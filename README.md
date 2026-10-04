@@ -37,6 +37,7 @@ npm run build
 - CSV template, validation, resumable-by-SKU draft import and result export.
 - Admin homepage content, categories, plans, seller/listing edits, campaign review, reports and audit log.
 - PWA manifest, icons, safe offline fallback; Android/iOS binaries are not part of this release.
+- Shareable `/shop/name` storefronts for individuals and shops, with editable cover/hero copy, preset colours/fonts, social video, photo gallery, optional section order, dashboard preview and copy-link button. Apply migration 007 to existing marketplace databases before saving these settings. See [docs/STOREFRONTS.md](docs/STOREFRONTS.md).
 
 ## Deploy to Vercel
 
