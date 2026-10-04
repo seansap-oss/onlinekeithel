@@ -1,5 +1,9 @@
 # Build status — v0.3.0
 
+## v0.7.0 brand and construction department
+
+Onlinekeithel replaces the marketplace-facing Leikai Market brand in the header, title, manifest, app icons, payment descriptor and assistance copy. The selected architectural roof logo has a scalable SVG and rendered PWA icons. The Construction header and drawer expose a single department with nested specialists; search and category directory group the same existing IDs. Builder, bricklayer, handyman, labourer and supervisor options appear inside the construction trades category. Existing category IDs and listing references remain stable. An optional 006 SQL migration updates an old marketplace name and adds these subcategories to a connected backend; it must be applied to the dedicated marketplace database before those new choices are used by live sellers.
+
 ## v0.6.1 seller UI handoff (4 October 2026)
 
 The seller dashboard, photo upload drawer, clothing variant/stock editor, vehicle details, shop identity, UPI/social settings and buyer listing were visually inspected in a local browser. An HTTP preview incompatibility with `crypto.randomUUID()` in the size editor was corrected with a secure-random-byte fallback. All seven test files and the production build pass. This is a complete-source release archive reconciled on top of the current GitHub main. No live seller save or payment was claimed: backend credentials and migration are still required. GitHub write API returned 403; shell Git fetched main but lacked credentials for push. No new deployment was made from this workspace.

@@ -15,7 +15,7 @@ export const plans = [
   active: true,
 }));
 export const settings = {
-  name: "Leikai Market",
+  name: "Onlinekeithel",
   tagline: "Our people. Our neighbourhood.",
   hero_title: "Your neighbourhood. Every shop.",
   hero_description:
@@ -392,8 +392,8 @@ variety.description =
     "batteries",
     "AA rechargeable batteries",
     399,
-    "electrical",
-    "batteries-energy-storage",
+    "retail",
+    "household-supplies",
   ],
   ["toy", "Wooden building blocks", 699, "kids", "toys-games"],
 ].forEach(([key, title, price, category_id, subcategory_id]) => {

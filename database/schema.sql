@@ -1,4 +1,4 @@
--- Leikai Market v0.3: apply to a NEW dedicated Supabase project.
+-- Onlinekeithel v0.3: apply to a NEW dedicated Supabase project.
 -- No messaging tables: enquiries leave the application via WhatsApp.
 begin;
 create schema if not exists private;
@@ -136,7 +136,7 @@ insert into public.categories(id,name,theme,fields,position) values
 ('retail','General retail','general','["Material","Dimensions"]',9),
 ('fashion','Fashion','fashion','["Size","Colour","Material"]',1),('mobiles','Mobiles','electronics','["Brand","Model","Storage","Warranty"]',2),('vehicles','Vehicles','vehicles','["Make","Model","Year","Kilometres","Fuel"]',3),('home','Home & furniture','general','["Material","Dimensions"]',4),('electronics','Electronics','electronics','["Brand","Model","Warranty"]',5),('services','Services','general','["Service area","Price unit"]',6),('property','Property','general','["Area","Bedrooms","Property type"]',7),('bicycles','Bicycles','vehicles','["Brand","Frame size","Type"]',8);
 insert into public.plans(id,name,price,listing_limit) values('free','Free',0,3),('starter','Starter',500,50),('growth','Growth',1000,250),('business','Business',2000,1000),('catalogue','Large catalogue',5000,15000);
-insert into public.settings(id,value) values('marketplace','{"name":"Leikai Market","tagline":"Our people. Our neighbourhood.","hero_title":"Your neighbourhood. Every shop.","hero_description":"Discover something wonderful, just around the corner. Shop local across Manipur.","hero_image":"/images/hero-handloom.webp","support_email":"","support_whatsapp":"","announcement":"Made for Manipur. Open to everyone.","ads_price_note":"Contact us for featured placement prices."}');
+insert into public.settings(id,value) values('marketplace','{"name":"Onlinekeithel","tagline":"Our people. Our neighbourhood.","hero_title":"Your neighbourhood. Every shop.","hero_description":"Discover something wonderful, just around the corner. Shop local across Manipur.","hero_image":"/images/hero-handloom.webp","support_email":"","support_whatsapp":"","announcement":"Made for Manipur. Open to everyone.","ads_price_note":"Contact us for featured placement prices."}');
 commit;
 create function public.search_listings(p_query text default '') returns setof public.listings language sql stable security invoker set search_path='' as $$
  select l.* from public.listings l join public.sellers s on s.id=l.seller_id
@@ -287,4 +287,35 @@ create or replace function public.search_listings(p_query text default '') retur
  select l.* from public.listings l join public.sellers s on s.id=l.seller_id join public.categories c on c.id=l.category_id
  where l.status='published' and not s.suspended and (p_query='' or (l.title||' '||l.description||' '||l.tags||' '||l.socials::text||' '||l.videos::text||' '||coalesce(l.commerce->'variants','[]'::jsonb)::text||' '||l.attributes::text||' '||s.name||' '||c.name||' '||coalesce((select child->>'name' from jsonb_array_elements(c.subcategories) child where child->>'id'=l.subcategory_id),'') ) ilike '%'||replace(replace(replace(p_query,'\','\\'),'%','\%'),'_','\_')||'%')
 $$;
+commit;
+
+-- Onlinekeithel v0.7: preserve existing category IDs and listing references.
+-- Construction is a UI department grouping existing specialist categories.
+begin;
+update public.settings
+set value = jsonb_set(value, '{name}', '"Onlinekeithel"'::jsonb)
+where id = 'marketplace' and value->>'name' = 'Leikai Market';
+
+update public.categories c
+set subcategories = (
+  select coalesce(jsonb_agg(
+    case when child->>'id' = 'general-building-contractors'
+      then jsonb_set(child, '{name}', '"Builders & general contractors"'::jsonb)
+      else child end
+  ), '[]'::jsonb)
+  from jsonb_array_elements(c.subcategories) child
+) || (
+  select coalesce(jsonb_agg(child), '[]'::jsonb)
+  from jsonb_array_elements(
+    '[{"id":"bricklayers-masons","name":"Bricklayers & masons","icon":"HardHat"},
+      {"id":"handyman-repairs","name":"Handyman & small repairs","icon":"Wrench"},
+      {"id":"construction-labourers","name":"Construction labourers","icon":"HardHat"},
+      {"id":"site-supervisors","name":"Site supervisors","icon":"HardHat"}]'::jsonb
+  ) child
+  where not exists (
+    select 1 from jsonb_array_elements(c.subcategories) existing
+    where existing->>'id' = child->>'id'
+  )
+)
+where c.id = 'contractors';
 commit;

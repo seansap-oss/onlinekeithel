@@ -20,6 +20,7 @@ import {
   preview,
 } from "../lib/backend";
 import { Field, Upload, Empty } from "../components/UI";
+import { CategoryOptions } from "../components/CategoryOptions";
 import { money, slugify, socialUrl, whatsappUrl } from "../lib/utils";
 export function AuthPage({ reset = false }) {
   const { session, navigate, notice } = useMarket();
@@ -313,11 +314,7 @@ export function SellerForm({ existing, onSaved }) {
             <option value="" disabled>
               Choose a category to apply its template
             </option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
+            <CategoryOptions categories={categories} />
           </select>
         </Field>
         <Field label="Shop presentation">

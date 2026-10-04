@@ -8,6 +8,7 @@ import {
 } from "../lib/commerce";
 import { ProductVideosEditor } from "../components/ProductMedia";
 import { subcategoriesFor } from "../lib/categories";
+import { CategoryOptions } from "../components/CategoryOptions";
 import React, { useState, useEffect, useRef } from "react";
 import Papa from "papaparse";
 import {
@@ -190,11 +191,7 @@ export function ListingEditor({
                 });
               }}
             >
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              <CategoryOptions categories={categories} />
             </select>
           </Field>
           <Field label="Subcategory">
@@ -548,7 +545,7 @@ function Importer({ seller, visual }) {
       </p>
       <button
         className="button outline"
-        onClick={() => download(template, "leikai-catalogue-template.csv")}
+        onClick={() => download(template, "onlinekeithel-catalogue-template.csv")}
       >
         <DownloadSimple /> Download CSV template
       </button>

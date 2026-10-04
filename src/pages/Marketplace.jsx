@@ -5,6 +5,7 @@ import {
   categoryName,
   subcategoryName,
   subcategoriesFor,
+  constructionCategories,
 } from "../lib/categories";
 import React, { useState, useEffect, useRef } from "react";
 import {
@@ -24,6 +25,7 @@ import {
   MagnifyingGlass,
 } from "@phosphor-icons/react";
 import { useMarket, Link } from "../lib/context";
+import { CategoryOptions } from "../components/CategoryOptions";
 import { supabase, configured, result } from "../lib/backend";
 import {
   money,
@@ -433,6 +435,7 @@ export function Search({ saved = false }) {
   const params = new URLSearchParams(path.split("?")[1]);
   const q = params.get("q") || "",
     cat = params.get("category") || "",
+    department = params.get("department") || "",
     sub = params.get("subcategory") || "",
     loc = params.get("location") || "";
   const [items, setItems] = useState([]),
@@ -447,7 +450,7 @@ export function Search({ saved = false }) {
     [filters, setFilters] = useState(false);
   useEffect(
     () => setPage(0),
-    [q, cat, sub, loc, sort, condition, type, min, max],
+    [q, cat, department, sub, loc, sort, condition, type, min, max],
   );
   useEffect(() => {
     let live = true;
@@ -464,6 +467,7 @@ export function Search({ saved = false }) {
                 (x) =>
                   (!q || searchable(x).includes(q.toLowerCase())) &&
                   (!cat || x.category_id === cat) &&
+                  (department !== "construction" || constructionCategories(categories).some((c) => c.id === x.category_id)) &&
                   (!sub || x.subcategory_id === sub) &&
                   (!loc ||
                     x.location.toLowerCase().includes(loc.toLowerCase())) &&
@@ -479,6 +483,10 @@ export function Search({ saved = false }) {
             .rpc("search_listings", { p_query: q })
             .select("*,seller:sellers!inner(*)");
           if (cat) query = query.eq("category_id", cat);
+          else if (department === "construction") {
+            const ids = constructionCategories(categories).map((c) => c.id);
+            query = query.in("category_id", ids.length ? ids : ["construction"]);
+          }
           if (sub) query = query.eq("subcategory_id", sub);
           if (loc)
             query = query.ilike(
@@ -526,6 +534,7 @@ export function Search({ saved = false }) {
   }, [
     path,
     fixtures,
+    categories,
     sort,
     condition,
     type,
@@ -550,6 +559,8 @@ export function Search({ saved = false }) {
               ? "Your saved finds"
               : q
                 ? `Results for “${q}”`
+                : department === "construction" && !cat
+                  ? "Construction"
                 : cat
                   ? subcategoryName(categories, cat, sub) ||
                     categoryName(categories, cat)
@@ -578,17 +589,14 @@ export function Search({ saved = false }) {
                     new URLSearchParams({
                       q,
                       category: e.target.value,
+                      department: e.target.value ? "" : department,
                       location: loc,
                     }),
                 )
               }
             >
-              <option value="">All categories</option>
-              {categories.map((c) => (
-                <option value={c.id} key={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              <option value="">{department === "construction" ? "All construction" : "All categories"}</option>
+              <CategoryOptions categories={categories} />
             </select>
           </Field>
           {cat && (
@@ -946,13 +954,13 @@ export function SellerPage({ slug }) {
         <SocialLinks values={seller.socials} />
         {whatsappUrl(
           seller.whatsapp,
-          "Hello, I found your shop on Leikai Market.",
+          "Hello, I found your shop on Onlinekeithel.",
         ) && (
           <a
             className="button primary"
             href={whatsappUrl(
               seller.whatsapp,
-              "Hello, I found your shop on Leikai Market.",
+              "Hello, I found your shop on Onlinekeithel.",
             )}
             target="_blank"
             rel="noopener noreferrer"
@@ -1019,11 +1027,7 @@ export function SellerPage({ slug }) {
                 }}
               >
                 <option value="">All categories</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+                <CategoryOptions categories={categories} />
               </select>
             </Field>
           </div>

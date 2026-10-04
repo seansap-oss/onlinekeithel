@@ -31,7 +31,7 @@ function Router() {
           ? "Marketplace administration"
           : p.startsWith("/dashboard")
             ? "Your seller workspace"
-            : "Explore your local marketplace") + " | Leikai Market";
+            : "Explore your local marketplace") + " | Onlinekeithel";
   }, [p]);
   let page;
   if (p === "/") page = <Home />;
