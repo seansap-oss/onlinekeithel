@@ -71,7 +71,7 @@ export async function checkout(planId) {
       order_id: data.orderId,
       amount: data.amount,
       currency: "INR",
-      name: "Onlinekeithel",
+      name: "OnlineKeithel",
       description: "30-day seller package",
       handler: async (payment) => {
         try {

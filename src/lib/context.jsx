@@ -18,7 +18,7 @@ export function MarketProvider({ children }) {
     [categories, setCategories] = useState(categoryCatalog),
     [plans, setPlans] = useState([]),
     [settings, setSettings] = useState({
-      name: "Onlinekeithel",
+      name: "OnlineKeithel",
       hero_title: "Your neighbourhood. Every shop.",
       hero_description:
         "Discover products and independent shops across Manipur.",
@@ -100,7 +100,7 @@ export function MarketProvider({ children }) {
         setPlans(ps);
         setSettings({
           ...st.value,
-          name: st.value.name === "Leikai Market" ? "Onlinekeithel" : st.value.name,
+          name: /^(Leikai Market|onlinekeithell?)$/i.test(st.value.name || "") ? "OnlineKeithel" : st.value.name,
         });
       } else if (showSamples) {
         const d = await import("./preview-data.js");

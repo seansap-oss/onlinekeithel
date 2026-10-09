@@ -1,4 +1,10 @@
-# Build status — v0.8.0
+# Build status — v0.9.0
+
+## v0.9.0 brand and owner controls (9 October 2026)
+
+Corrected OnlineKeithel throughout public content; bundled the Caveat wordmark font; preserved the roof logo and header layout; changed the posting CTA; added five-second footer admin sign-in and Ebit Solutions credit. Added server-protected user listing/invitations, category icon/colour/subcategory editing, deletion controls, editable starter catalogue import, and database-backed homepage draft/publish/revision recovery with optimistic concurrency checks. Migration `supabase/migrations/20261009051356_admin_publishing.sql` is required on an existing database. Fresh schema includes it. Existing 004–007 history is retained.
+
+21 automated tests passed. Production and Sites packaging builds pass. Browser preview failed with connection refusal in this environment; new visual interactions have not been visually verified. No dedicated backend is configured, so real account writes, invitations, uploads and publishing remain provider-dependent and unverified. GitHub denied create-tree writes with 403. No Vercel deployment is claimed. Read `UPDATE-v0.9.0.md` for installation and limitations. Bundled disconnected catalogue records are read-only; the importer creates editable database drafts once genuine seller accounts exist.
 
 ## v0.8.0 shareable storefronts (4 October 2026)
 

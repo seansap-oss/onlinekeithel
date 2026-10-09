@@ -89,11 +89,7 @@ export function ProductCard({ item }) {
         <span
           className={"condition " + (item.condition === "Used" ? "used" : "")}
         >
-          {outOfStock(item)
-            ? "Out of stock"
-            : item.sample
-              ? "Sample"
-              : item.condition}
+          {outOfStock(item) ? "Out of stock" : item.condition}
         </span>
         <button
           className={"save-button " + (saved ? "saved" : "")}
@@ -102,7 +98,7 @@ export function ProductCard({ item }) {
           onClick={async () => {
             if (item.sample)
               return notice(
-                "This sample cannot be saved. Browse the templates to explore the design.",
+                "Saving is available after account services are connected.",
               );
             if (!session) return navigate("/login");
             try {
@@ -150,7 +146,7 @@ export function ProductCard({ item }) {
           to={"/listing/" + item.id + "?enquire=1"}
         >
           <WhatsappLogo size={17} />{" "}
-          {item.sample ? "Explore sample" : "Contact seller"}
+          {item.sample ? "View details" : "Contact seller"}
         </Link>
       </div>
     </article>
@@ -170,10 +166,7 @@ export function ShopCard({ seller }) {
         </span>
         <div>
           <strong>{seller.name}</strong>
-          <small>
-            {templates[seller.theme]?.category || seller.theme}
-            {seller.sample ? " · Sample shop" : ""}
-          </small>
+          <small>{templates[seller.theme]?.category || seller.theme}</small>
           <small>
             <MapPin size={12} />
             {seller.location}
@@ -184,14 +177,15 @@ export function ShopCard({ seller }) {
     </Link>
   );
 }
-export function Hero() {
-  const { settings, navigate } = useMarket();
+export function Hero({ settingsOverride, editor = false } = {}) {
+  const { settings: liveSettings, navigate } = useMarket();
+  const settings = settingsOverride || liveSettings;
   const [campaigns, setCampaigns] = useState([]),
     [index, setIndex] = useState(0),
     [video, setVideo] = useState(null);
   const start = useRef(null);
   useEffect(() => {
-    if (configured)
+    if (configured && !editor)
       result(
         supabase
           .from("campaigns")
@@ -430,7 +424,7 @@ export function Home() {
           </p>
         </div>
         <Link to="/sell" className="button primary">
-          Open your shop <ArrowRight size={18} />
+          Post ad <ArrowRight size={18} />
         </Link>
       </section>
     </div>
@@ -930,7 +924,7 @@ export function SellerPage({ slug }) {
     };
   }, [fixtures, slug, collection, page, shopCategory, shopQuery]);
   useEffect(() => {
-    if (seller) document.title = `${seller.name} | Onlinekeithel`;
+    if (seller) document.title = `${seller.name} | OnlineKeithel`;
   }, [seller]);
   if (!seller)
     return (
@@ -949,12 +943,6 @@ export function SellerPage({ slug }) {
         "--shop-font": storefrontFonts[display.font].value,
       }}
     >
-      {seller.sample && (
-        <div className="sample-notice">
-          Sample shop · illustrative products and prices.{" "}
-          <Link to="/templates">Explore all templates</Link>
-        </div>
-      )}
       <div className="shop-cover shop-hero">
         <Photo src={seller.cover} alt={seller.name} />
         <div className="shop-hero-content">
@@ -987,13 +975,13 @@ export function SellerPage({ slug }) {
         <SocialLinks values={seller.socials} />
         {whatsappUrl(
           seller.whatsapp,
-          "Hello, I found your shop on Onlinekeithel.",
+          "Hello, I found your shop on OnlineKeithel.",
         ) && (
           <a
             className="button primary"
             href={whatsappUrl(
               seller.whatsapp,
-              "Hello, I found your shop on Onlinekeithel.",
+              "Hello, I found your shop on OnlineKeithel.",
             )}
             target="_blank"
             rel="noopener noreferrer"
@@ -1289,12 +1277,6 @@ export function ProductPage({ id }) {
                   item.subcategory_id,
                 )}
           </span>
-          {item.sample && (
-            <div className="sample-notice">
-              Sample product · not for sale · price and specifications are
-              illustrative.
-            </div>
-          )}
           <h1>{item.title}</h1>
           <strong className="detail-price">{money(item.price)}</strong>
           <p className="muted">

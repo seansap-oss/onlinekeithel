@@ -25,8 +25,12 @@ import {
 } from "@phosphor-icons/react";
 import { Link, useMarket } from "../lib/context";
 import { Modal } from "./UI";
-import { preview, showSamples, supabase } from "../lib/backend";
-import { constructionCategories, isConstructionCategory } from "../lib/categories";
+import { supabase } from "../lib/backend";
+import {
+  constructionCategories,
+  isConstructionCategory,
+} from "../lib/categories";
+import { AdminEntry } from "./AdminEntry";
 import { BrandMark } from "./BrandMark";
 export const icons = Object.fromEntries(
   categoryCatalog.map((c) => [c.id, categoryIcons[c.icon]]),
@@ -105,7 +109,7 @@ export function Layout({ children }) {
             <span>{session ? "My account" : "Sign in"}</span>
           </Link>
           <Link className="button primary sell-header" to="/sell">
-            <Plus size={19} /> Open your shop
+            <Plus size={19} /> Post ad
           </Link>
         </div>
       </header>
@@ -115,15 +119,9 @@ export function Layout({ children }) {
             <SquaresFour size={19} /> All categories
           </Link>
           {categories
-            .filter((c) =>
-              [
-                "fashion",
-                "mobiles",
-                "vehicles",
-              ].includes(c.id),
-            )
+            .filter((c) => ["fashion", "mobiles", "vehicles"].includes(c.id))
             .map((c) => {
-              const Icon = icons[c.id] || SquaresFour;
+              const Icon = categoryIcons[c.icon] || icons[c.id] || SquaresFour;
               return (
                 <Link key={c.id} to={"/search?category=" + c.id}>
                   <Icon size={22} />
@@ -137,11 +135,17 @@ export function Layout({ children }) {
             })}
           {constructionCategories(categories).length > 0 && (
             <details className="nav-department">
-              <summary><Buildings size={22} /> Construction <CaretDown size={13} /></summary>
+              <summary>
+                <Buildings size={22} /> Construction <CaretDown size={13} />
+              </summary>
               <div className="nav-department-menu">
-                <Link to="/search?department=construction">All construction</Link>
+                <Link to="/search?department=construction">
+                  All construction
+                </Link>
                 {constructionCategories(categories).map((c) => (
-                  <Link key={c.id} to={"/search?category=" + c.id}>{c.name}</Link>
+                  <Link key={c.id} to={"/search?category=" + c.id}>
+                    {c.name}
+                  </Link>
                 ))}
               </div>
             </details>
@@ -172,7 +176,7 @@ export function Layout({ children }) {
         </div>
         <div>
           <b>Start something</b>
-          <Link to="/sell">Open your shop</Link>
+          <Link to="/sell">Post ad</Link>
           <Link to="/plans">Seller packages</Link>
           <Link to="/dashboard?tab=promotions">Advertise with us</Link>
         </div>
@@ -182,7 +186,14 @@ export function Layout({ children }) {
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Marketplace terms</Link>
           <small>
-            © {new Date().getFullYear()} {settings.name}
+            <AdminEntry /> {new Date().getFullYear()} {settings.name}
+            <span className="release-version"> · v0.9.0</span>
+          </small>
+          <small className="creator-credit">
+            Created by{" "}
+            <span className="creator-name">
+              <span>Ebit</span> <span>Solutions</span>
+            </span>
           </small>
         </div>
       </footer>
@@ -190,7 +201,7 @@ export function Layout({ children }) {
         {[
           ["/", House, "Home"],
           ["/categories", SquaresFour, "Categories"],
-          ["/sell", Plus, "Sell"],
+          ["/sell", Plus, "Post ad"],
           ["/saved", Heart, "Saved"],
           [session ? "/dashboard" : "/login", User, "Account"],
         ].map(([to, Icon, label]) => (
@@ -198,7 +209,7 @@ export function Layout({ children }) {
             to={to}
             key={label}
             className={
-              (label === "Sell" ? "nav-sell " : "") +
+              (label === "Post ad" ? "nav-sell " : "") +
               (path.split("?")[0] === to ? "active" : "")
             }
           >
@@ -225,26 +236,42 @@ export function Layout({ children }) {
             <h3>Shop by category</h3>
             {constructionCategories(categories).length > 0 && (
               <details className="drawer-department">
-                <summary><Buildings size={22} /> Construction <CaretDown size={14} /></summary>
-                <Link to="/search?department=construction" onClick={() => setMenu(false)}>All construction</Link>
+                <summary>
+                  <Buildings size={22} /> Construction <CaretDown size={14} />
+                </summary>
+                <Link
+                  to="/search?department=construction"
+                  onClick={() => setMenu(false)}
+                >
+                  All construction
+                </Link>
                 {constructionCategories(categories).map((c) => (
-                  <Link key={c.id} to={"/search?category=" + c.id} onClick={() => setMenu(false)}>{c.name}</Link>
+                  <Link
+                    key={c.id}
+                    to={"/search?category=" + c.id}
+                    onClick={() => setMenu(false)}
+                  >
+                    {c.name}
+                  </Link>
                 ))}
               </details>
             )}
-            {categories.filter((c) => !isConstructionCategory(c)).map((c) => {
-              const Icon = icons[c.id] || SquaresFour;
-              return (
-                <Link
-                  to={"/search?category=" + c.id}
-                  key={c.id}
-                  onClick={() => setMenu(false)}
-                >
-                  <Icon size={22} />
-                  {c.name}
-                </Link>
-              );
-            })}
+            {categories
+              .filter((c) => !isConstructionCategory(c))
+              .map((c) => {
+                const Icon =
+                  categoryIcons[c.icon] || icons[c.id] || SquaresFour;
+                return (
+                  <Link
+                    to={"/search?category=" + c.id}
+                    key={c.id}
+                    onClick={() => setMenu(false)}
+                  >
+                    <Icon size={22} />
+                    {c.name}
+                  </Link>
+                );
+              })}
             <hr />
             <Link to="/dashboard" onClick={() => setMenu(false)}>
               My seller dashboard
@@ -271,12 +298,6 @@ export function Layout({ children }) {
             )}
           </nav>
         </Modal>
-      )}
-      {(showSamples || preview) && (
-        <div className="preview-ribbon">
-          <Link to="/templates">Explore shop templates · </Link>
-          Sample shops & illustrative prices · not available for purchase
-        </div>
       )}
     </>
   );

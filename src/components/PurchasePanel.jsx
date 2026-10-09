@@ -165,14 +165,14 @@ export function PurchasePanel({ item }) {
         <p>{payments.instructions}</p>
         <small>
           Pay only after agreement with the seller. Direct transfers are not
-          verified by Onlinekeithel.
+          verified by OnlineKeithel.
         </small>
       </details>
       {open && (
         <Modal
           title={
             item.sample
-              ? "Sample purchase enquiry"
+              ? "Purchase enquiry"
               : "Confirm your purchase enquiry"
           }
           onClose={() => setOpen(false)}
@@ -223,7 +223,7 @@ export function PurchasePanel({ item }) {
           ) : (
             <p className="notice-box">
               {item.sample
-                ? "Sample only. No message or payment can be sent."
+                ? "This item is not currently available for purchase."
                 : error || "The seller has not provided a WhatsApp number."}
             </p>
           )}

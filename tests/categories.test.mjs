@@ -33,7 +33,7 @@ test('database enforces parent-child category integrity and protects categories 
  await db.exec(update);
  await db.exec(update);
  const {rows:[{name,count}]}=await db.query("select (select value->>'name' from public.settings where id='marketplace') name,(select count(*) from jsonb_array_elements(subcategories) where value->>'id'='bricklayers-masons') count from public.categories where id='contractors'");
- assert.equal(name,'Onlinekeithel');
+ assert.equal(name,'OnlineKeithel');
  assert.equal(Number(count),1);
  const {rows:[listing]}=await db.query("select category_id,subcategory_id from public.listings where id='valid'");
  assert.deepEqual(listing,{category_id:'construction',subcategory_id:'cement-binders'});

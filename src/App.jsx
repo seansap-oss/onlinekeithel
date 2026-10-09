@@ -31,7 +31,7 @@ function Router() {
           ? "Marketplace administration"
           : p.startsWith("/dashboard")
             ? "Your seller workspace"
-            : "Explore your local marketplace") + " | Onlinekeithel";
+            : "Explore your local marketplace") + " | OnlineKeithel";
   }, [p]);
   useEffect(() => {
     if (p.startsWith("/seller/")) {

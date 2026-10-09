@@ -22,7 +22,7 @@ export function Information({ kind }) {
             product with photos, a price and category.
           </p>
           <Link className="button primary" to="/sell">
-            Open your shop <ArrowRight />
+            Post ad <ArrowRight />
           </Link>
           <h2>Where do messages go?</h2>
           <p>
@@ -41,13 +41,13 @@ export function Information({ kind }) {
           )}
           {whatsappUrl(
             settings.support_whatsapp,
-            "Hello, I need help with Onlinekeithel.",
+            "Hello, I need help with OnlineKeithel.",
           ) && (
             <a
               className="button green"
               href={whatsappUrl(
                 settings.support_whatsapp,
-                "Hello, I need help with Onlinekeithel.",
+                "Hello, I need help with OnlineKeithel.",
               )}
               target="_blank"
               rel="noopener noreferrer"

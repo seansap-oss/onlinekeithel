@@ -1,4 +1,11 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Lora:wght@400;500;600;650;700&display=swap");
+@font-face {
+  font-family: "Caveat";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/caveat-700.ttf") format("truetype");
+}
 :root {
   font-family: "DM Sans", sans-serif;
   color: #15352e;
@@ -184,7 +191,8 @@ hr {
   object-fit: contain;
 }
 .brand b {
-  font-family: Lora, Georgia, serif;
+  font-family: "Caveat", "Segoe Print", cursive;
+  color: #064b3b;
   font-weight: 700;
   font-size: 25px;
   letter-spacing: -1px;
@@ -3074,5 +3082,84 @@ th {
   }
   .media-url-row input {
     flex-basis: 100%;
+  }
+}
+
+/* Approved brand, quiet owner access and responsive editor. */
+.copyright-entry {
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 8px 3px;
+  font: inherit;
+  touch-action: pan-y;
+  user-select: none;
+}
+.copyright-entry:focus-visible {
+  outline: 2px solid #e5b344;
+  outline-offset: 2px;
+}
+.creator-credit .creator-name {
+  display: inline !important;
+  font-weight: 650;
+}
+.creator-credit .creator-name span:first-child {
+  color: #168568;
+}
+.creator-credit .creator-name span:last-child {
+  color: #bd5248;
+}
+.release-version {
+  opacity: 0.6;
+}
+.admin-signin .auth-story {
+  display: none;
+}
+.admin-signin .auth-layout {
+  display: block;
+  padding: 0;
+  width: 100%;
+}
+.admin-signin .auth-form {
+  max-width: none;
+  padding: 12px;
+}
+.child-category {
+  border: 1px solid #dce5df;
+  border-radius: 12px;
+  padding: 14px;
+  margin: 12px 0;
+}
+.child-category .button-row {
+  justify-content: space-between;
+}
+.editor-preview {
+  border: 1px solid #dce5df;
+  border-radius: 16px;
+  overflow: hidden;
+  margin: 20px 0;
+}
+.editor-preview .hero {
+  min-height: 340px;
+}
+.editor-preview .hero-panel {
+  max-width: 70%;
+}
+.editor-preview .hero h1 {
+  font-size: 34px;
+}
+.editor-preview .hero-image {
+  height: 100%;
+}
+.editor-state {
+  color: #527368;
+  font-size: 13px;
+}
+@media (max-width: 600px) {
+  .editor-preview .hero-panel {
+    max-width: 100%;
+  }
+  .admin-row {
+    flex-wrap: wrap;
   }
 }

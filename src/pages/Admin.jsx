@@ -1,3 +1,7 @@
+import { StarterCatalogue } from "../components/StarterCatalogue";
+import { AdminUsers } from "../components/AdminUsers";
+import { HomepageEditor } from "../components/HomepageEditor";
+import { SubcategoryEditor } from "../components/SubcategoryEditor";
 import { categoryIcons } from "../components/CategoryIcon";
 import React, { useState, useEffect } from "react";
 import {
@@ -20,6 +24,8 @@ import { ListingEditor } from "./Dashboard";
 const sections = [
   ["settings", "Homepage", SlidersHorizontal],
   ["sellers", "Sellers", Storefront],
+  ["users", "Users", ShieldCheck],
+  ["starter", "Starter catalogue", Package],
   ["listings", "Listings", Package],
   ["categories", "Categories", SquaresFour],
   ["plans", "Packages", Package],
@@ -33,6 +39,10 @@ const defaults = {
     name: "",
     theme: "general",
     fields: [],
+    color: "#064b3b",
+    icon: "Storefront",
+    group_name: "Other",
+    subcategories: [],
     position: 0,
     active: true,
   },
@@ -58,7 +68,7 @@ export function Admin({ visual = false }) {
     [more, setMore] = useState(false),
     [query, setQuery] = useState("");
   const load = async () => {
-    if (tab === "settings") return;
+    if (["settings", "users", "starter"].includes(tab)) return;
     try {
       if (visual) {
         setRows(fixtures?.[tab] || []);
@@ -94,8 +104,8 @@ export function Admin({ visual = false }) {
       );
     await result(
       id
-        ? supabase.from(table).update(data).eq("id", id)
-        : supabase.from(table).insert(data),
+        ? supabase.from(table).update(data).eq("id", id).select().single()
+        : supabase.from(table).insert(data).select().single(),
     );
     await refresh();
     load();
@@ -106,6 +116,7 @@ export function Admin({ visual = false }) {
       "name",
       "theme",
       "icon",
+      "color",
       "group_name",
       "subcategories",
       "fields",
@@ -162,54 +173,11 @@ export function Admin({ visual = false }) {
         </aside>
         <section className="dashboard-content">
           {tab === "settings" ? (
-            <form
-              className="editor-form"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setBusy(true);
-                try {
-                  await save("settings", { value: homepage }, "marketplace");
-                  notice("Marketplace content updated");
-                } catch (e) {
-                  notice(e.message);
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              <h2>Your homepage</h2>
-              <p>
-                Edit the public identity, hero, announcement and support
-                details.
-              </p>
-              {[
-                ["name", "Marketplace name"],
-                ["tagline", "Brand tagline"],
-                ["announcement", "Announcement bar"],
-                ["hero_title", "Hero headline"],
-                ["hero_description", "Hero description"],
-                ["support_email", "Support email"],
-                ["support_whatsapp", "Support WhatsApp number"],
-                ["ads_price_note", "Featured placement pricing note"],
-              ].map(([key, label]) => (
-                <Field
-                  key={key}
-                  label={label}
-                  value={homepage[key] || ""}
-                  onChange={(e) =>
-                    setHomepage({ ...homepage, [key]: e.target.value })
-                  }
-                />
-              ))}
-              <h3>Hero photograph</h3>
-              <Upload
-                value={homepage.hero_image}
-                onChange={(v) => setHomepage({ ...homepage, hero_image: v })}
-              />
-              <button className="button primary" disabled={busy}>
-                {busy ? "Saving…" : "Save homepage"}
-              </button>
-            </form>
+            <HomepageEditor visual={visual} />
+          ) : tab === "users" ? (
+            <AdminUsers visual={visual} />
+          ) : tab === "starter" ? (
+            <StarterCatalogue visual={visual} />
           ) : (
             <>
               <div className="section-heading">
@@ -271,6 +239,42 @@ export function Admin({ visual = false }) {
                         }}
                       >
                         <PencilSimple size={20} />
+                      </button>
+                    )}
+                    {["listings", "categories", "campaigns"].includes(tab) && (
+                      <button
+                        className="button outline small"
+                        onClick={async () => {
+                          if (visual)
+                            return notice(
+                              "Connect an administrator account to delete records.",
+                            );
+                          if (
+                            !window.confirm(
+                              "Permanently delete " +
+                                (r.title || r.name || "this record") +
+                                "? This cannot be undone.",
+                            )
+                          )
+                            return;
+                          try {
+                            await result(
+                              supabase
+                                .from(tab)
+                                .delete()
+                                .eq("id", r.id)
+                                .select()
+                                .single(),
+                            );
+                            await refresh();
+                            load();
+                            notice("Record deleted");
+                          } catch (e) {
+                            notice(e.message);
+                          }
+                        }}
+                      >
+                        Delete
                       </button>
                     )}
                     {tab === "sellers" && (
@@ -408,34 +412,13 @@ export function Admin({ visual = false }) {
                   </select>
                 </Field>
               ) : k === "subcategories" ? (
-                <Field key={k} label="Subcategories — one id | name per line">
-                  <textarea
-                    rows={10}
-                    defaultValue={(editing.subcategories || [])
-                      .map((s) => s.id + " | " + s.name)
-                      .join("\n")}
-                    onBlur={(e) =>
-                      setEditing({
-                        ...editing,
-                        subcategories: e.target.value
-                          .split("\n")
-                          .filter((s) => s.trim())
-                          .map((line) => {
-                            const [id, ...name] = line.split("|");
-                            return {
-                              id: id.trim(),
-                              name: name.join("|").trim(),
-                              icon: editing.icon || "Storefront",
-                            };
-                          }),
-                      })
-                    }
-                  />
-                  <small>
-                    Keep existing IDs when renaming. Used subcategories cannot
-                    be removed.
-                  </small>
-                </Field>
+                <SubcategoryEditor
+                  key={k}
+                  value={editing.subcategories || []}
+                  onChange={(value) =>
+                    setEditing({ ...editing, subcategories: value })
+                  }
+                />
               ) : k === "fields" ? (
                 <Field
                   key={k}
@@ -470,7 +453,13 @@ export function Admin({ visual = false }) {
                   label={k.replaceAll("_", " ")}
                   required={["id", "name", "title"].includes(k)}
                   disabled={k === "id" && !isNew}
-                  type={typeof editing[k] === "number" ? "number" : "text"}
+                  type={
+                    k === "color"
+                      ? "color"
+                      : typeof editing[k] === "number"
+                        ? "number"
+                        : "text"
+                  }
                   min={0}
                   value={editing[k] ?? ""}
                   onChange={(e) =>

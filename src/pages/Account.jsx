@@ -29,7 +29,7 @@ import {
   storefrontSections,
   shopPath,
 } from "../lib/storefront";
-export function AuthPage({ reset = false }) {
+export function AuthPage({ reset = false, returnTo }) {
   const { session, navigate, notice } = useMarket();
   const [mode, setMode] = useState("login"),
     [email, setEmail] = useState(""),
@@ -41,9 +41,12 @@ export function AuthPage({ reset = false }) {
     if (session && !reset) navigate(destination);
   }, [session, reset]);
   const chosenTemplate = new URLSearchParams(location.search).get("template");
-  const destination = Object.hasOwn(templates, chosenTemplate)
-    ? "/dashboard?template=" + chosenTemplate
-    : "/dashboard";
+  const destination =
+    returnTo ||
+    (location.pathname === "/admin" ? "/admin" : null) ||
+    (Object.hasOwn(templates, chosenTemplate)
+      ? "/dashboard?template=" + chosenTemplate
+      : "/dashboard");
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
