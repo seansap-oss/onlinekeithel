@@ -1,3 +1,4 @@
+import { Department, Recruiters } from "./pages/Departments";
 import Categories from "./pages/Categories";
 import Templates from "./pages/Templates";
 import React, { Suspense, lazy, useEffect } from "react";
@@ -43,6 +44,11 @@ function Router() {
   if (p === "/") page = <Home />;
   else if (p === "/search" || p === "/saved")
     page = <Search key={p} saved={p === "/saved"} />;
+  else if (["/homes", "/jobs", "/motors", "/whats-on"].includes(p))
+    page = <Department key={p} kind={p.slice(1)} />;
+  else if (p === "/recruiters") page = <Recruiters />;
+  else if (p.startsWith("/recruiter/"))
+    page = <Recruiters key={p} slug={decodeURIComponent(p.split("/")[2])} />;
   else if (p === "/shops") page = <Shops />;
   else if (p.startsWith("/shop/") || p.startsWith("/seller/"))
     page = <SellerPage key={p} slug={decodeURIComponent(p.split("/")[2])} />;

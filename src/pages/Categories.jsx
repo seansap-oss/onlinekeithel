@@ -1,3 +1,4 @@
+import { categoryRoute } from "../lib/departments";
 import React, { useState } from "react";
 import { useMarket, Link } from "../lib/context";
 import { categoryMatches, isConstructionCategory } from "../lib/categories";
@@ -23,7 +24,7 @@ export default function Categories() {
             {isConstructionCategory(c) ? "Construction" : c.group_name}
           </small>
           <h2>
-            <Link to={"/search?category=" + c.id}>{c.name}</Link>
+            <Link to={categoryRoute(c.id)}>{c.name}</Link>
           </h2>
         </div>
       </div>
@@ -46,7 +47,7 @@ export default function Categories() {
           </li>
         ))}
       </ul>
-      <Link className="category-view-all" to={"/search?category=" + c.id}>
+      <Link className="category-view-all" to={categoryRoute(c.id)}>
         Browse all in this category →
       </Link>
     </section>

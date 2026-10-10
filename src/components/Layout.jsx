@@ -1,3 +1,4 @@
+import { categoryRoute } from "../lib/departments";
 import { categoryCatalog } from "../lib/categories";
 import { categoryIcons, CategoryIcon } from "./CategoryIcon";
 import { Ticker } from "./Ticker";
@@ -156,7 +157,7 @@ export function Layout({ children }) {
           <Link to="/terms">Marketplace terms</Link>
           <small>
             <AdminEntry /> {new Date().getFullYear()} {settings.name}
-            <span className="release-version"> · v0.10.0</span>
+            <span className="release-version"> · v0.11.0</span>
           </small>
           <small className="creator-credit">
             Created by{" "}
@@ -229,7 +230,7 @@ export function Layout({ children }) {
                 {constructionCategories(categories).map((c) => (
                   <Link
                     key={c.id}
-                    to={"/search?category=" + c.id}
+                    to={categoryRoute(c.id)}
                     onClick={() => setMenu(false)}
                   >
                     {c.name}
@@ -244,7 +245,7 @@ export function Layout({ children }) {
                   categoryIcons[c.icon] || icons[c.id] || SquaresFour;
                 return (
                   <Link
-                    to={"/search?category=" + c.id}
+                    to={categoryRoute(c.id)}
                     key={c.id}
                     onClick={() => setMenu(false)}
                   >

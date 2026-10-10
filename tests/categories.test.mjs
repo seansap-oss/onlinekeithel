@@ -5,8 +5,8 @@ import {categoryCatalog,categoryMatches,subcategoriesFor,constructionCategories}
 import {listings} from '../src/lib/preview-data.js';
 import {PGlite} from '@electric-sql/pglite';
 test('taxonomy has unique IDs, valid icons, key construction disciplines and valid sample mappings',()=>{
- assert.equal(categoryCatalog.length,31);
- assert.equal(new Set(categoryCatalog.map(c=>c.id)).size,31);
+ assert.equal(categoryCatalog.length,33);
+ assert.equal(new Set(categoryCatalog.map(c=>c.id)).size,33);
  for(const c of categoryCatalog){
   assert.ok(existsSync('node_modules/@phosphor-icons/react/dist/csr/'+c.icon+'.es.js'));
   assert.equal(new Set(c.subcategories.map(s=>s.id)).size,c.subcategories.length);

@@ -16,6 +16,47 @@ export const vehicleFields = [
   "Accident history",
 ];
 export const fieldOptions = {
+  "Listing purpose": ["For sale", "For rent", "Short stay"],
+  "Property type": [
+    "House",
+    "Apartment",
+    "Villa",
+    "Whole building",
+    "Room",
+    "PG",
+    "Hostel",
+    "Hotel",
+    "Homestay",
+    "Resort",
+    "Shop",
+    "Office",
+    "Warehouse",
+    "Industrial",
+    "Residential land",
+    "Agricultural land",
+    "Commercial land",
+    "Other",
+  ],
+  "Area unit": ["sq ft", "sq m", "acre", "hectare"],
+  Furnishing: ["Unfurnished", "Semi-furnished", "Furnished"],
+  "Price basis": ["Total", "Month", "Night", "Day", "Year"],
+  "Contact role": ["Owner", "Agent", "Developer", "Host"],
+  "Employment type": [
+    "Full-time",
+    "Part-time",
+    "Contract",
+    "Freelance",
+    "Daily wage",
+    "Temporary",
+    "Seasonal",
+    "Internship",
+    "Apprenticeship",
+  ],
+  "Employer sector": ["Private", "Government", "NGO", "Individual"],
+  "Work arrangement": ["On-site", "Remote", "Hybrid"],
+  "Salary basis": ["Month", "Day", "Hour", "Year", "Project", "Not disclosed"],
+  "Entry type": ["Free", "Paid", "Registration required"],
+  "Event format": ["In person", "Online", "Hybrid"],
   Fuel: ["Petrol", "Diesel", "Electric", "Hybrid", "CNG", "LPG"],
   Transmission: ["Manual", "Automatic", "AMT", "CVT", "DCT"],
   Owners: ["First owner", "Second owner", "Third owner", "Fourth or more"],
@@ -26,7 +67,9 @@ export const isVehicle = (id) => ["vehicles", "motorcycles"].includes(id);
 export function productFields(category) {
   return isVehicle(category?.id)
     ? [...new Set([...(category.fields || []), ...vehicleFields])]
-    : (category?.fields || []).filter((k) => category?.id !== "fashion" || k !== "Size");
+    : (category?.fields || []).filter(
+        (k) => category?.id !== "fashion" || k !== "Size",
+      );
 }
 export function commerceFor(item) {
   const c = item?.commerce || {};

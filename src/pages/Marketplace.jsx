@@ -1,6 +1,12 @@
 import { CategoryRail } from "../components/CategoryRail";
 import { defaultHeroSlides } from "../lib/hero";
 import { ProductVideos as HeroVideo } from "../components/ProductMedia";
+import {
+  isClassified,
+  listingPrice,
+  motorCategories,
+} from "../lib/departments";
+import { ClassifiedContact } from "../components/ClassifiedContact";
 import { PurchasePanel } from "../components/PurchasePanel";
 import { ProductVideos } from "../components/ProductMedia";
 import { outOfStock } from "../lib/commerce";
@@ -94,7 +100,17 @@ export function ProductCard({ item }) {
         <span
           className={"condition " + (item.condition === "Used" ? "used" : "")}
         >
-          {outOfStock(item) ? "Out of stock" : item.condition}
+          {isClassified(item.category_id)
+            ? item.attributes?.[
+                item.category_id === "jobs"
+                  ? "Employment type"
+                  : item.category_id === "property"
+                    ? "Listing purpose"
+                    : "Entry type"
+              ] || "Listing"
+            : outOfStock(item)
+              ? "Out of stock"
+              : item.condition}
         </span>
         <button
           className={"save-button " + (saved ? "saved" : "")}
@@ -137,7 +153,7 @@ export function ProductCard({ item }) {
         <Link to={"/listing/" + item.id} className="product-title">
           {item.title}
         </Link>
-        <strong className="price">{money(item.price)}</strong>
+        <strong className="price">{listingPrice(item, money)}</strong>
         <Link to={shopPath(item.seller?.slug)} className="seller-line">
           <Storefront size={14} />
           {item.seller?.name || "Local seller"}
@@ -491,7 +507,9 @@ export function Search({ saved = false }) {
     cat = params.get("category") || "",
     department = params.get("department") || "",
     sub = params.get("subcategory") || "",
-    loc = params.get("location") || "";
+    loc = params.get("location") || "",
+    attribute = params.get("attribute") || "",
+    attributeValue = params.get("value") || "";
   const [items, setItems] = useState([]),
     [loading, setLoading] = useState(true),
     [sort, setSort] = useState("newest"),
@@ -525,6 +543,11 @@ export function Search({ saved = false }) {
                     constructionCategories(categories).some(
                       (c) => c.id === x.category_id,
                     )) &&
+                  (!attribute ||
+                    !attributeValue ||
+                    x.attributes?.[attribute] === attributeValue) &&
+                  (department !== "motors" ||
+                    motorCategories.includes(x.category_id)) &&
                   (!sub || x.subcategory_id === sub) &&
                   (!loc ||
                     x.location.toLowerCase().includes(loc.toLowerCase())) &&
@@ -547,6 +570,12 @@ export function Search({ saved = false }) {
               ids.length ? ids : ["construction"],
             );
           }
+          if (department === "motors")
+            query = query.in("category_id", motorCategories);
+          if (attribute && attributeValue)
+            query = query.contains("attributes", {
+              [attribute]: attributeValue,
+            });
           if (sub) query = query.eq("subcategory_id", sub);
           if (loc)
             query = query.ilike(
@@ -626,7 +655,25 @@ export function Search({ saved = false }) {
                       categoryName(categories, cat)
                     : "Explore the marketplace"}
           </h1>
-          <p>Products from shops and individuals across Manipur.</p>
+          <p>Listings from people and businesses across Manipur.</p>
+          {attribute && attributeValue && (
+            <p>
+              Filter: {attribute} — {attributeValue}{" "}
+              <Link
+                to={
+                  "/search?" +
+                  new URLSearchParams({
+                    category: cat,
+                    q,
+                    location: loc,
+                    subcategory: sub,
+                  })
+                }
+              >
+                Clear
+              </Link>
+            </p>
+          )}
         </div>
         <button
           className="button outline filter-toggle"
@@ -688,18 +735,20 @@ export function Search({ saved = false }) {
               </select>
             </Field>
           )}
-          <Field label="Condition">
-            <select
-              value={condition}
-              onChange={(e) => setCondition(e.target.value)}
-            >
-              <option value="">Any condition</option>
-              {["New", "Used", "Refurbished"].map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Seller">
+          {!isClassified(cat) && (
+            <Field label="Condition">
+              <select
+                value={condition}
+                onChange={(e) => setCondition(e.target.value)}
+              >
+                <option value="">Any condition</option>
+                {["New", "Used", "Refurbished"].map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+          <Field label="Posted by">
             <select value={type} onChange={(e) => setType(e.target.value)}>
               <option value="">Everyone</option>
               <option value="shop">Shops</option>
@@ -1332,7 +1381,7 @@ export function ProductPage({ id }) {
                 )}
           </span>
           <h1>{item.title}</h1>
-          <strong className="detail-price">{money(item.price)}</strong>
+          <strong className="detail-price">{listingPrice(item, money)}</strong>
           <p className="muted">
             <MapPin size={17} /> {item.location}
           </p>
@@ -1362,7 +1411,11 @@ export function ProductPage({ id }) {
             </div>
             <ArrowRight />
           </div>
-          <PurchasePanel item={item} />
+          {isClassified(item.category_id) ? (
+            <ClassifiedContact item={item} />
+          ) : (
+            <PurchasePanel item={item} />
+          )}
           <div className="button-row">
             <button className="button outline" onClick={() => setSocial(true)}>
               <LinkSimple /> Social & video

@@ -1,3 +1,4 @@
+import { isClassified, validateClassified } from "../lib/departments";
 import { InventoryEditor } from "../components/ProductOptions";
 import {
   normalizeCommerce,
@@ -42,12 +43,17 @@ export function ListingEditor({
   visual = false,
   moderationAction,
 }) {
-  const { categories, notice } = useMarket();
+  const { categories, notice, path } = useMarket();
+  const requestedCategory = new URLSearchParams(path.split("?")[1]).get(
+    "category",
+  );
   const [f, setF] = useState(
       initial || {
         title: "",
         price: "",
-        category_id: categories[0]?.id || "fashion",
+        category_id: categories.some((c) => c.id === requestedCategory)
+          ? requestedCategory
+          : categories[0]?.id || "fashion",
         collection_id: "",
         description: "",
         condition: "New",
@@ -101,6 +107,7 @@ export function ListingEditor({
               throw Error(
                 "Add front, back, left and right clothing photos before publishing.",
               );
+            validateClassified(f);
             const payload = {
               seller_id: seller.id,
               title: f.title,
@@ -114,7 +121,11 @@ export function ListingEditor({
               images: f.images,
               socials: f.socials,
               attributes: f.attributes,
-              commerce: normalizeCommerce(f.commerce),
+              commerce: normalizeCommerce(
+                isClassified(f.category_id)
+                  ? { mode: "enquiry", stock: null, variants: [] }
+                  : f.commerce,
+              ),
               videos: normalizeVideos(f.videos),
               tags: f.tags,
               sku: f.sku || null,
@@ -135,7 +146,7 @@ export function ListingEditor({
           }
         }}
       >
-        <span className="eyebrow">YOUR PRODUCT, IN ITS BEST LIGHT</span>
+        <span className="eyebrow">YOUR LISTING, IN ITS BEST LIGHT</span>
         <h3>Photos</h3>
         <p className="muted">
           {f.category_id === "fashion"
@@ -154,11 +165,23 @@ export function ListingEditor({
           onChange={(v) => update("images", v)}
         />
         <Field
-          label="Product title"
+          label={
+            f.category_id === "jobs"
+              ? "Job title"
+              : f.category_id === "happenings"
+                ? "Event title"
+                : "Listing title"
+          }
           required
           minLength={3}
           maxLength={160}
-          placeholder="e.g. Handwoven cotton T-shirt"
+          placeholder={
+            f.category_id === "jobs"
+              ? "e.g. Front desk assistant"
+              : f.category_id === "happenings"
+                ? "e.g. Weekend food market"
+                : "Give your listing a clear title"
+          }
           value={f.title}
           onChange={(e) => update("title", e.target.value)}
         />
@@ -223,7 +246,13 @@ export function ListingEditor({
             </select>
           </Field>
           <Field
-            label="Price (₹)"
+            label={
+              f.category_id === "jobs"
+                ? "Starting salary / pay (₹; 0 if undisclosed)"
+                : f.category_id === "happenings"
+                  ? "Entry price (₹; 0 for free)"
+                  : "Price (₹)"
+            }
             required
             type="number"
             min="0"
@@ -231,16 +260,18 @@ export function ListingEditor({
             value={f.price}
             onChange={(e) => update("price", e.target.value)}
           />
-          <Field label="Condition">
-            <select
-              value={f.condition}
-              onChange={(e) => update("condition", e.target.value)}
-            >
-              {["New", "Used", "Refurbished"].map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </Field>
+          {!isClassified(f.category_id) && (
+            <Field label="Condition">
+              <select
+                value={f.condition}
+                onChange={(e) => update("condition", e.target.value)}
+              >
+                {["New", "Used", "Refurbished"].map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+            </Field>
+          )}
         </div>
         <Field label="Description">
           <textarea
@@ -254,7 +285,15 @@ export function ListingEditor({
         <div className="form-grid">
           {productFields(categories.find((c) => c.id === f.category_id)).map(
             (k) => (
-              <Field key={k} label={k}>
+              <Field
+                key={k}
+                label={
+                  k +
+                  (["Event starts", "Event ends"].includes(k)
+                    ? " (India time)"
+                    : "")
+                }
+              >
                 {fieldOptions[k] ? (
                   <select
                     value={f.attributes?.[k] || ""}
@@ -275,9 +314,21 @@ export function ListingEditor({
                     type={
                       ["Year", "Registration year", "Kilometres"].includes(k)
                         ? "number"
-                        : k === "Insurance until"
-                          ? "date"
-                          : "text"
+                        : ["Event starts", "Event ends"].includes(k)
+                          ? "datetime-local"
+                          : [
+                                "Application URL",
+                                "Official notice URL",
+                                "Booking URL",
+                              ].includes(k)
+                            ? "url"
+                            : [
+                                  "Insurance until",
+                                  "Application deadline",
+                                  "Available from",
+                                ].includes(k)
+                              ? "date"
+                              : "text"
                     }
                     min={k === "Kilometres" ? 0 : 1886}
                     max={
@@ -299,11 +350,13 @@ export function ListingEditor({
             ),
           )}
         </div>
-        <InventoryEditor
-          category={f.category_id}
-          value={f.commerce}
-          onChange={(v) => update("commerce", v)}
-        />
+        {!isClassified(f.category_id) && (
+          <InventoryEditor
+            category={f.category_id}
+            value={f.commerce}
+            onChange={(v) => update("commerce", v)}
+          />
+        )}
         <ProductVideosEditor
           value={f.videos || []}
           onChange={(v) => update("videos", v)}
@@ -518,7 +571,10 @@ export function Promotions({ seller, visual = false }) {
   );
 }
 function Importer({ seller, visual }) {
-  const { categories, notice } = useMarket();
+  const { categories, notice, path } = useMarket();
+  const requestedCategory = new URLSearchParams(path.split("?")[1]).get(
+    "category",
+  );
   const [rows, setRows] = useState([]),
     [log, setLog] = useState([]),
     [busy, setBusy] = useState(false),
@@ -800,6 +856,9 @@ export function Dashboard({ startSell = false, visual = false }) {
           </p>
         </div>
         <div className="shop-share-actions">
+          <Link className="button outline" to={"/recruiter/" + seller.slug}>
+            View recruiter page
+          </Link>
           <Link className="button outline" to={shopPath(seller.slug)}>
             View storefront <ArrowSquareOut size={18} />
           </Link>

@@ -75,3 +75,11 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 - Include Windows PowerShell installation/update commands after every build. User works in VS Code and downloads release ZIPs.
 - User's new GitHub destination is `seansap-oss/onlinekeithel`; this supersedes `seansap-oss/emarket`.
 - GitHub connector currently rejects writes with HTTP 403. Do not claim source was pushed or deployed without verification.
+
+## Approved departments — v0.11.0, 11 October 2026
+
+- User approved four category destinations: Homes & Stays, Jobs & Careers, Motors, What’s On. Preserve the horned roof logo, forest-green/saffron theme and existing marketplace.
+- Property includes sale/rent/stays, PG, hotels, homestays, resorts, commercial property, land and buildings. Jobs use occupation subcategories plus employment/sector/work-arrangement fields. Recruiter pages reuse seller identity and published vacancies.
+- Keep event services under existing `events`; actual dated happenings use `happenings`. Preserve old category/subcategory IDs and custom administrator entries. Motors groups vehicles, motorcycles and bicycles.
+- Never invent real vacancies/events or show verification badges without verification. Event dates are entered in India time. Booking/application/WhatsApp links are handoffs, not completed transactions.
+- Existing backend needs 009_departments.sql. Production backend and browser acceptance remain pending. Include Windows ZIP install commands with each release.

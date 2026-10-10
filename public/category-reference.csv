@@ -45,6 +45,9 @@ vehicles,Cars & commercial vehicles,buses-passenger-vehicles,Buses & passenger v
 vehicles,Cars & commercial vehicles,car-parts-accessories,Car parts & accessories,Car
 vehicles,Cars & commercial vehicles,tyres-wheels,Tyres & wheels,Car
 vehicles,Cars & commercial vehicles,vehicle-servicing,Vehicle servicing,Car
+vehicles,Cars & commercial vehicles,three-wheelers,Three-wheelers & e-rickshaws,Car
+vehicles,Cars & commercial vehicles,vehicle-trailers,Trailers,Car
+vehicles,Cars & commercial vehicles,vehicle-rentals,Car & commercial rentals,Car
 motorcycles,Motorcycles & scooters,commuter-motorcycles,Commuter motorcycles,Motorcycle
 motorcycles,Motorcycles & scooters,roadsters,Roadsters,Motorcycle
 motorcycles,Motorcycles & scooters,sports-motorcycles,Sports motorcycles,Motorcycle
@@ -54,6 +57,9 @@ motorcycles,Motorcycles & scooters,electric-motorcycles-scooters,Electric motorc
 motorcycles,Motorcycles & scooters,motorcycle-parts,Motorcycle parts,Motorcycle
 motorcycles,Motorcycles & scooters,helmets-riding-gear,Helmets & riding gear,Motorcycle
 motorcycles,Motorcycles & scooters,motorcycle-servicing,Motorcycle servicing,Motorcycle
+motorcycles,Motorcycles & scooters,mopeds,Mopeds,Motorcycle
+motorcycles,Motorcycles & scooters,electric-scooters,Electric scooters,Motorcycle
+motorcycles,Motorcycles & scooters,bike-rentals,Motorcycle & scooter rentals,Motorcycle
 home,Furniture & home living,sofas-seating,Sofas & seating,Armchair
 home,Furniture & home living,beds-mattresses,Beds & mattresses,Armchair
 home,Furniture & home living,tables-desks,Tables & desks,Armchair
@@ -193,17 +199,31 @@ safety,"Safety, security & fire equipment",access-control-locks,Access control &
 safety,"Safety, security & fire equipment",security-alarms,Security alarms,ShieldCheck
 safety,"Safety, security & fire equipment",first-aid-kits,First-aid kits,ShieldCheck
 safety,"Safety, security & fire equipment",emergency-lighting,Emergency lighting,ShieldCheck
-property,Property & spaces,homes-for-sale,Homes for sale,Buildings
-property,Property & spaces,apartments-for-sale,Apartments for sale,Buildings
-property,Property & spaces,residential-land,Residential land,Buildings
-property,Property & spaces,agricultural-land,Agricultural land,Buildings
-property,Property & spaces,homes-flats-for-rent,Homes & flats for rent,Buildings
-property,Property & spaces,rooms-shared-accommodation,Rooms & shared accommodation,Buildings
-property,Property & spaces,shops-showrooms,Shops & showrooms,Buildings
-property,Property & spaces,offices-coworking,Offices & coworking,Buildings
-property,Property & spaces,warehouses-godowns,Warehouses & godowns,Buildings
-property,Property & spaces,industrial-sheds-plots,Industrial sheds & plots,Buildings
-property,Property & spaces,property-agents,Property agents,Buildings
+property,Homes & Stays,homes-for-sale,Homes for sale,Buildings
+property,Homes & Stays,apartments-for-sale,Apartments for sale,Buildings
+property,Homes & Stays,residential-land,Residential land,Buildings
+property,Homes & Stays,agricultural-land,Agricultural land,Buildings
+property,Homes & Stays,homes-flats-for-rent,Homes & flats for rent,Buildings
+property,Homes & Stays,rooms-shared-accommodation,Rooms & shared accommodation,Buildings
+property,Homes & Stays,shops-showrooms,Shops & showrooms,Buildings
+property,Homes & Stays,offices-coworking,Offices & coworking,Buildings
+property,Homes & Stays,warehouses-godowns,Warehouses & godowns,Buildings
+property,Homes & Stays,industrial-sheds-plots,Industrial sheds & plots,Buildings
+property,Homes & Stays,property-agents,Property agents,Buildings
+property,Homes & Stays,independent-buildings,Whole buildings,House
+property,Homes & Stays,villas-duplexes,Villas & duplexes,House
+property,Homes & Stays,commercial-land,Commercial land,House
+property,Homes & Stays,pg-paying-guest,Paying guest (PG),House
+property,Homes & Stays,student-hostels,Student hostels,House
+property,Homes & Stays,staff-accommodation,Staff accommodation,House
+property,Homes & Stays,homestays,Homestays,House
+property,Homes & Stays,guesthouses,Guesthouses & B&Bs,House
+property,Homes & Stays,hotels,Hotels,House
+property,Homes & Stays,resorts,Resorts,House
+property,Homes & Stays,serviced-apartments,Serviced apartments,House
+property,Homes & Stays,holiday-homes,Holiday homes & villas,House
+property,Homes & Stays,farm-camping-stays,Farm stays & campsites,House
+property,Homes & Stays,parking-storage,Parking & storage spaces,House
 logistics,Transport & logistics,local-delivery,Local delivery,Truck
 logistics,Transport & logistics,goods-vehicle-hire,Goods vehicle hire,Truck
 logistics,Transport & logistics,packers-movers,Packers & movers,Truck
@@ -334,3 +354,42 @@ retail,General retail & wholesale,wholesale-mixed-goods,Wholesale mixed goods,St
 retail,General retail & wholesale,shop-fixtures-displays,Shop fixtures & displays,Storefront
 retail,General retail & wholesale,local-crafts-souvenirs,Local crafts & souvenirs,Storefront
 retail,General retail & wholesale,seasonal-goods,Seasonal goods,Storefront
+jobs,Jobs & Careers,administration,Administration & office support,Briefcase
+jobs,Jobs & Careers,accounting-finance,"Accounting, banking & finance",Briefcase
+jobs,Jobs & Careers,sales-retail,"Sales, retail & customer support",Briefcase
+jobs,Jobs & Careers,technology,"IT, software & AV technology",Briefcase
+jobs,Jobs & Careers,engineering,Engineering & technical,Briefcase
+jobs,Jobs & Careers,education-training,Teaching & training,Briefcase
+jobs,Jobs & Careers,healthcare,Healthcare & pharmacy,Briefcase
+jobs,Jobs & Careers,hospitality,"Hotels, restaurants & hospitality",Briefcase
+jobs,Jobs & Careers,construction-trades,Construction & skilled trades,Briefcase
+jobs,Jobs & Careers,labour-helpers,Labourers & helpers,Briefcase
+jobs,Jobs & Careers,drivers-delivery,"Drivers, delivery & transport",Briefcase
+jobs,Jobs & Careers,manufacturing,Manufacturing & production,Briefcase
+jobs,Jobs & Careers,warehouse-logistics,Warehouse & logistics,Briefcase
+jobs,Jobs & Careers,agriculture-farming,Agriculture & farming,Briefcase
+jobs,Jobs & Careers,security,Security & housekeeping,Briefcase
+jobs,Jobs & Careers,domestic-care,Domestic work & caregiving,Briefcase
+jobs,Jobs & Careers,beauty-wellness,"Beauty, fitness & wellness",Briefcase
+jobs,Jobs & Careers,media-design,"Media, design & creative",Briefcase
+jobs,Jobs & Careers,legal-consulting,Legal & professional services,Briefcase
+jobs,Jobs & Careers,ngo-community,NGO & community work,Briefcase
+jobs,Jobs & Careers,government-public,Government & public sector,Briefcase
+jobs,Jobs & Careers,other-vacancies,Other vacancies,Briefcase
+happenings,What’s On,music-live,Music & live performances,CalendarDots
+happenings,What’s On,arts-exhibitions,"Art, galleries & exhibitions",CalendarDots
+happenings,What’s On,culture-festivals,Culture & festivals,CalendarDots
+happenings,What’s On,food-markets,Food festivals & markets,CalendarDots
+happenings,What’s On,restaurant-offers,Restaurant offers & specials,CalendarDots
+happenings,What’s On,shopping-sales,Shopping sales & pop-ups,CalendarDots
+happenings,What’s On,workshops-classes,Workshops & classes,CalendarDots
+happenings,What’s On,sports-fitness,Sports & fitness,CalendarDots
+happenings,What’s On,community-meetups,Community & meetups,CalendarDots
+happenings,What’s On,business-networking,Business & networking,CalendarDots
+happenings,What’s On,career-fairs,Career & education fairs,CalendarDots
+happenings,What’s On,family-kids,Family & children,CalendarDots
+happenings,What’s On,heritage-walks,Heritage walks & tours,CalendarDots
+happenings,What’s On,outdoor-adventure,Outdoor & adventure,CalendarDots
+happenings,What’s On,charity-fundraisers,Charity & fundraisers,CalendarDots
+happenings,What’s On,film-theatre,"Film, theatre & comedy",CalendarDots
+happenings,What’s On,online-events,Online events,CalendarDots

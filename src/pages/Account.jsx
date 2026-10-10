@@ -222,9 +222,9 @@ export function AuthPage({ reset = false, returnTo }) {
   );
 }
 export function Guard({ children, adminOnly = false }) {
-  const { session, authReady, admin } = useMarket();
+  const { session, authReady, admin, path } = useMarket();
   if (!authReady) return <div className="page">Checking your session…</div>;
-  if (!session) return <AuthPage />;
+  if (!session) return <AuthPage returnTo={path} />;
   if (adminOnly && !admin)
     return (
       <div className="page">

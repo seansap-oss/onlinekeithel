@@ -1,4 +1,13 @@
-# Build status — v0.10.0
+# Build status — v0.11.0
+
+## v0.11.0 category destinations (11 October 2026)
+
+Added /homes, /jobs, /motors, /whats-on, /recruiters and /recruiter/:slug. Expanded additive taxonomy and CSV reference. Search supports exact JSON attribute filters; posting includes relevant property/job/event fields, validation, enquiry-only commerce and safe external application/booking links. Recruiters reuse seller profiles and published jobs (directory shows recruiters from the latest 100 vacancies). New departments render live/fixture data without invented new vacancies or events. Events can be promoted manually using the existing admin ticker editor with their listing link. No automatic ticker purchase or promotion workflow.
+
+Production build and 26 tests pass. Server rendering checks pass for all five new entry routes. Cloud browser cannot connect to localhost (ERR_CONNECTION_REFUSED); interactive visual verification remains pending. No configured marketplace Supabase project, no new GitHub push or Vercel deployment. Existing backend must apply database/migrations/009_departments.sql (same as timestamped Supabase migration). Fresh installations use current database/schema.sql and database/storage.sql.
+
+Hero illustration panels are used on Homes, Jobs and What’s On; Motors uses the bundled vehicle photo. Existing account/profile images remain configurable; per-department hero editing is not yet part of the homepage admin editor. Native apps, bookings, ticketing, applicant tracking and product payment settlement are not implemented.
+
 
 
 ## v0.10.0 approved interface and rich ticker (10 October 2026)

@@ -293,6 +293,21 @@
         "id": "vehicle-servicing",
         "name": "Vehicle servicing",
         "icon": "Car"
+      },
+      {
+        "id": "three-wheelers",
+        "name": "Three-wheelers & e-rickshaws",
+        "icon": "Car"
+      },
+      {
+        "id": "vehicle-trailers",
+        "name": "Trailers",
+        "icon": "Car"
+      },
+      {
+        "id": "vehicle-rentals",
+        "name": "Car & commercial rentals",
+        "icon": "Car"
       }
     ]
   },
@@ -355,6 +370,21 @@
       {
         "id": "motorcycle-servicing",
         "name": "Motorcycle servicing",
+        "icon": "Motorcycle"
+      },
+      {
+        "id": "mopeds",
+        "name": "Mopeds",
+        "icon": "Motorcycle"
+      },
+      {
+        "id": "electric-scooters",
+        "name": "Electric scooters",
+        "icon": "Motorcycle"
+      },
+      {
+        "id": "bike-rentals",
+        "name": "Motorcycle & scooter rentals",
         "icon": "Motorcycle"
       }
     ]
@@ -1247,15 +1277,24 @@
   },
   {
     "id": "property",
-    "name": "Property & spaces",
-    "icon": "Buildings",
-    "group_name": "Property & services",
+    "name": "Homes & Stays",
+    "icon": "House",
+    "group_name": "Homes & stays",
     "theme": "general",
     "fields": [
+      "Listing purpose",
+      "Property type",
       "Area",
       "Area unit",
       "Bedrooms",
-      "Listing type"
+      "Bathrooms",
+      "Furnishing",
+      "Price basis",
+      "Deposit",
+      "Available from",
+      "Minimum stay",
+      "Amenities",
+      "Contact role"
     ],
     "position": 16,
     "active": true,
@@ -1314,6 +1353,76 @@
         "id": "property-agents",
         "name": "Property agents",
         "icon": "Buildings"
+      },
+      {
+        "id": "independent-buildings",
+        "name": "Whole buildings",
+        "icon": "House"
+      },
+      {
+        "id": "villas-duplexes",
+        "name": "Villas & duplexes",
+        "icon": "House"
+      },
+      {
+        "id": "commercial-land",
+        "name": "Commercial land",
+        "icon": "House"
+      },
+      {
+        "id": "pg-paying-guest",
+        "name": "Paying guest (PG)",
+        "icon": "House"
+      },
+      {
+        "id": "student-hostels",
+        "name": "Student hostels",
+        "icon": "House"
+      },
+      {
+        "id": "staff-accommodation",
+        "name": "Staff accommodation",
+        "icon": "House"
+      },
+      {
+        "id": "homestays",
+        "name": "Homestays",
+        "icon": "House"
+      },
+      {
+        "id": "guesthouses",
+        "name": "Guesthouses & B&Bs",
+        "icon": "House"
+      },
+      {
+        "id": "hotels",
+        "name": "Hotels",
+        "icon": "House"
+      },
+      {
+        "id": "resorts",
+        "name": "Resorts",
+        "icon": "House"
+      },
+      {
+        "id": "serviced-apartments",
+        "name": "Serviced apartments",
+        "icon": "House"
+      },
+      {
+        "id": "holiday-homes",
+        "name": "Holiday homes & villas",
+        "icon": "House"
+      },
+      {
+        "id": "farm-camping-stays",
+        "name": "Farm stays & campsites",
+        "icon": "House"
+      },
+      {
+        "id": "parking-storage",
+        "name": "Parking & storage spaces",
+        "icon": "House"
       }
     ]
   },
@@ -2193,6 +2302,249 @@
         "name": "Seasonal goods",
         "icon": "Storefront"
       }
+    ]
+  },
+  {
+    "id": "jobs",
+    "theme": "general",
+    "position": 31,
+    "active": true,
+    "subcategories": [
+      {
+        "id": "administration",
+        "name": "Administration & office support",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "accounting-finance",
+        "name": "Accounting, banking & finance",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "sales-retail",
+        "name": "Sales, retail & customer support",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "technology",
+        "name": "IT, software & AV technology",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "engineering",
+        "name": "Engineering & technical",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "education-training",
+        "name": "Teaching & training",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "healthcare",
+        "name": "Healthcare & pharmacy",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "hospitality",
+        "name": "Hotels, restaurants & hospitality",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "construction-trades",
+        "name": "Construction & skilled trades",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "labour-helpers",
+        "name": "Labourers & helpers",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "drivers-delivery",
+        "name": "Drivers, delivery & transport",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "manufacturing",
+        "name": "Manufacturing & production",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "warehouse-logistics",
+        "name": "Warehouse & logistics",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "agriculture-farming",
+        "name": "Agriculture & farming",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "security",
+        "name": "Security & housekeeping",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "domestic-care",
+        "name": "Domestic work & caregiving",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "beauty-wellness",
+        "name": "Beauty, fitness & wellness",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "media-design",
+        "name": "Media, design & creative",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "legal-consulting",
+        "name": "Legal & professional services",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "ngo-community",
+        "name": "NGO & community work",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "government-public",
+        "name": "Government & public sector",
+        "icon": "Briefcase"
+      },
+      {
+        "id": "other-vacancies",
+        "name": "Other vacancies",
+        "icon": "Briefcase"
+      }
+    ],
+    "name": "Jobs & Careers",
+    "icon": "Briefcase",
+    "group_name": "Work & careers",
+    "fields": [
+      "Employment type",
+      "Employer sector",
+      "Work arrangement",
+      "Salary basis",
+      "Salary maximum",
+      "Experience",
+      "Qualification",
+      "Vacancies",
+      "Application deadline",
+      "Application URL",
+      "Official notice URL",
+      "Shift",
+      "Skills"
+    ]
+  },
+  {
+    "id": "happenings",
+    "theme": "general",
+    "position": 32,
+    "active": true,
+    "subcategories": [
+      {
+        "id": "music-live",
+        "name": "Music & live performances",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "arts-exhibitions",
+        "name": "Art, galleries & exhibitions",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "culture-festivals",
+        "name": "Culture & festivals",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "food-markets",
+        "name": "Food festivals & markets",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "restaurant-offers",
+        "name": "Restaurant offers & specials",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "shopping-sales",
+        "name": "Shopping sales & pop-ups",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "workshops-classes",
+        "name": "Workshops & classes",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "sports-fitness",
+        "name": "Sports & fitness",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "community-meetups",
+        "name": "Community & meetups",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "business-networking",
+        "name": "Business & networking",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "career-fairs",
+        "name": "Career & education fairs",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "family-kids",
+        "name": "Family & children",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "heritage-walks",
+        "name": "Heritage walks & tours",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "outdoor-adventure",
+        "name": "Outdoor & adventure",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "charity-fundraisers",
+        "name": "Charity & fundraisers",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "film-theatre",
+        "name": "Film, theatre & comedy",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "online-events",
+        "name": "Online events",
+        "icon": "CalendarDots"
+      }
+    ],
+    "name": "What\u2019s On",
+    "icon": "CalendarDots",
+    "group_name": "Events & community",
+    "fields": [
+      "Event starts",
+      "Event ends",
+      "Venue",
+      "Entry type",
+      "Booking URL",
+      "Organiser",
+      "Age guidance",
+      "Accessibility",
+      "Event format"
     ]
   }
 ]

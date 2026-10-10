@@ -1,5 +1,10 @@
 import React from "react";
 import {
+  House,
+  CalendarDots,
+  Bed,
+  MapPin,
+  Clock,
   TShirt,
   DeviceMobile,
   Desktop,
@@ -34,6 +39,11 @@ import {
   SquaresFour,
 } from "@phosphor-icons/react";
 export const categoryIcons = {
+  House,
+  CalendarDots,
+  Bed,
+  MapPin,
+  Clock,
   TShirt,
   DeviceMobile,
   Desktop,

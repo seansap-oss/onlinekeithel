@@ -1,3 +1,4 @@
+import { categoryRoute } from "../lib/departments";
 import React, { useRef, useState } from "react";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { Link, useMarket } from "../lib/context";
@@ -16,7 +17,10 @@ export function CategoryRail() {
       return {};
     }
   });
-  const list = categories.filter((c) => !isConstructionCategory(c));
+  const list = categories.filter(
+    (c) =>
+      !isConstructionCategory(c) && !["motorcycles", "bicycles"].includes(c.id),
+  );
   if (categories.some(isConstructionCategory))
     list.splice(4, 0, {
       id: "construction",
@@ -24,8 +28,21 @@ export function CategoryRail() {
       icon: "HardHat",
       department: true,
     });
+  const priority = [
+    "fashion",
+    "mobiles",
+    "electronics",
+    "vehicles",
+    "property",
+    "jobs",
+    "happenings",
+    "construction",
+  ];
+  const rank = (id) => (priority.includes(id) ? priority.indexOf(id) : 100);
   const ordered = [...list].sort(
-    (a, b) => (Number(usage[b.id]) || 0) - (Number(usage[a.id]) || 0),
+    (a, b) =>
+      (Number(usage[b.id]) || 0) - (Number(usage[a.id]) || 0) ||
+      rank(a.id) - rank(b.id),
   );
   const remember = (id) => {
     try {
@@ -41,7 +58,10 @@ export function CategoryRail() {
     fashion: "Clothing",
     mobiles: "Mobiles",
     electronics: "Electronics",
-    vehicles: "Cars",
+    vehicles: "Motors",
+    property: "Homes & Stays",
+    jobs: "Jobs & Careers",
+    happenings: "What’s On",
     motorcycles: "Motorcycles",
     home: "Home",
     retail: "Retail",
@@ -68,10 +88,9 @@ export function CategoryRail() {
             <Link
               key={c.id}
               to={
-                "/search?" +
-                (c.department ? "department" : "category") +
-                "=" +
-                c.id
+                c.department
+                  ? "/search?department=" + c.id
+                  : categoryRoute(c.id)
               }
               onClick={() => remember(c.id)}
             >
