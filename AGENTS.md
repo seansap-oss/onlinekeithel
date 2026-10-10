@@ -69,3 +69,9 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 - Exact user correction: **Avit Solutions**, linked to https://www.avitsolutions.tech/. This supersedes the Ebit credit.
 - Sponsored ticker placements are manually arranged and labelled; no automated ticker billing or impression reporting exists yet.
 - `npm run review` enables development-only temporary admin design review on port 5189. Production cannot bypass admin auth through that route.
+
+## Delivery and deployment — 10 October 2026
+
+- Include Windows PowerShell installation/update commands after every build. User works in VS Code and downloads release ZIPs.
+- User's new GitHub destination is `seansap-oss/onlinekeithel`; this supersedes `seansap-oss/emarket`.
+- GitHub connector currently rejects writes with HTTP 403. Do not claim source was pushed or deployed without verification.
