@@ -1,8 +1,12 @@
 import { categoryCatalog } from "../lib/categories";
 import { categoryIcons, CategoryIcon } from "./CategoryIcon";
-import React, { useState } from "react";
+import { Ticker } from "./Ticker";
+import { SearchPanel } from "./SearchPanel";
+import React, { useState, useEffect } from "react";
 import {
   List,
+  Moon,
+  Sun,
   MagnifyingGlass,
   MapPin,
   Storefront,
@@ -37,20 +41,27 @@ export const icons = Object.fromEntries(
 );
 export function Layout({ children }) {
   const { navigate, path, session, categories, settings, notice } = useMarket();
-  const [menu, setMenu] = useState(false),
-    [query, setQuery] = useState(
-      new URLSearchParams(location.search).get("q") || "",
-    );
+  const [menu, setMenu] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    try {
+      return (
+        localStorage.getItem("ok-theme") ||
+        (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+      );
+    } catch {
+      return "light";
+    }
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem("ok-theme", theme);
+    } catch {}
+  }, [theme]);
+  useEffect(() => setSearchOpen(false), [path]);
   return (
     <>
-      <div className="announcement">
-        <span>
-          {settings.announcement || "Your local marketplace, across Manipur."}
-        </span>
-        <Link to="/plans">
-          A little idea. Your own shop. <ArrowRight size={13} />
-        </Link>
-      </div>
       <header className="main-header">
         <div className="header-inner">
           <button
@@ -75,24 +86,13 @@ export function Layout({ children }) {
           >
             <MapPin size={19} /> Imphal <CaretDown size={12} />
           </button>
-          <form
-            className="search-bar"
-            onSubmit={(e) => {
-              e.preventDefault();
-              navigate("/search?q=" + encodeURIComponent(query));
-            }}
+          <button
+            className="icon-button header-search"
+            aria-label="Search marketplace"
+            onClick={() => setSearchOpen(true)}
           >
-            <MagnifyingGlass size={20} />
-            <input
-              aria-label="Search products, shops or social URLs"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products, shops or social URLs"
-            />
-            <button type="submit" aria-label="Search">
-              <ArrowRight size={18} />
-            </button>
-          </form>
+            <MagnifyingGlass size={23} />
+          </button>
           <Link
             className="desktop-saved icon-button"
             to="/saved"
@@ -108,53 +108,22 @@ export function Layout({ children }) {
             <User size={22} />
             <span>{session ? "My account" : "Sign in"}</span>
           </Link>
+          <button
+            className="icon-button desktop-theme"
+            aria-label={
+              theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+            }
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? <Sun size={22} /> : <Moon size={22} />}
+          </button>
           <Link className="button primary sell-header" to="/sell">
             <Plus size={19} /> Post ad
           </Link>
         </div>
       </header>
-      <nav className="category-nav" aria-label="Product categories">
-        <div>
-          <Link to="/categories" className="all-categories">
-            <SquaresFour size={19} /> All categories
-          </Link>
-          {categories
-            .filter((c) => ["fashion", "mobiles", "vehicles"].includes(c.id))
-            .map((c) => {
-              const Icon = categoryIcons[c.icon] || icons[c.id] || SquaresFour;
-              return (
-                <Link key={c.id} to={"/search?category=" + c.id}>
-                  <Icon size={22} />
-                  {{
-                    fashion: "Clothing",
-                    mobiles: "Mobiles",
-                    vehicles: "Cars",
-                  }[c.id] || c.name}
-                </Link>
-              );
-            })}
-          {constructionCategories(categories).length > 0 && (
-            <details className="nav-department">
-              <summary>
-                <Buildings size={22} /> Construction <CaretDown size={13} />
-              </summary>
-              <div className="nav-department-menu">
-                <Link to="/search?department=construction">
-                  All construction
-                </Link>
-                {constructionCategories(categories).map((c) => (
-                  <Link key={c.id} to={"/search?category=" + c.id}>
-                    {c.name}
-                  </Link>
-                ))}
-              </div>
-            </details>
-          )}
-          <Link to="/shops">
-            Local shops <ArrowRight size={16} />
-          </Link>
-        </div>
-      </nav>
+      <Ticker value={settings.ticker} />
+      {searchOpen && <SearchPanel onClose={() => setSearchOpen(false)} />}
       <main>{children}</main>
       <footer className="site-footer">
         <div>
@@ -187,12 +156,18 @@ export function Layout({ children }) {
           <Link to="/terms">Marketplace terms</Link>
           <small>
             <AdminEntry /> {new Date().getFullYear()} {settings.name}
-            <span className="release-version"> · v0.9.0</span>
+            <span className="release-version"> · v0.10.0</span>
           </small>
           <small className="creator-credit">
             Created by{" "}
             <span className="creator-name">
-              <span>Ebit</span> <span>Solutions</span>
+              <a
+                href="https://www.avitsolutions.tech/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span>Avit</span> <span>Solutions</span>
+              </a>
             </span>
           </small>
         </div>
@@ -224,6 +199,12 @@ export function Layout({ children }) {
       {menu && (
         <Modal title="Your neighbourhood" side onClose={() => setMenu(false)}>
           <nav className="drawer-links">
+            <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? <Sun size={22} /> : <Moon size={22} />}{" "}
+              {theme === "dark" ? "Light mode" : "Dark mode"}
+            </button>
             <Link to="/" onClick={() => setMenu(false)}>
               Marketplace home
             </Link>

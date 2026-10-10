@@ -58,3 +58,14 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 - Admin drafts and revisions use protected database tables; only verified admins may publish. No gesture or client-side flag grants permissions.
 - Starter records can be imported into real seller accounts as drafts, then edited/published/deleted. The disconnected fixture catalogue has no live contacts or purchases. Do not claim offline catalogue edits are persisted.
 - This release does not include a natural-language editor, arbitrary drag-and-drop pages, native mobile binaries, or direct product Razorpay settlement. Do not describe those as implemented.
+
+
+## Approved design and rich ticker — 10 October 2026, v0.10.0
+
+- User approved light/dark/search board and requested implementation. Keep approved roof/horns icon and OnlineKeithel wordmark; remove top announcement and full-width search field.
+- Header: compact circular search, saved heart before account; ticker immediately below. Mobile posting remains in bottom navigation. Categories below hero in swipeable rail with See all categories; aggregate Construction.
+- Hero changes every five seconds; pause for interaction/video/reduced motion. Admin can edit official slides and videos; existing approved paid campaigns also appear.
+- Dedicated Ticker editor: per-character/word formatting, colours, five font presets, 12–36px sizes, bold/italic/underline, arbitrary pasted Unicode emojis plus palette, icons/separators, per-message destinations/scheduling/visibility/order, background/speed, undo/redo, database-backed draft/publish/revision recovery. No arbitrary HTML.
+- Exact user correction: **Avit Solutions**, linked to https://www.avitsolutions.tech/. This supersedes the Ebit credit.
+- Sponsored ticker placements are manually arranged and labelled; no automated ticker billing or impression reporting exists yet.
+- `npm run review` enables development-only temporary admin design review on port 5189. Production cannot bypass admin auth through that route.

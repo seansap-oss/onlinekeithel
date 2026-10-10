@@ -36,7 +36,22 @@ test("homepage drafts stay private; publishing is atomic and rejects stale revis
     const baseline = (
       await db.query("select value from settings where id='marketplace'")
     ).rows[0].value;
-    const draft = { ...baseline, hero_title: "Our new market" };
+    const draft = {
+      ...baseline,
+      hero_title: "Our new market",
+      ticker: {
+        enabled: true,
+        messages: [
+          {
+            id: "sale",
+            runs: [
+              { text: "Hot 🔥", color: "#bd4037", font: "serif", size: 24 },
+            ],
+            sponsored: true,
+          },
+        ],
+      },
+    };
     await db.query(
       "insert into content_drafts(id,value) values('marketplace',$1)",
       [draft],
@@ -81,6 +96,11 @@ test("homepage drafts stay private; publishing is atomic and rejects stale revis
       (await db.query("select value from settings where id='marketplace'"))
         .rows[0].value.hero_title,
       "Our new market",
+    );
+    assert.deepEqual(
+      (await db.query("select value from settings where id='marketplace'"))
+        .rows[0].value.ticker,
+      draft.ticker,
     );
     await assert.rejects(
       () => db.query("select * from content_drafts"),

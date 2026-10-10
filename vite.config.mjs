@@ -9,6 +9,8 @@ export default defineConfig({
     include: ["react", "react-dom/client"],
   },
   server: {
+    port: 5189,
+    strictPort: true,
     host: "0.0.0.0",
     allowedHosts: ["terminal.local"],
     warmup: {

@@ -1,3 +1,6 @@
+import { CategoryRail } from "../components/CategoryRail";
+import { defaultHeroSlides } from "../lib/hero";
+import { ProductVideos as HeroVideo } from "../components/ProductMedia";
 import { PurchasePanel } from "../components/PurchasePanel";
 import { ProductVideos } from "../components/ProductMedia";
 import { outOfStock } from "../lib/commerce";
@@ -10,6 +13,8 @@ import {
 import React, { useState, useEffect, useRef } from "react";
 import {
   Heart,
+  Pause,
+  Play,
   MapPin,
   Storefront,
   ArrowRight,
@@ -184,6 +189,24 @@ export function Hero({ settingsOverride, editor = false } = {}) {
     [index, setIndex] = useState(0),
     [video, setVideo] = useState(null);
   const start = useRef(null);
+  const [paused, setPaused] = useState(false),
+    [hovered, setHovered] = useState(false),
+    [focused, setFocused] = useState(false),
+    [hidden, setHidden] = useState(document.hidden);
+  const [reduced, setReduced] = useState(
+    () => matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  useEffect(() => {
+    const media = matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(media.matches);
+    media.addEventListener("change", update);
+    const visibility = () => setHidden(document.hidden);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      media.removeEventListener("change", update);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, []);
   useEffect(() => {
     if (configured && !editor)
       result(
@@ -200,12 +223,42 @@ export function Hero({ settingsOverride, editor = false } = {}) {
         .then(setCampaigns)
         .catch(() => {});
   }, []);
-  const slide = campaigns[index - 1],
-    total = campaigns.length + 1;
+  const slides = [
+    ...(settings.hero_slides || defaultHeroSlides).filter(
+      (s) => s.enabled !== false,
+    ),
+    ...campaigns.map((s) => ({ ...s, sponsored: true })),
+  ];
+  const slide = slides[index - 1],
+    total = slides.length + 1;
+  useEffect(() => {
+    if (index >= total) setIndex(0);
+  }, [total, index]);
+  useEffect(() => {
+    if (
+      total < 2 ||
+      paused ||
+      hovered ||
+      focused ||
+      video ||
+      hidden ||
+      reduced ||
+      editor
+    )
+      return;
+    const timer = setTimeout(() => setIndex((i) => (i + 1) % total), 5000);
+    return () => clearTimeout(timer);
+  }, [index, total, paused, hovered, focused, video, hidden, reduced, editor]);
   const go = (n) => setIndex((n + total) % total);
   return (
     <section
       className="hero"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocusCapture={() => setFocused(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false);
+      }}
       onTouchStart={(e) =>
         (start.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })
       }
@@ -221,14 +274,17 @@ export function Hero({ settingsOverride, editor = false } = {}) {
       aria-label="Featured marketplace stories"
     >
       <Photo
+        key={index}
         className="hero-image"
         src={slide?.image || settings.hero_image}
-        alt="Local handloom shop and colourful textiles"
+        alt={slide?.title || "Local handloom shop and colourful textiles"}
       />
-      <div className="hero-panel">
+      <div className="hero-panel" key={"text-" + index}>
         <span className="eyebrow">
           {slide
-            ? "SPONSORED · LOCAL SPOTLIGHT"
+            ? slide.sponsored
+              ? "SPONSORED · LOCAL SPOTLIGHT"
+              : "YOUR LOCAL MARKETPLACE"
             : "GOOD FINDS. GREAT NEIGHBOURS."}
         </span>
         <h1>{slide?.title || settings.hero_title}</h1>
@@ -247,8 +303,8 @@ export function Hero({ settingsOverride, editor = false } = {}) {
               onClick={() => {
                 if (slide) {
                   if (
-                    slide.destination.startsWith("/") &&
-                    !slide.destination.startsWith("//")
+                    (slide.destination || "").startsWith("/") &&
+                    !(slide.destination || "").startsWith("//")
                   )
                     navigate(slide.destination);
                   else if (safeUrl(slide.destination))
@@ -260,7 +316,9 @@ export function Hero({ settingsOverride, editor = false } = {}) {
                 } else navigate("/shops");
               }}
             >
-              {slide ? "Explore this shop" : "Explore local shops"}{" "}
+              {slide
+                ? slide.button || "Explore this shop"
+                : "Explore local shops"}{" "}
               <ArrowRight size={18} />
             </button>
           )}
@@ -282,6 +340,14 @@ export function Hero({ settingsOverride, editor = false } = {}) {
         </div>
         <div>
           <button
+            type="button"
+            aria-label={paused ? "Resume hero rotation" : "Pause hero rotation"}
+            aria-pressed={paused}
+            onClick={() => setPaused(!paused)}
+          >
+            {paused ? <Play size={18} /> : <Pause size={18} />}
+          </button>
+          <button
             aria-label="Previous featured story"
             disabled={total < 2}
             onClick={() => go(index - 1)}
@@ -299,7 +365,7 @@ export function Hero({ settingsOverride, editor = false } = {}) {
       </div>
       {video && (
         <Modal title="Featured video" onClose={() => setVideo(null)}>
-          <Video url={video} />
+          <HeroVideo videos={[{ url: video }]} />
         </Modal>
       )}
     </section>
@@ -344,19 +410,7 @@ export function Home() {
   return (
     <div className="page home">
       <Hero />
-      <section className="mobile-categories">
-        {categories.slice(0, 6).map((c) => {
-          const Icon = icons[c.id] || Storefront;
-          return (
-            <Link to={"/search?category=" + c.id} key={c.id}>
-              <span>
-                <Icon size={25} />
-              </span>
-              {c.name.split(" &")[0]}
-            </Link>
-          );
-        })}
-      </section>
+      <CategoryRail />
       <section className="section">
         <div className="section-heading">
           <div>

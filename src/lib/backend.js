@@ -4,7 +4,9 @@ export const configured = Boolean(
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
 );
 export const preview =
-  import.meta.env.DEV && import.meta.env.VITE_PREVIEW_MODE === "true";
+  import.meta.env.DEV &&
+  (import.meta.env.VITE_PREVIEW_MODE === "true" ||
+    import.meta.env.MODE === "review");
 // Public catalogue showcase: disabled explicitly or when a real backend is connected.
 export const showSamples =
   !configured && import.meta.env.VITE_SHOW_SAMPLES !== "false";

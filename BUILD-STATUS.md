@@ -1,4 +1,11 @@
-# Build status — v0.9.0
+# Build status — v0.10.0
+
+
+## v0.10.0 approved interface and rich ticker (10 October 2026)
+
+Implemented compact search panel, header saved heart, removed announcement, ticker under header, five-second hero rotation with editable slides/video uploads, category rail, persistent device-level light/dark theme, and corrected Avit Solutions footer link. Dedicated ticker editor supports selected-letter formatting, fonts/sizes/colours, arbitrary emoji insertion, icons/separators, links, schedules, sponsored labels, ordering, visibility, undo/redo and shared website draft/publish/history. Paid ticker billing remains manual. No new migration beyond v0.9 is required.
+
+24 automated tests and production build pass; server-render checks cover homepage and ticker editor. Historical migration-006 test now correctly expects that migration's original spelling; the full current schema/publishing test verifies OnlineKeithel and persists formatted ticker JSON. Browser preview connection was refused, so visual interaction and live provider acceptance remain unverified. No new GitHub/Vercel deployment is claimed. See `UPDATE-v0.10.0.md`. Supabase provisioning and production email/storage/admin setup remain pending.
 
 ## v0.9.0 brand and owner controls (9 October 2026)
 

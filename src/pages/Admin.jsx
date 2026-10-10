@@ -23,6 +23,7 @@ import { SellerForm } from "./Account";
 import { ListingEditor } from "./Dashboard";
 const sections = [
   ["settings", "Homepage", SlidersHorizontal],
+  ["ticker", "Ticker editor", Megaphone],
   ["sellers", "Sellers", Storefront],
   ["users", "Users", ShieldCheck],
   ["starter", "Starter catalogue", Package],
@@ -58,6 +59,7 @@ const defaults = {
 };
 export function Admin({ visual = false }) {
   const { settings, refresh, notice, fixtures } = useMarket();
+  const [dirty, setDirty] = useState(false);
   const [tab, setTab] = useState("settings"),
     [rows, setRows] = useState([]),
     [editing, setEditing] = useState(null),
@@ -68,7 +70,7 @@ export function Admin({ visual = false }) {
     [more, setMore] = useState(false),
     [query, setQuery] = useState("");
   const load = async () => {
-    if (["settings", "users", "starter"].includes(tab)) return;
+    if (["settings", "ticker", "users", "starter"].includes(tab)) return;
     try {
       if (visual) {
         setRows(fixtures?.[tab] || []);
@@ -151,7 +153,7 @@ export function Admin({ visual = false }) {
       </div>
       {visual && (
         <div className="notice-box">
-          Read-only admin design preview. No administrator session is simulated.
+          Design preview. Edits are temporary and cannot be saved or published.
         </div>
       )}
       <div className="dashboard-layout">
@@ -161,6 +163,15 @@ export function Admin({ visual = false }) {
               key={id}
               className={tab === id ? "active" : ""}
               onClick={() => {
+                if (
+                  id !== tab &&
+                  dirty &&
+                  !window.confirm(
+                    "Discard unsaved editor changes? Save a draft first to keep them.",
+                  )
+                )
+                  return;
+                setDirty(false);
                 setTab(id);
                 setPage(0);
                 setQuery("");
@@ -172,8 +183,13 @@ export function Admin({ visual = false }) {
           ))}
         </aside>
         <section className="dashboard-content">
-          {tab === "settings" ? (
-            <HomepageEditor visual={visual} />
+          {["settings", "ticker"].includes(tab) ? (
+            <HomepageEditor
+              key={tab}
+              onDirtyChange={setDirty}
+              visual={visual}
+              mode={tab === "ticker" ? "ticker" : "homepage"}
+            />
           ) : tab === "users" ? (
             <AdminUsers visual={visual} />
           ) : tab === "starter" ? (

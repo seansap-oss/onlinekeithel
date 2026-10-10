@@ -1,15 +1,25 @@
+import { TickerEditor } from "./TickerEditor";
+import { HeroSlidesEditor } from "./HeroSlidesEditor";
+import { validateTicker, destination } from "../lib/ticker";
+import { directVideoUrl } from "../lib/commerce";
+import { embedUrl, mediaUrl } from "../lib/utils";
 import React, { useEffect, useState } from "react";
 import { useMarket } from "../lib/context";
 import { result, supabase } from "../lib/backend";
 import { Field, Upload } from "./UI";
 import { Hero } from "../pages/Marketplace";
-export function HomepageEditor({ visual = false }) {
+export function HomepageEditor({
+  visual = false,
+  mode = "homepage",
+  onDirtyChange,
+}) {
   const { settings, refresh, notice } = useMarket();
   const [draft, setDraft] = useState(settings),
     [baseline, setBaseline] = useState(settings);
   const [busy, setBusy] = useState(false),
     [status, setStatus] = useState("Unpublished edits"),
     [revisions, setRevisions] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const [width, setWidth] = useState("100%");
   const load = async () => {
     if (visual) return;
@@ -52,12 +62,42 @@ export function HomepageEditor({ visual = false }) {
     setDraft((d) => ({ ...d, [key]: value }));
     setStatus("Unsaved changes");
   };
+  useEffect(() => {
+    const dirty = status === "Unsaved changes" || status === "Not saved";
+    onDirtyChange?.(dirty);
+    const warn = (e) => {
+      if (dirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [status, onDirtyChange]);
   const save = async (publish) => {
     setBusy(true);
     try {
       if (visual)
         throw Error("Connect an administrator account to save or publish.");
-      const value = { ...draft, name: "OnlineKeithel" };
+      const value = {
+        ...draft,
+        name: "OnlineKeithel",
+        ticker: validateTicker(draft.ticker),
+      };
+      for (const slide of value.hero_slides || []) {
+        if (slide.enabled !== false && !slide.title?.trim())
+          throw Error("Every enabled hero slide needs a headline.");
+        if (slide.destination && !destination(slide.destination))
+          throw Error("Hero links must be a local path or HTTPS URL.");
+        if (slide.image && !mediaUrl(slide.image))
+          throw Error("Use a supported hero image URL.");
+        if (
+          slide.video_url &&
+          !directVideoUrl(slide.video_url) &&
+          !embedUrl(slide.video_url)
+        )
+          throw Error("Use a supported video or embed URL.");
+      }
       if (publish) {
         await result(
           supabase.rpc("publish_homepage", {
@@ -85,7 +125,7 @@ export function HomepageEditor({ visual = false }) {
           ? "Published to the marketplace"
           : "Draft saved — public site unchanged",
       );
-      notice(publish ? "Homepage published" : "Draft saved");
+      notice(publish ? "Website content published" : "Draft saved");
     } catch (e) {
       setStatus("Not saved");
       notice(e.message);
@@ -101,56 +141,69 @@ export function HomepageEditor({ visual = false }) {
         save(true);
       }}
     >
-      <h2>Your homepage</h2>
-      <p>Edit, preview, save a draft, then publish when ready.</p>
-      <Field label="Marketplace name" value="OnlineKeithel" readOnly />
-      {[
-        ["tagline", "Brand tagline"],
-        ["announcement", "Announcement bar"],
-        ["hero_title", "Hero headline"],
-        ["hero_description", "Hero description"],
-        ["support_email", "Support email"],
-        ["support_whatsapp", "Support WhatsApp number"],
-        ["ads_price_note", "Featured placement pricing note"],
-      ].map(([key, label]) => (
-        <Field
-          key={key}
-          label={label}
-          required={key === "hero_title"}
-          value={draft[key] || ""}
-          onChange={(e) => change(key, e.target.value)}
+      {mode === "ticker" ? (
+        <TickerEditor
+          value={draft.ticker}
+          onChange={(v) => change("ticker", v)}
         />
-      ))}
-      <h3>Hero photograph</h3>
-      <Upload
-        value={draft.hero_image}
-        onChange={(v) => change("hero_image", v)}
-      />
-      <h3>Live hero preview</h3>
-      <div className="button-row">
-        {[
-          ["100%", "Desktop"],
-          ["768px", "Tablet"],
-          ["390px", "Phone"],
-        ].map(([size, label]) => (
-          <button
-            className="button outline small"
-            type="button"
-            key={size}
-            aria-pressed={width === size}
-            onClick={() => setWidth(size)}
+      ) : (
+        <>
+          <h2>Your homepage</h2>
+          <p>Edit, preview, save a draft, then publish when ready.</p>
+          <Field label="Marketplace name" value="OnlineKeithel" readOnly />
+          {[
+            ["tagline", "Brand tagline"],
+            ["hero_title", "Hero headline"],
+            ["hero_description", "Hero description"],
+            ["support_email", "Support email"],
+            ["support_whatsapp", "Support WhatsApp number"],
+            ["ads_price_note", "Featured placement pricing note"],
+          ].map(([key, label]) => (
+            <Field
+              key={key}
+              label={label}
+              required={key === "hero_title"}
+              value={draft[key] || ""}
+              onChange={(e) => change(key, e.target.value)}
+            />
+          ))}
+          <h3>Hero photograph</h3>
+          <Upload
+            value={draft.hero_image}
+            onChange={(v) => change("hero_image", v)}
+          />
+          <HeroSlidesEditor
+            value={draft.hero_slides}
+            onChange={(v) => change("hero_slides", v)}
+            onBusyChange={setUploading}
+          />
+          <h3>Live hero preview</h3>
+          <div className="button-row">
+            {[
+              ["100%", "Desktop"],
+              ["768px", "Tablet"],
+              ["390px", "Phone"],
+            ].map(([size, label]) => (
+              <button
+                className="button outline small"
+                type="button"
+                key={size}
+                aria-pressed={width === size}
+                onClick={() => setWidth(size)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div
+            className="editor-preview"
+            style={{ width, maxWidth: "100%" }}
+            inert={true}
           >
-            {label}
-          </button>
-        ))}
-      </div>
-      <div
-        className="editor-preview"
-        style={{ width, maxWidth: "100%" }}
-        inert={true}
-      >
-        <Hero settingsOverride={draft} editor />
-      </div>
+            <Hero settingsOverride={draft} editor />
+          </div>
+        </>
+      )}
       <p role="status" className="editor-state">
         {status}
       </p>
@@ -158,12 +211,16 @@ export function HomepageEditor({ visual = false }) {
         <button
           type="button"
           className="button outline"
-          disabled={busy}
+          disabled={busy || uploading}
           onClick={() => save(false)}
         >
           Save draft
         </button>
-        <button type="submit" className="button primary" disabled={busy}>
+        <button
+          type="submit"
+          className="button primary"
+          disabled={busy || uploading}
+        >
           {busy ? "Saving…" : "Save & publish"}
         </button>
         <button
@@ -177,7 +234,7 @@ export function HomepageEditor({ visual = false }) {
           Undo edits
         </button>
       </div>
-      <h3>Previous published versions</h3>
+      <h3>Previous published website versions</h3>
       <p>Restore a version into the editor, review it, then publish.</p>
       {revisions.map((r) => (
         <div className="admin-row" key={r.id}>
