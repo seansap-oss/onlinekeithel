@@ -15,7 +15,7 @@ export const plans = [
   active: true,
 }));
 export const settings = {
-  name: "Onlinekeithel",
+  name: "OnlineKeithel",
   tagline: "Our people. Our neighbourhood.",
   hero_title: "Your neighbourhood. Every shop.",
   hero_description:
@@ -317,7 +317,7 @@ extras.forEach(
       attributes,
       status: "published",
       socials: {},
-      tags: "sample demo " + category_id,
+      tags: "" + category_id,
       created_at: "2026-10-03T04:00:00Z",
       collection_id: `${sellers[si].id}-collection-${collection}`,
     }),
@@ -329,7 +329,7 @@ listings.forEach((item, index) => {
   item.sample = true;
   item.collection_id ||= `${item.seller_id}-collection-${index === 4 || index === 5 ? 1 : 0}`;
   item.description =
-    "Sample listing with an illustrative price and photograph, showing how your own products will appear. This item is not offered for sale. Replace samples with your own catalogue when account services are connected.";
+    "Contact and purchase options will be available when the seller activates this listing.";
 });
 
 listings.forEach((item) => {
@@ -395,7 +395,7 @@ tee.commerce.variants = ["XS", "S", "M", "L", "XL", "XXL"].map((label, i) => ({
   price: null,
 }));
 tee.description =
-  "Sample garment illustrations show the front, back and side gallery. Hover the cover photo or use the thumbnails. Choose a size and quantity to preview a WhatsApp enquiry. Not for sale.";
+  "Cotton T-shirt with front, back and side views. Choose a size and quantity. This listing is not currently available for purchase.";
 
 const variety = sellers.find((s) => s.id === "sample-home");
 variety.description =
@@ -426,15 +426,15 @@ variety.description =
     seller: variety,
     location: variety.location,
     condition: "New",
-    attributes: { Brand: "Sample" },
+    attributes: { Brand: "Unspecified" },
     status: "published",
     socials: {},
-    tags: "sample variety store " + key,
+    tags: "variety store " + key,
     sample: true,
     created_at: "2026-10-03T04:00:00Z",
     collection_id: variety.id + "-collection-0",
     description:
-      "Illustrative sample showing mixed-category products in one shop. Not for sale.",
+      "Find everyday essentials in this mixed-category store. This listing is not currently available for purchase.",
     commerce: {
       mode: "retail",
       stock: key === "toy" ? 0 : 12,

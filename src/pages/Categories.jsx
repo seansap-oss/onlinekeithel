@@ -15,17 +15,32 @@ export default function Categories() {
   const card = (c) => (
     <section className="category-directory-card" key={c.id}>
       <div className="category-card-heading">
-        <span><CategoryIcon name={c.icon} size={28} /></span>
+        <span>
+          <CategoryIcon name={c.icon} size={28} color={c.color || "#064b3b"} />
+        </span>
         <div>
-          <small>{isConstructionCategory(c) ? "Construction" : c.group_name}</small>
-          <h2><Link to={"/search?category=" + c.id}>{c.name}</Link></h2>
+          <small>
+            {isConstructionCategory(c) ? "Construction" : c.group_name}
+          </small>
+          <h2>
+            <Link to={"/search?category=" + c.id}>{c.name}</Link>
+          </h2>
         </div>
       </div>
       <ul>
         {(c.subcategories || []).map((s) => (
           <li key={s.id}>
-            <Link to={"/search?" + new URLSearchParams({ category: c.id, subcategory: s.id })}>
-              <CategoryIcon name={s.icon || c.icon} size={16} />
+            <Link
+              to={
+                "/search?" +
+                new URLSearchParams({ category: c.id, subcategory: s.id })
+              }
+            >
+              <CategoryIcon
+                name={s.icon || c.icon}
+                size={16}
+                color={s.color || c.color || "#064b3b"}
+              />
               {s.name}
             </Link>
           </li>
@@ -74,11 +89,21 @@ export default function Categories() {
       {construction.length > 0 && (
         <section className="category-department">
           <div className="category-department-heading">
-            <div><span className="eyebrow">ONE DEPARTMENT</span><h2>Construction</h2>
-              <p>Materials, architects, builders, trades, workers and site supplies.</p></div>
-            <Link to="/search?department=construction">Browse all construction →</Link>
+            <div>
+              <span className="eyebrow">ONE DEPARTMENT</span>
+              <h2>Construction</h2>
+              <p>
+                Materials, architects, builders, trades, workers and site
+                supplies.
+              </p>
+            </div>
+            <Link to="/search?department=construction">
+              Browse all construction →
+            </Link>
           </div>
-          <div className="category-directory-grid">{construction.map(card)}</div>
+          <div className="category-directory-grid">
+            {construction.map(card)}
+          </div>
         </section>
       )}
       <div className="category-directory-grid">{other.map(card)}</div>

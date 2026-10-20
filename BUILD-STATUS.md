@@ -1,4 +1,17 @@
-# Build status — v0.8.0
+# Build status — v0.10.0
+
+
+## v0.10.0 approved interface and rich ticker (10 October 2026)
+
+Implemented compact search panel, header saved heart, removed announcement, ticker under header, five-second hero rotation with editable slides/video uploads, category rail, persistent device-level light/dark theme, and corrected Avit Solutions footer link. Dedicated ticker editor supports selected-letter formatting, fonts/sizes/colours, arbitrary emoji insertion, icons/separators, links, schedules, sponsored labels, ordering, visibility, undo/redo and shared website draft/publish/history. Paid ticker billing remains manual. No new migration beyond v0.9 is required.
+
+24 automated tests and production build pass; server-render checks cover homepage and ticker editor. Historical migration-006 test now correctly expects that migration's original spelling; the full current schema/publishing test verifies OnlineKeithel and persists formatted ticker JSON. Browser preview connection was refused, so visual interaction and live provider acceptance remain unverified. No new GitHub/Vercel deployment is claimed. See `UPDATE-v0.10.0.md`. Supabase provisioning and production email/storage/admin setup remain pending.
+
+## v0.9.0 brand and owner controls (9 October 2026)
+
+Corrected OnlineKeithel throughout public content; bundled the Caveat wordmark font; preserved the roof logo and header layout; changed the posting CTA; added five-second footer admin sign-in and Ebit Solutions credit. Added server-protected user listing/invitations, category icon/colour/subcategory editing, deletion controls, editable starter catalogue import, and database-backed homepage draft/publish/revision recovery with optimistic concurrency checks. Migration `supabase/migrations/20261009051356_admin_publishing.sql` is required on an existing database. Fresh schema includes it. Existing 004–007 history is retained.
+
+21 automated tests passed. Production and Sites packaging builds pass. Browser preview failed with connection refusal in this environment; new visual interactions have not been visually verified. No dedicated backend is configured, so real account writes, invitations, uploads and publishing remain provider-dependent and unverified. GitHub denied create-tree writes with 403. No Vercel deployment is claimed. Read `UPDATE-v0.9.0.md` for installation and limitations. Bundled disconnected catalogue records are read-only; the importer creates editable database drafts once genuine seller accounts exist.
 
 ## v0.8.0 shareable storefronts (4 October 2026)
 

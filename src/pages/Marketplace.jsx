@@ -1,3 +1,6 @@
+import { CategoryRail } from "../components/CategoryRail";
+import { defaultHeroSlides } from "../lib/hero";
+import { ProductVideos as HeroVideo } from "../components/ProductMedia";
 import { PurchasePanel } from "../components/PurchasePanel";
 import { ProductVideos } from "../components/ProductMedia";
 import { outOfStock } from "../lib/commerce";
@@ -10,6 +13,8 @@ import {
 import React, { useState, useEffect, useRef } from "react";
 import {
   Heart,
+  Pause,
+  Play,
   MapPin,
   Storefront,
   ArrowRight,
@@ -89,11 +94,7 @@ export function ProductCard({ item }) {
         <span
           className={"condition " + (item.condition === "Used" ? "used" : "")}
         >
-          {outOfStock(item)
-            ? "Out of stock"
-            : item.sample
-              ? "Sample"
-              : item.condition}
+          {outOfStock(item) ? "Out of stock" : item.condition}
         </span>
         <button
           className={"save-button " + (saved ? "saved" : "")}
@@ -102,7 +103,7 @@ export function ProductCard({ item }) {
           onClick={async () => {
             if (item.sample)
               return notice(
-                "This sample cannot be saved. Browse the templates to explore the design.",
+                "Saving is available after account services are connected.",
               );
             if (!session) return navigate("/login");
             try {
@@ -150,7 +151,7 @@ export function ProductCard({ item }) {
           to={"/listing/" + item.id + "?enquire=1"}
         >
           <WhatsappLogo size={17} />{" "}
-          {item.sample ? "Explore sample" : "Contact seller"}
+          {item.sample ? "View details" : "Contact seller"}
         </Link>
       </div>
     </article>
@@ -170,10 +171,7 @@ export function ShopCard({ seller }) {
         </span>
         <div>
           <strong>{seller.name}</strong>
-          <small>
-            {templates[seller.theme]?.category || seller.theme}
-            {seller.sample ? " · Sample shop" : ""}
-          </small>
+          <small>{templates[seller.theme]?.category || seller.theme}</small>
           <small>
             <MapPin size={12} />
             {seller.location}
@@ -184,14 +182,33 @@ export function ShopCard({ seller }) {
     </Link>
   );
 }
-export function Hero() {
-  const { settings, navigate } = useMarket();
+export function Hero({ settingsOverride, editor = false } = {}) {
+  const { settings: liveSettings, navigate } = useMarket();
+  const settings = settingsOverride || liveSettings;
   const [campaigns, setCampaigns] = useState([]),
     [index, setIndex] = useState(0),
     [video, setVideo] = useState(null);
   const start = useRef(null);
+  const [paused, setPaused] = useState(false),
+    [hovered, setHovered] = useState(false),
+    [focused, setFocused] = useState(false),
+    [hidden, setHidden] = useState(document.hidden);
+  const [reduced, setReduced] = useState(
+    () => matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
   useEffect(() => {
-    if (configured)
+    const media = matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(media.matches);
+    media.addEventListener("change", update);
+    const visibility = () => setHidden(document.hidden);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      media.removeEventListener("change", update);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, []);
+  useEffect(() => {
+    if (configured && !editor)
       result(
         supabase
           .from("campaigns")
@@ -206,12 +223,42 @@ export function Hero() {
         .then(setCampaigns)
         .catch(() => {});
   }, []);
-  const slide = campaigns[index - 1],
-    total = campaigns.length + 1;
+  const slides = [
+    ...(settings.hero_slides || defaultHeroSlides).filter(
+      (s) => s.enabled !== false,
+    ),
+    ...campaigns.map((s) => ({ ...s, sponsored: true })),
+  ];
+  const slide = slides[index - 1],
+    total = slides.length + 1;
+  useEffect(() => {
+    if (index >= total) setIndex(0);
+  }, [total, index]);
+  useEffect(() => {
+    if (
+      total < 2 ||
+      paused ||
+      hovered ||
+      focused ||
+      video ||
+      hidden ||
+      reduced ||
+      editor
+    )
+      return;
+    const timer = setTimeout(() => setIndex((i) => (i + 1) % total), 5000);
+    return () => clearTimeout(timer);
+  }, [index, total, paused, hovered, focused, video, hidden, reduced, editor]);
   const go = (n) => setIndex((n + total) % total);
   return (
     <section
       className="hero"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocusCapture={() => setFocused(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false);
+      }}
       onTouchStart={(e) =>
         (start.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })
       }
@@ -227,14 +274,17 @@ export function Hero() {
       aria-label="Featured marketplace stories"
     >
       <Photo
+        key={index}
         className="hero-image"
         src={slide?.image || settings.hero_image}
-        alt="Local handloom shop and colourful textiles"
+        alt={slide?.title || "Local handloom shop and colourful textiles"}
       />
-      <div className="hero-panel">
+      <div className="hero-panel" key={"text-" + index}>
         <span className="eyebrow">
           {slide
-            ? "SPONSORED · LOCAL SPOTLIGHT"
+            ? slide.sponsored
+              ? "SPONSORED · LOCAL SPOTLIGHT"
+              : "YOUR LOCAL MARKETPLACE"
             : "GOOD FINDS. GREAT NEIGHBOURS."}
         </span>
         <h1>{slide?.title || settings.hero_title}</h1>
@@ -253,8 +303,8 @@ export function Hero() {
               onClick={() => {
                 if (slide) {
                   if (
-                    slide.destination.startsWith("/") &&
-                    !slide.destination.startsWith("//")
+                    (slide.destination || "").startsWith("/") &&
+                    !(slide.destination || "").startsWith("//")
                   )
                     navigate(slide.destination);
                   else if (safeUrl(slide.destination))
@@ -266,7 +316,9 @@ export function Hero() {
                 } else navigate("/shops");
               }}
             >
-              {slide ? "Explore this shop" : "Explore local shops"}{" "}
+              {slide
+                ? slide.button || "Explore this shop"
+                : "Explore local shops"}{" "}
               <ArrowRight size={18} />
             </button>
           )}
@@ -288,6 +340,14 @@ export function Hero() {
         </div>
         <div>
           <button
+            type="button"
+            aria-label={paused ? "Resume hero rotation" : "Pause hero rotation"}
+            aria-pressed={paused}
+            onClick={() => setPaused(!paused)}
+          >
+            {paused ? <Play size={18} /> : <Pause size={18} />}
+          </button>
+          <button
             aria-label="Previous featured story"
             disabled={total < 2}
             onClick={() => go(index - 1)}
@@ -305,7 +365,7 @@ export function Hero() {
       </div>
       {video && (
         <Modal title="Featured video" onClose={() => setVideo(null)}>
-          <Video url={video} />
+          <HeroVideo videos={[{ url: video }]} />
         </Modal>
       )}
     </section>
@@ -350,19 +410,7 @@ export function Home() {
   return (
     <div className="page home">
       <Hero />
-      <section className="mobile-categories">
-        {categories.slice(0, 6).map((c) => {
-          const Icon = icons[c.id] || Storefront;
-          return (
-            <Link to={"/search?category=" + c.id} key={c.id}>
-              <span>
-                <Icon size={25} />
-              </span>
-              {c.name.split(" &")[0]}
-            </Link>
-          );
-        })}
-      </section>
+      <CategoryRail />
       <section className="section">
         <div className="section-heading">
           <div>
@@ -430,7 +478,7 @@ export function Home() {
           </p>
         </div>
         <Link to="/sell" className="button primary">
-          Open your shop <ArrowRight size={18} />
+          Post ad <ArrowRight size={18} />
         </Link>
       </section>
     </div>
@@ -930,7 +978,7 @@ export function SellerPage({ slug }) {
     };
   }, [fixtures, slug, collection, page, shopCategory, shopQuery]);
   useEffect(() => {
-    if (seller) document.title = `${seller.name} | Onlinekeithel`;
+    if (seller) document.title = `${seller.name} | OnlineKeithel`;
   }, [seller]);
   if (!seller)
     return (
@@ -949,12 +997,6 @@ export function SellerPage({ slug }) {
         "--shop-font": storefrontFonts[display.font].value,
       }}
     >
-      {seller.sample && (
-        <div className="sample-notice">
-          Sample shop · illustrative products and prices.{" "}
-          <Link to="/templates">Explore all templates</Link>
-        </div>
-      )}
       <div className="shop-cover shop-hero">
         <Photo src={seller.cover} alt={seller.name} />
         <div className="shop-hero-content">
@@ -987,13 +1029,13 @@ export function SellerPage({ slug }) {
         <SocialLinks values={seller.socials} />
         {whatsappUrl(
           seller.whatsapp,
-          "Hello, I found your shop on Onlinekeithel.",
+          "Hello, I found your shop on OnlineKeithel.",
         ) && (
           <a
             className="button primary"
             href={whatsappUrl(
               seller.whatsapp,
-              "Hello, I found your shop on Onlinekeithel.",
+              "Hello, I found your shop on OnlineKeithel.",
             )}
             target="_blank"
             rel="noopener noreferrer"
@@ -1289,12 +1331,6 @@ export function ProductPage({ id }) {
                   item.subcategory_id,
                 )}
           </span>
-          {item.sample && (
-            <div className="sample-notice">
-              Sample product · not for sale · price and specifications are
-              illustrative.
-            </div>
-          )}
           <h1>{item.title}</h1>
           <strong className="detail-price">{money(item.price)}</strong>
           <p className="muted">

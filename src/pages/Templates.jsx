@@ -54,15 +54,14 @@ export default function Templates() {
           </div>
           {showSamples && (
             <Link className="button primary" to={"/shop/" + chosen.sample}>
-              Explore this sample shop <ArrowRight />
+              View this storefront <ArrowRight />
             </Link>
           )}
           <Link className="button outline" to={"/sell?template=" + selected}>
             Use this template
           </Link>
           <small>
-            Sample photographs and illustrative prices. Real publishing requires
-            an account.
+            Choose a template, then add your own products and photographs.
           </small>
         </div>
       </section>

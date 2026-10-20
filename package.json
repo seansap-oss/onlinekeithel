@@ -1,6 +1,6 @@
 {
   "name": "onlinekeithel",
-  "version": "0.8.0",
+  "version": "0.10.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,8 @@
     "build": "vite build && node scripts/prepare-sites-build.mjs",
     "preview": "vite preview",
     "test:sites": "node --test tests/sites-worker.test.mjs",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "review": "vite --mode review --host 127.0.0.1 --port 5189 --strictPort"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
