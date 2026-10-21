@@ -12,11 +12,16 @@ import { configured, supabase, result } from "../lib/backend";
 import { money } from "../lib/utils";
 export function Department({ kind }) {
   const c = departmentConfig[kind],
-    { categories, navigate, fixtures } = useMarket();
+    { categories, navigate, fixtures, path } = useMarket();
   const [query, setQuery] = useState(""),
     [location, setLocation] = useState(""),
     [choice, setChoice] = useState(""),
     [motor, setMotor] = useState("vehicles");
+  useEffect(() => {
+    if (kind !== "motors") return;
+    const requested = new URLSearchParams(path.split("?")[1] || "").get("category");
+    setMotor(motorCategories.includes(requested) ? requested : "vehicles");
+  }, [kind, path]);
   const category = kind === "motors" ? motor : c.category;
   const current = categories.find((x) => x.id === category);
   const [featured, setFeatured] = useState([]),
@@ -102,7 +107,7 @@ export function Department({ kind }) {
               key={id}
               onClick={() => setMotor(id)}
             >
-              {["Cars & commercial", "Bikes & scooters", "Bicycles"][i]}
+              {["Cars & commercial", "Bikes & scooters", "Bicycles", "Boats"][i]}
             </button>
           ))
         ) : (
@@ -223,12 +228,12 @@ export function Department({ kind }) {
           <div>
             <h2>Give your event a wider audience.</h2>
             <p>
-              Post your event, then contact the marketplace team about a
-              sponsored ticker placement. All placements need approval.
+              Post your event for free. The marketplace team may choose
+              community highlights for the ticker.
             </p>
           </div>
           <Link className="button" to="/help">
-            Promotion enquiries →
+            Contact the team →
           </Link>
         </aside>
       )}

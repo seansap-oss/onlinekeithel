@@ -25,7 +25,7 @@ export const textOf = (runs = []) => runs.map((r) => r.text || "").join("");
 const color = (v, fallback) => (/^#[\da-f]{6}$/i.test(v || "") ? v : fallback);
 export function runStyle(r = {}) {
   return {
-    color: color(r.color, "#15352e"),
+    color: color(r.color, "#ffffff"),
     font: Object.hasOwn(tickerFonts, r.font) ? r.font : "sans",
     size: Math.min(36, Math.max(12, Number(r.size) || 16)),
     bold: !!r.bold,
@@ -93,7 +93,7 @@ export function destination(value = "") {
 }
 export const defaultTicker = {
   enabled: true,
-  background: "#fff7df",
+  background: "#063c31",
   speed: 55,
   messages: [
     {
@@ -104,7 +104,7 @@ export const defaultTicker = {
       runs: [
         {
           text: "Local updates · Discover shops near you · New arrivals this week",
-          color: "#15352e",
+          color: "#ffffff",
           font: "sans",
           size: 14,
         },
@@ -118,16 +118,29 @@ export const defaultTicker = {
 };
 export function tickerSettings(value) {
   const t = value && typeof value === "object" ? value : defaultTicker;
+  const rawMessages = Array.isArray(t.messages) ? t.messages : [];
+  const legacyDefault =
+    t.background === "#fff7df" &&
+    rawMessages.length === 1 &&
+    rawMessages[0]?.id === "welcome" &&
+    textOf(rawMessages[0]?.runs || []) ===
+      "Local updates · Discover shops near you · New arrivals this week";
   return {
     enabled: t.enabled !== false,
-    background: color(t.background, "#fff7df"),
+    background: color(legacyDefault ? "#063c31" : t.background, "#063c31"),
     speed: Math.max(20, Math.min(140, Number(t.speed) || 55)),
-    messages: (Array.isArray(t.messages) ? t.messages : []).map((m, i) => ({
+    messages: rawMessages.map((m, i) => ({
       id: String(m.id || i),
       enabled: m.enabled !== false,
       icon: Object.hasOwn(tickerIcons, m.icon) ? m.icon : "none",
       separator: String(m.separator || "•").slice(0, 20),
-      runs: cleanRuns(Array.isArray(m.runs) ? m.runs : []),
+      runs: cleanRuns(
+        (Array.isArray(m.runs) ? m.runs : []).map((run) =>
+          legacyDefault && run.color === "#15352e"
+            ? { ...run, color: "#ffffff" }
+            : run,
+        ),
+      ),
       link: destination(m.link),
       sponsored: !!m.sponsored,
       startsAt: m.startsAt || "",

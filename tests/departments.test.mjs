@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
-import {validateClassified, listingPrice, indiaTime} from '../src/lib/departments.js';
+import {validateClassified, listingPrice, indiaTime, categoryRoute, motorCategories} from '../src/lib/departments.js';
 test('classified publishing rejects missing details, unsafe links and invalid event pricing',()=>{
  const event={category_id:'happenings',status:'published',price:0,attributes:{'Event starts':'2026-10-20T10:00','Event ends':'2026-10-20T12:00',Venue:'Imphal','Entry type':'Free'}};
  assert.doesNotThrow(()=>validateClassified(event));
@@ -13,6 +13,8 @@ test('classified publishing rejects missing details, unsafe links and invalid ev
  assert.throws(()=>validateClassified({...job,attributes:{...job.attributes,'Official notice URL':'javascript:alert(1)'}}),/HTTPS/);
  assert.equal(indiaTime('2026-10-20T10:00'),Date.parse('2026-10-20T04:30:00Z'));
  assert.equal(listingPrice({category_id:'jobs',price:0},String),'Salary not disclosed');
+ assert.equal(categoryRoute('boats'),'/motors?category=boats');
+ assert.ok(motorCategories.includes('boats'));
 });
 test('department migration is repeatable and preserves operator categories and existing ads',async()=>{
  const db=new PGlite();

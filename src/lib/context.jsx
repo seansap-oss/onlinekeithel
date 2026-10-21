@@ -102,7 +102,7 @@ export function MarketProvider({ children }) {
           ...st.value,
           name: /^(Leikai Market|onlinekeithell?)$/i.test(st.value.name || "") ? "OnlineKeithel" : st.value.name,
         });
-      } else if (showSamples) {
+      } else if (import.meta.env.DEV && showSamples) {
         const d = await import("./preview-data.js");
         setFixtures(d);
         setCategories(d.categories);

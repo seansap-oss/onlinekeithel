@@ -1,84 +1,45 @@
-# Onlinekeithel / emarket
+# OnlineKeithel — Free Launch Candidate 1 (v0.15.0)
 
-A Manipur marketplace with individual and business storefronts, global product search, WhatsApp enquiries, seller packages and a restricted admin dashboard.
+A mobile-first Manipur marketplace with shop and individual pages, searchable listings, WhatsApp enquiries, an admin editor, a PWA and an Android Studio test project. This release does not charge sellers.
 
-**Release:** 0.7.0. **Status:** marketplace and seller interface locally verified; live account and payment services still require configuration. See [BUILD-STATUS.md](BUILD-STATUS.md) for exact verification and remaining scope.
+## What the free release does
 
-## Run locally
+- Account creation with Supabase email/password, confirmation and recovery. Phone OTP UI still requires an SMS provider; WhatsApp OTP is not configured.
+- A seller can publish up to 100 active listings. Published ads stay visible until paused or removed; one photo is sufficient, and extra photos are welcome.
+- Buyers find listings by category, shop and keyword. Contact buttons open WhatsApp with an enquiry; sending happens in WhatsApp.
+- Seller storefronts, uploads and editing, administrator controls, hero/ticker editors and PWA remain available. Paid packages are inactive and checkout is disabled. Existing payment and entitlement records are preserved for a later release.
 
-Node 22 or later:
+**Launch status:** local tests and build pass. The live release still needs two-account signup/posting/enquiry testing, a production email sender, mobile checks and final operator/contact details. See [BUILD-STATUS.md](BUILD-STATUS.md).
 
-```bash
+## One Windows folder and one Vercel project
+
+Use the existing project folder in VS Code. In its PowerShell terminal, check `git status` before replacing files. If you use the release ZIP, extract its contents *into that same repository folder*; do not create a second repository or Vercel project. Keep your `.env.local` in that folder and never commit it.
+
+```powershell
 npm ci
-cp .env.example .env.local
+npm test
+npm run build
 npm run dev
 ```
 
-Add the URL and publishable key of a **dedicated** Supabase project to `.env.local`. For a visual review without accounts, set `VITE_PREVIEW_MODE=true`. Sample shops and products are enabled in production by default until a real backend is connected; set `VITE_SHOW_SAMPLES=false` and rebuild to remove them. `/preview/seller` and `/preview/admin` remain development-only. They do not simulate authentication and cannot publish changes. Public samples never simulate account sessions or allow real purchases.
+Vite prints the local URL, usually `http://localhost:5173`. Production uses the existing GitHub repository `seansap-oss/onlinekeithel` and the existing OnlineKeithel Vercel project. A push to the project's configured production branch triggers the Vercel deployment. The build command is `npm run build`, output `dist/client`.
 
-```bash
-npm test
-npm run build
+### Database
+
+On a database that already has the v0.14.4 migrations, apply `database/migrations/015_free_launch.sql` **once** if it has not already been applied by the maintainer. It turns off paid plans, raises the free active-listing allowance to 100 and removes the 14-day public visibility rule. Do not re-run the old package migration after this one. A production custom SMTP provider and Supabase Auth Site URL/redirects are required for public email signup. The public `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` belong in `.env.local` for the local or Android build and in the existing Vercel project's environment variables for the website. Never put the service role key in any `VITE_` variable.
+
+### Android Studio test APK
+
+Node 22+ and Android Studio with the SDK are required. The `android/` project and Capacitor config are included. In the same VS Code PowerShell terminal, after `.env.local` is set:
+
+```powershell
+npm ci
+npm run android:sync
+npm run android:open
 ```
 
-## Features
+Android Studio opens the generated project; let Gradle finish syncing, select an emulator or USB-connected Android phone and press **Run**. For an installable debug APK select **Build > Build Bundle(s) / APK(s) > Build APK(s)**. The output is `android/app/build/outputs/apk/debug/app-debug.apk`. After changing web code, run `npm run android:sync` again before building the APK. The debug APK is for testing, not Play Store release. Email confirmation links still open the website; afterwards sign in inside the APK. Native deep-link handling, notification delivery and release signing are future work.
 
-- Responsive marketplace and compact-screen bottom navigation, without disabling pinch zoom.
-- Global keyword/URL search, category/location/price/condition/seller filters and pagination.
-- Individual/shop profiles, category storefront themes, logos/covers and collections.
-- 31 searchable specialist categories grouped in the interface; Construction brings architects, builders, trades, workers, materials and site suppliers under one department.
-- Seller upload dashboard: galleries of up to 12 photos, reorder/remove, videos/social embeds, clothing sizes and stock, vehicle details, shop UPI/QR, listing status and mixed-store collections.
-- WhatsApp enquiry composer; no messaging database or automatic sending.
-- Supabase email/password signup, confirmation, login, recovery and protected seller/admin routes.
-- Database row-level security, published-listing quotas, seller suspension and ad approval enforcement.
-- Free, ₹500, ₹1,000, ₹2,000 and ₹5,000 packages with snapshot quotas.
-- Razorpay manual 30-day package checkout, signature validation, captured-payment verification and idempotent webhook fulfilment.
-- Scheduled sponsored hero carousel, video drawer, and manual admin payment/approval workflow.
-- CSV template, validation, resumable-by-SKU draft import and result export.
-- Admin homepage content, categories, plans, seller/listing edits, campaign review, reports and audit log.
-- PWA manifest, icons, safe offline fallback; Android/iOS binaries are not part of this release.
-- Shareable `/shop/name` storefronts for individuals and shops, with editable cover/hero copy, preset colours/fonts, social video, photo gallery, optional section order, dashboard preview and copy-link button. Apply migration 007 to existing marketplace databases before saving these settings. See [docs/STOREFRONTS.md](docs/STOREFRONTS.md).
+## Security and operations
 
-## Deploy to Vercel
-
-1. Import **seansap-oss/emarket** into Vercel. Framework: **Vite**. Root directory: repository root.
-2. Build command: `npm run build`. Output: `dist/client`. `vercel.json` includes deep-link rewrites and security headers.
-3. Create a dedicated Supabase project and run `database/schema.sql`, followed by `database/storage.sql`, once in its SQL editor.
-4. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in Vercel. These are intentionally public. Enable email confirmation and configure production Site URL, redirect URLs and a production SMTP sender in Supabase Auth.
-5. Add server-only `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (a Supabase server secret or legacy service-role key). Never prefix a server secret with `VITE_`.
-6. Create your own account through the site and confirm your email. Use the account's actual UUID to grant administrator access through the trusted SQL editor:
-
-```sql
-insert into public.admins(user_id) values ('REPLACE_WITH_YOUR_ACTUAL_AUTH_USER_UUID');
-```
-
-7. Sign out/in, then visit `/admin`. Set marketplace branding, public support contacts, policies and final package/advertising prices before launch.
-8. For packages, set server-only `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`. Configure automatic capture and a `payment.captured` webhook pointing to `/api/payment-webhook` on the deployed domain. First verify with Razorpay test mode. Do not accept live payments before final terms/refund policy are published.
-9. Redeploy after changing `VITE_` variables; these are compiled into the browser bundle.
-10. Run the live acceptance checklist in BUILD-STATUS.md. Do not switch to public launch simply because Vercel's build is green.
-
-## Package behaviour
-
-Free: 3 active products. Starter ₹500: 50. Growth ₹1,000: 250. Business ₹2,000: 1,000. Large catalogue ₹5,000: 15,000. Prices/limits can be edited by an administrator. Paid orders snapshot price and listing limit. Packages last **30 days**, renew manually and do not automatically debit the seller. Repurchase extends the remaining validity by 30 days and applies the purchased quota immediately; no proration is implemented. Plan versioning is limited to order snapshots.
-
-On expiry, records remain in the database and only the newest free allowance is public. Seller dashboards retain access to the rest. Sellers can pause products to change the visible set. At most 8 images are offered in the editor; a database hard ceiling is 12. Images are up to 5 MB each. Total-storage metering and lifecycle cleanup require additional implementation before an unrestricted large-catalogue launch.
-
-## Catalogue imports
-
-CSV columns: `sku,title,category,price,condition,location,images,social_url,tags,description`. Use `|` between image URLs. Import requires an SKU and an existing category. Importing the same SKU updates the existing record and sets it to draft. It can overwrite that product's previous data: export/backup first. Images are linked; they are not scraped or downloaded from arbitrary URLs. Keep the import page open. A durable background import queue and XLSX support are not yet included.
-
-## Security and privacy
-
-RLS governs access even when frontend routes are bypassed. Privileged server secrets remain in Vercel environment variables. Public seller contact information is intentionally public. Message text is never sent to our backend. External video providers may collect data only after the visitor loads their player. Unknown URLs are not embedded as arbitrary HTML.
-
-Schema tests use PGlite and simulated Supabase roles; they do not replace live Supabase Auth/Storage testing. Admin MFA, abuse-rate tuning, server-enforced aggregate upload budgets, backup/restore exercises and automated payment reconciliation remain release gates for larger production use.
-
-## Architecture
-
-React/Vite client; Supabase Auth/Postgres/Storage; Vercel Node functions for package payments; external WhatsApp for conversations. Modules live in `src/pages`, shared UI in `src/components`, domain helpers in `src/lib`, SQL in `database`, billing handlers in `api`. The original Product Design worker remains available for static preview, but production payments target Vercel.
-
-The current site is a client-rendered SPA. Per-listing server-rendered SEO/social metadata, native app packaging and automatic social-feed imports are future work; do not claim these exist.
-
-## Product tools (v0.6.0)
-
-See [docs/PRODUCT-TOOLS.md](docs/PRODUCT-TOOLS.md) for galleries, videos, vehicle fields, variants, stock, UPI details, extended imports and database upgrade instructions. Product purchases are WhatsApp requests; they are not confirmed paid orders.
+Admin access is by an authenticated account in `public.admins`, never a shared password. Sellers cannot grant themselves admin access or publish another seller's listings. Photos go to Supabase Storage; the website and APK use the same hosted database. A Vercel build alone does not verify signup, SMTP, image upload or live mobile WhatsApp handoff. Finish the checks in BUILD-STATUS.md before inviting sellers.

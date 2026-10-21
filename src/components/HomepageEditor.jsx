@@ -2,7 +2,8 @@ import { TickerEditor } from "./TickerEditor";
 import { HeroSlidesEditor } from "./HeroSlidesEditor";
 import { validateTicker, destination } from "../lib/ticker";
 import { directVideoUrl } from "../lib/commerce";
-import { embedUrl, mediaUrl } from "../lib/utils";
+import { embedUrl, mediaUrl, socialUrl } from "../lib/utils";
+import { heroDisplaySettings, heroLayouts } from "../lib/hero";
 import React, { useEffect, useState } from "react";
 import { useMarket } from "../lib/context";
 import { result, supabase } from "../lib/backend";
@@ -21,6 +22,7 @@ export function HomepageEditor({
     [revisions, setRevisions] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [width, setWidth] = useState("100%");
+  const display = heroDisplaySettings(draft.hero_display);
   const load = async () => {
     if (visual) return;
     try {
@@ -83,6 +85,7 @@ export function HomepageEditor({
         ...draft,
         name: "OnlineKeithel",
         ticker: validateTicker(draft.ticker),
+        hero_display: display,
       };
       for (const slide of value.hero_slides || []) {
         if (slide.enabled !== false && !slide.title?.trim())
@@ -97,6 +100,14 @@ export function HomepageEditor({
           !embedUrl(slide.video_url)
         )
           throw Error("Use a supported video or embed URL.");
+        if (slide.social_url && !socialUrl(slide.social_url))
+          throw Error("Use a supported Instagram, Facebook or YouTube URL.");
+        if (
+          slide.starts_at &&
+          slide.ends_at &&
+          Date.parse(slide.ends_at) <= Date.parse(slide.starts_at)
+        )
+          throw Error("Promotion end time must be after its start time.");
       }
       if (publish) {
         await result(
@@ -172,6 +183,76 @@ export function HomepageEditor({
             value={draft.hero_image}
             onChange={(v) => change("hero_image", v)}
           />
+          <section className="hero-display-editor">
+            <h3>Hero and premium display</h3>
+            <p>
+              Select how promotions display on the homepage. Layouts adjust for
+              phone, tablet and desktop.
+            </p>
+            <div className="hero-layout-options">
+              {heroLayouts.map((item) => (
+                <button
+                  type="button"
+                  key={item.id}
+                  className={
+                    display.layout === item.id
+                      ? "hero-layout-option selected"
+                      : "hero-layout-option"
+                  }
+                  aria-pressed={display.layout === item.id}
+                  onClick={() =>
+                    change("hero_display", { ...display, layout: item.id })
+                  }
+                >
+                  <strong>{item.label}</strong>
+                  <small>{item.count} at a time</small>
+                </button>
+              ))}
+            </div>
+            <div className="form-grid">
+              <Field
+                label="Rotation interval (seconds)"
+                type="number"
+                min="3"
+                max="60"
+                value={display.rotation_seconds}
+                onChange={(e) =>
+                  change("hero_display", {
+                    ...display,
+                    rotation_seconds: Number(e.target.value),
+                  })
+                }
+              />
+              <Field label="Promotion order">
+                <select
+                  value={display.order}
+                  onChange={(e) =>
+                    change("hero_display", {
+                      ...display,
+                      order: e.target.value,
+                    })
+                  }
+                >
+                  <option value="priority">Paid priority, then newest</option>
+                  <option value="newest">Newest first</option>
+                  <option value="manual">Manual order</option>
+                </select>
+              </Field>
+            </div>
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={display.pause_on_interaction}
+                onChange={(e) =>
+                  change("hero_display", {
+                    ...display,
+                    pause_on_interaction: e.target.checked,
+                  })
+                }
+              />{" "}
+              Pause while visitors interact
+            </label>
+          </section>
           <HeroSlidesEditor
             value={draft.hero_slides}
             onChange={(v) => change("hero_slides", v)}

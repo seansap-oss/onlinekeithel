@@ -1,4 +1,4 @@
--- OnlineKeithel v0.3: apply to a NEW dedicated Supabase project.
+-- OnlineKeithel v0.3: apply to a NEW dedicated Supabase project, then run migration 010_discovery_categories.sql.
 -- No messaging tables: enquiries leave the application via WhatsApp.
 begin;
 create schema if not exists private;
@@ -11,18 +11,18 @@ grant usage on schema private to authenticated, anon;
 grant execute on function private.is_admin() to authenticated, anon;
 create function public.is_admin() returns boolean language sql stable security invoker set search_path='' as $$ select private.is_admin() $$;
 create table public.categories(id text primary key, name text not null, theme text not null default 'general', fields jsonb not null default '[]', position int not null default 0, active boolean not null default true);
-create table public.plans(id text primary key, name text not null, price integer not null check(price>=0), listing_limit integer not null check(listing_limit>0), image_limit integer not null default 8 check(image_limit between 1 and 12), active boolean not null default true);
+create table public.plans(id text primary key, name text not null, price integer not null check(price>=0), listing_limit integer not null check(listing_limit>0), image_limit integer not null default 8 check(image_limit between 1 and 12), duration_days integer not null default 30 check(duration_days between 1 and 365), active boolean not null default true);
 create table public.settings(id text primary key, value jsonb not null);
 create table public.sellers(id uuid primary key default gen_random_uuid(), user_id uuid not null unique references auth.users(id) on delete cascade, name text not null check(length(name) between 2 and 80), slug text not null unique check(slug ~ '^[a-z0-9][a-z0-9-]{2,59}$'), type text not null default 'individual' check(type in ('individual','shop')), theme text not null default 'general' check(theme in ('general','fashion','electronics','vehicles','motorcycles')), description text not null default '', location text not null default 'Imphal', whatsapp text not null check(whatsapp ~ '^[1-9][0-9]{7,14}$'), logo text not null default '', cover text not null default '', socials jsonb not null default '{}', storefront jsonb not null default '{}' check(jsonb_typeof(storefront)='object' and pg_column_size(storefront)<=8192), suspended boolean not null default false, created_at timestamptz not null default now());
 create table public.entitlements(seller_id uuid primary key references public.sellers(id) on delete cascade, plan_id text not null references public.plans(id), listing_limit integer not null check(listing_limit>0), expires_at timestamptz not null, updated_at timestamptz not null default now());
 create table public.collections(id uuid primary key default gen_random_uuid(), seller_id uuid not null references public.sellers(id) on delete cascade, name text not null check(length(name) between 1 and 60), position int not null default 0, unique(seller_id,name), unique(id,seller_id));
-create table public.listings(id uuid primary key default gen_random_uuid(), seller_id uuid not null references public.sellers(id) on delete cascade, category_id text not null references public.categories(id), collection_id uuid, title text not null check(length(title) between 3 and 160), description text not null default '', price numeric(12,2) not null check(price>=0), condition text not null default 'New' check(condition in ('New','Used','Refurbished')), location text not null default 'Imphal', images jsonb not null default '[]' check(jsonb_typeof(images)='array' and jsonb_array_length(images)<=12), socials jsonb not null default '{}', attributes jsonb not null default '{}', tags text not null default '', sku text, status text not null default 'draft' check(status in ('draft','published','paused','sold','archived','rejected')), created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique(seller_id,sku), foreign key(collection_id,seller_id) references public.collections(id,seller_id));
+create table public.listings(id uuid primary key default gen_random_uuid(), seller_id uuid not null references public.sellers(id) on delete cascade, category_id text not null references public.categories(id), collection_id uuid, title text not null check(length(title) between 3 and 160), description text not null default '', price numeric(12,2) not null check(price>=0), condition text not null default 'New' check(condition in ('New','Used','Refurbished')), location text not null default 'Imphal', images jsonb not null default '[]' check(jsonb_typeof(images)='array'), socials jsonb not null default '{}', attributes jsonb not null default '{}', tags text not null default '', sku text, status text not null default 'draft' check(status in ('draft','published','paused','sold','archived','rejected')), created_at timestamptz not null default now(), updated_at timestamptz not null default now(), published_at timestamptz, unique(seller_id,sku), foreign key(collection_id,seller_id) references public.collections(id,seller_id));
 create index listing_category on public.listings(category_id,status,created_at desc);
 create index listing_seller on public.listings(seller_id,status,created_at desc);
 create index listing_collection on public.listings(collection_id);
 create index listing_search on public.listings using gin(to_tsvector('simple',title||' '||description||' '||tags||' '||socials::text));
-create table public.campaigns(id uuid primary key default gen_random_uuid(), seller_id uuid not null references public.sellers(id) on delete cascade, title text not null check(length(title) between 3 and 100), description text not null default '', image text not null default '', video_url text not null default '', destination text not null, starts_at timestamptz not null, ends_at timestamptz not null, status text not null default 'pending' check(status in ('pending','approved','rejected','paused')), paid boolean not null default false, created_at timestamptz not null default now(), check(ends_at>starts_at));
-create table public.billing_orders(id uuid primary key default gen_random_uuid(), seller_id uuid not null references public.sellers(id), plan_id text not null references public.plans(id), listing_limit integer not null, amount integer not null check(amount>0), gateway_order_id text unique, gateway_payment_id text unique, status text not null default 'created' check(status in ('created','paid','failed')), created_at timestamptz not null default now());
+create table public.campaigns(id uuid primary key default gen_random_uuid(), seller_id uuid not null references public.sellers(id) on delete cascade, title text not null check(length(title) between 3 and 100), description text not null default '', image text not null default '', video_url text not null default '', social_url text not null default '', destination text not null, placement text not null default 'featured' check(placement in ('hero','featured','both')), priority integer not null default 0 check(priority between 0 and 999), display_seconds integer not null default 6 check(display_seconds between 3 and 60), starts_at timestamptz not null, ends_at timestamptz not null, status text not null default 'pending' check(status in ('pending','approved','rejected','paused')), paid boolean not null default false, created_at timestamptz not null default now(), check(ends_at>starts_at));
+create table public.billing_orders(id uuid primary key default gen_random_uuid(), seller_id uuid not null references public.sellers(id), plan_id text not null references public.plans(id), listing_limit integer not null, amount integer not null check(amount>0), duration_days integer not null default 30 check(duration_days between 1 and 365), gateway_order_id text unique, gateway_payment_id text unique, status text not null default 'created' check(status in ('created','paid','failed')), created_at timestamptz not null default now());
 create table public.reports(id uuid primary key default gen_random_uuid(), user_id uuid not null default auth.uid() references auth.users(id), listing_id uuid not null references public.listings(id) on delete cascade, reason text not null check(length(reason) between 5 and 500), resolved boolean not null default false, created_at timestamptz not null default now());
 create table public.saved_listings(user_id uuid not null references auth.users(id) on delete cascade, listing_id uuid not null references public.listings(id) on delete cascade, primary key(user_id,listing_id));
 create table public.audit_log(id bigint generated always as identity primary key, actor uuid, action text not null, entity text not null, entity_id text, created_at timestamptz not null default now());
@@ -39,13 +39,18 @@ begin
   if TG_OP='UPDATE' and old.status='rejected' then raise exception 'Contact support to restore a moderated listing'; end if;
   if new.status='rejected' then raise exception 'Only moderators can reject listings'; end if;
  end if;
+ if new.status='published' then
+  if TG_OP='INSERT' then new.published_at=now();
+  elsif old.status<>'published' or (old.published_at is not null and old.published_at < now()-interval '14 days' and not exists(select 1 from public.entitlements where seller_id=new.seller_id and expires_at>now())) then new.published_at=now();
+  else new.published_at=old.published_at; end if;
+ end if;
  -- Serialize all quota changes for a seller, including concurrent API/import requests.
  perform pg_advisory_xact_lock(hashtextextended(new.seller_id::text,0));
  select listing_limit into cap from public.entitlements where seller_id=new.seller_id and expires_at>now();
  if cap is null then select listing_limit into cap from public.plans where id='free'; end if;
  if new.status='published' then
-  select count(*) into used from public.listings where seller_id=new.seller_id and status='published' and id<>new.id;
-  if used>=coalesce(cap,3) then raise exception 'Active listing limit reached. Pause a listing or upgrade your package.'; end if;
+  select count(*) into used from public.listings where seller_id=new.seller_id and status='published' and id<>new.id and (exists(select 1 from public.entitlements where seller_id=new.seller_id and expires_at>now()) or published_at>=now()-interval '14 days');
+  if used>=coalesce(cap,2) then raise exception 'Active listing limit reached. Pause a listing or upgrade your package.'; end if;
   if jsonb_array_length(new.images)=0 then raise exception 'Add at least one product photo'; end if;
   if not exists(select 1 from public.categories where id=new.category_id and active) then raise exception 'Category is unavailable'; end if;
  end if;
@@ -80,7 +85,7 @@ create trigger settings_audit after insert or update or delete on public.setting
 -- Expired entitlements retain the catalogue; only the newest free allowance stays public.
 create function private.public_listing(p_id uuid,p_seller uuid) returns boolean language sql stable security definer set search_path='' as $$
  select exists(select 1 from public.sellers where id=p_seller and not suspended) and p_id in (
- select id from public.listings where seller_id=p_seller and status='published' order by created_at desc,id limit coalesce((select listing_limit from public.entitlements where seller_id=p_seller and expires_at>now()),(select listing_limit from public.plans where id='free'),3)) $$;
+ select id from public.listings where seller_id=p_seller and status='published' and (exists(select 1 from public.entitlements where seller_id=p_seller and expires_at>now()) or published_at>=now()-interval '14 days') order by published_at desc,id limit coalesce((select listing_limit from public.entitlements where seller_id=p_seller and expires_at>now()),(select listing_limit from public.plans where id='free'),2)) $$;
 revoke all on function private.public_listing(uuid,uuid) from public;
 grant execute on function private.public_listing(uuid,uuid) to anon,authenticated;
 
@@ -125,7 +130,7 @@ begin
  if o.status='paid' then return; end if;
  perform pg_advisory_xact_lock(hashtextextended(o.seller_id::text,0));
  select greatest(now(),expires_at) into until_at from public.entitlements where seller_id=o.seller_id;
- insert into public.entitlements(seller_id,plan_id,listing_limit,expires_at) values(o.seller_id,o.plan_id,o.listing_limit,coalesce(until_at,now())+interval '30 days') on conflict(seller_id) do update set plan_id=excluded.plan_id,listing_limit=excluded.listing_limit,expires_at=excluded.expires_at,updated_at=now();
+ insert into public.entitlements(seller_id,plan_id,listing_limit,expires_at) values(o.seller_id,o.plan_id,o.listing_limit,coalesce(until_at,now())+make_interval(days=>o.duration_days)) on conflict(seller_id) do update set plan_id=excluded.plan_id,listing_limit=excluded.listing_limit,expires_at=excluded.expires_at,updated_at=now();
  update public.billing_orders set status='paid',gateway_payment_id=p_payment where id=o.id;
 end $$;
 revoke all on function public.fulfill_order(text,text) from public,anon,authenticated;
@@ -135,9 +140,10 @@ insert into public.categories(id,name,theme,fields,position) values
 ('motorcycles','Motorcycles','motorcycles','["Make","Engine","Year","Kilometres"]',8),
 ('retail','General retail','general','["Material","Dimensions"]',9),
 ('fashion','Fashion','fashion','["Size","Colour","Material"]',1),('mobiles','Mobiles','electronics','["Brand","Model","Storage","Warranty"]',2),('vehicles','Vehicles','vehicles','["Make","Model","Year","Kilometres","Fuel"]',3),('home','Home & furniture','general','["Material","Dimensions"]',4),('electronics','Electronics','electronics','["Brand","Model","Warranty"]',5),('services','Services','general','["Service area","Price unit"]',6),('property','Property','general','["Area","Bedrooms","Property type"]',7),('bicycles','Bicycles','vehicles','["Brand","Frame size","Type"]',8);
-insert into public.plans(id,name,price,listing_limit) values('free','Free',0,3),('starter','Starter',500,50),('growth','Growth',1000,250),('business','Business',2000,1000),('catalogue','Large catalogue',5000,15000);
+insert into public.plans(id,name,price,listing_limit,duration_days) values('free','Free',0,2,14),('quick','Quick Seller',100,5,14),('individual','Individual',200,10,30),('premium','Premium Business',400,20,30),('business','Business Plus',600,50,30);
 insert into public.settings(id,value) values('marketplace','{"name":"OnlineKeithel","tagline":"Our people. Our neighbourhood.","hero_title":"Your neighbourhood. Every shop.","hero_description":"Discover something wonderful, just around the corner. Shop local across Manipur.","hero_image":"/images/hero-handloom.webp","support_email":"","support_whatsapp":"","announcement":"Made for Manipur. Open to everyone.","ads_price_note":"Contact us for featured placement prices."}');
 commit;
+
 create function public.search_listings(p_query text default '') returns setof public.listings language sql stable security invoker set search_path='' as $$
  select l.* from public.listings l join public.sellers s on s.id=l.seller_id
  where l.status='published' and not s.suspended and (p_query='' or (l.title||' '||l.description||' '||l.tags||' '||l.socials::text||' '||l.attributes::text||' '||s.name) ilike '%'||replace(replace(replace(p_query,'\','\\'),'%','\%'),'_','\_')||'%')
@@ -248,11 +254,6 @@ begin
   if jsonb_typeof(v)<>'object' or jsonb_typeof(v->'url') is distinct from 'string' or coalesce(v->>'url','') !~* '^https://((www\.|m\.)?(youtube\.com|youtu\.be|instagram\.com|facebook\.com|fb\.watch)/[^[:space:]]*|[^[:space:]]+\.(mp4|webm)(\?[^[:space:]]*)?)$' then raise exception 'Invalid video URL'; end if;
   if v ? 'title' and (jsonb_typeof(v->'title')<>'string' or length(v->>'title')>100) then raise exception 'Invalid video title'; end if;
  end loop;
- -- Legacy listings remain readable. Enforce the gallery when publishing or changing photos/category.
- if new.status='published' and new.category_id='fashion' and jsonb_array_length(new.images)<4 then
-  if TG_OP='INSERT' then raise exception 'Add front, back, left and right clothing photos'; end if;
-  if new.images is distinct from old.images or new.status is distinct from old.status or new.category_id is distinct from old.category_id then raise exception 'Add front, back, left and right clothing photos'; end if;
- end if;
  return new;
 end $$;
 revoke all on function private.product_options_guard() from public;

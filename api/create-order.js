@@ -3,6 +3,8 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
+  if (process.env.ENABLE_PAID_PACKAGES !== "true")
+    return res.status(403).json({ error: "OnlineKeithel is free during launch. Payments are not available." });
   try {
     const { client, seller } = await authenticated(req);
     const { planId } =
@@ -39,6 +41,7 @@ export default async function handler(req, res) {
         seller_id: seller.id,
         plan_id: plan.id,
         listing_limit: plan.listing_limit,
+        duration_days: plan.duration_days || 30,
         amount,
       })
       .select()

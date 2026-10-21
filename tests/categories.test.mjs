@@ -5,8 +5,8 @@ import {categoryCatalog,categoryMatches,subcategoriesFor,constructionCategories}
 import {listings} from '../src/lib/preview-data.js';
 import {PGlite} from '@electric-sql/pglite';
 test('taxonomy has unique IDs, valid icons, key construction disciplines and valid sample mappings',()=>{
- assert.equal(categoryCatalog.length,33);
- assert.equal(new Set(categoryCatalog.map(c=>c.id)).size,33);
+ assert.equal(categoryCatalog.length,36);
+ assert.equal(new Set(categoryCatalog.map(c=>c.id)).size,36);
  for(const c of categoryCatalog){
   assert.ok(existsSync('node_modules/@phosphor-icons/react/dist/csr/'+c.icon+'.es.js'));
   assert.equal(new Set(c.subcategories.map(s=>s.id)).size,c.subcategories.length);
@@ -14,6 +14,11 @@ test('taxonomy has unique IDs, valid icons, key construction disciplines and val
  }
  assert.ok(categoryMatches(categoryCatalog.find(c=>c.id==='warehouse'),'pallet racks'));
  assert.ok(categoryMatches(categoryCatalog.find(c=>c.id==='architecture'),'structural'));
+ assert.ok(categoryMatches(categoryCatalog.find(c=>c.id==='freebies'),'swap & trade'));
+ assert.ok(categoryCatalog.find(c=>c.id==='boats').subcategories.some(s=>s.id==='jet-skis'));
+ assert.ok(categoryCatalog.find(c=>c.id==='music').subcategories.some(s=>s.id==='guitars-string-instruments'));
+ assert.ok(['antiques-collectibles'].every(id=>subcategoriesFor(categoryCatalog,'retail').some(s=>s.id===id)));
+ assert.ok(['tickets-entry-passes','community-notices'].every(id=>subcategoriesFor(categoryCatalog,'happenings').some(s=>s.id===id)));
  const construction=constructionCategories(categoryCatalog);
  assert.ok(['construction','architecture','contractors','warehouse'].every(id=>construction.some(c=>c.id===id)));
  assert.ok(['bricklayers-masons','handyman-repairs','construction-labourers','site-supervisors'].every(id=>subcategoriesFor(categoryCatalog,'contractors').some(s=>s.id===id)));
@@ -32,6 +37,13 @@ test('database enforces parent-child category integrity and protects categories 
  const update=readFileSync('database/migrations/006_onlinekeithel_construction.sql','utf8');
  await db.exec(update);
  await db.exec(update);
+ await db.exec(readFileSync('database/migrations/009_departments.sql','utf8'));
+ const discovery=readFileSync('database/migrations/010_discovery_categories.sql','utf8');
+ await db.exec(discovery);
+ await db.exec(discovery);
+ const {rows:[discoveryRow]}=await db.query("select (select count(*) from public.categories where id in ('freebies','boats','music')) roots,(select count(*) from jsonb_array_elements(subcategories) where value->>'id'='tickets-entry-passes') tickets from public.categories where id='happenings'");
+ assert.equal(Number(discoveryRow.roots),3);
+ assert.equal(Number(discoveryRow.tickets),1);
  const {rows:[{name,count}]}=await db.query("select (select value->>'name' from public.settings where id='marketplace') name,(select count(*) from jsonb_array_elements(subcategories) where value->>'id'='bricklayers-masons') count from public.categories where id='contractors'");
  // Migration 006 preserves its historical spelling; the v0.9 publishing migration fixes it.
  assert.equal(name,'Onlinekeithel');

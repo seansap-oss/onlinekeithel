@@ -26,6 +26,12 @@ test("database permissions, quotas, campaign approval and payment idempotency", 
     );
     await db.exec(storefrontMigration);
     await db.exec(storefrontMigration);
+    const packagesMigration = await readFile(new URL("../database/migrations/013_listing_packages.sql", import.meta.url), "utf8");
+    await db.exec(packagesMigration);
+    await db.exec(packagesMigration);
+    const noPhotoCount = await readFile(new URL("../database/migrations/014_photo_count.sql", import.meta.url), "utf8");
+    await db.exec(noPhotoCount);
+    await db.exec(noPhotoCount);
     await db.exec(`insert into public.admins values('${ADMIN}');`);
     const role = async (id, r = "authenticated") =>
       db.exec(
@@ -75,14 +81,13 @@ test("database permissions, quotas, campaign approval and payment idempotency", 
     const add = async (s, title = "Product") =>
       (
         await db.query(
-          `insert into listings(seller_id,category_id,title,price,images,status) values($1,'fashion',$2,100,'["https://example.com/a.jpg","https://example.com/b.jpg","https://example.com/c.jpg","https://example.com/d.jpg"]','published') returning id`,
+          `insert into listings(seller_id,category_id,title,price,images,status) values($1,'fashion',$2,100,'["https://example.com/a.jpg"]','published') returning id`,
           [s, title],
         )
       ).rows[0].id;
     await assert.rejects(() => add(sa), /access denied|row-level security/);
     await role(A);
     const la = await add(sa);
-    await add(sa);
     await add(sa);
     await assert.rejects(() => add(sa), /limit reached/);
     await assert.rejects(
@@ -124,7 +129,7 @@ test("database permissions, quotas, campaign approval and payment idempotency", 
     ).rows[0].id;
     await role("", "anon");
     assert.equal((await db.query("select * from campaigns")).rows.length, 0);
-    assert.equal((await db.query("select * from listings")).rows.length, 3);
+    assert.equal((await db.query("select * from listings")).rows.length, 2);
     await role(ADMIN);
     await db.query(
       `update campaigns set status='approved',paid=true where id=$1`,
@@ -142,8 +147,17 @@ test("database permissions, quotas, campaign approval and payment idempotency", 
       "pending",
     );
     await role("", "service_role");
+    const quickPlan = (await db.query("select price,listing_limit,duration_days from plans where id='quick'")).rows[0];
+    assert.deepEqual(quickPlan, { price: 100, listing_limit: 5, duration_days: 14 });
     await db.query(
-      `insert into billing_orders(seller_id,plan_id,listing_limit,amount,gateway_order_id) values($1,'starter',50,50000,'order_1')`,
+      `insert into billing_orders(seller_id,plan_id,listing_limit,amount,duration_days,gateway_order_id) values($1,'quick',5,10000,14,'order_quick')`,
+      [sb],
+    );
+    await db.query("select fulfill_order('order_quick','payment_quick')");
+    const quickDays = (await db.query("select extract(epoch from (expires_at-now()))/86400 as days from entitlements where seller_id=$1", [sb])).rows[0].days;
+    assert.ok(quickDays > 13.9 && quickDays <= 14);
+    await db.query(
+      `insert into billing_orders(seller_id,plan_id,listing_limit,amount,duration_days,gateway_order_id) values($1,'individual',10,20000,30,'order_1')`,
       [sa],
     );
     await db.query(`select fulfill_order('order_1','payment_1')`);
@@ -176,9 +190,16 @@ test("database permissions, quotas, campaign approval and payment idempotency", 
       [sa],
     );
     await role("", "anon");
-    assert.equal((await db.query("select * from listings")).rows.length, 3);
+    assert.equal((await db.query("select * from listings")).rows.length, 2);
     await role(A);
-    assert.equal((await db.query("select * from listings")).rows.length, 4);
+    assert.equal((await db.query("select * from listings")).rows.length, 3);
+    await db.exec("reset role; alter table public.listings disable trigger listing_guard; update public.listings set published_at=now()-interval '15 days'; alter table public.listings enable trigger listing_guard;");
+    await role("", "anon");
+    assert.equal((await db.query("select * from listings")).rows.length, 0);
+    await role(A);
+    await add(sa);
+    await role("", "anon");
+    assert.equal((await db.query("select * from listings")).rows.length, 1);
     await role(ADMIN);
     await db.query(`update sellers set suspended=true where id=$1`, [sa]);
     await role("", "anon");

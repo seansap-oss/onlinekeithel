@@ -2180,6 +2180,11 @@
         "id": "commercial-cleaning",
         "name": "Commercial cleaning",
         "icon": "Briefcase"
+      },
+      {
+        "id": "business-for-sale",
+        "name": "Businesses for sale",
+        "icon": "Briefcase"
       }
     ]
   },
@@ -2300,6 +2305,11 @@
       {
         "id": "seasonal-goods",
         "name": "Seasonal goods",
+        "icon": "Storefront"
+      },
+      {
+        "id": "antiques-collectibles",
+        "name": "Antiques & collectibles",
         "icon": "Storefront"
       }
     ]
@@ -2530,6 +2540,16 @@
         "id": "online-events",
         "name": "Online events",
         "icon": "CalendarDots"
+      },
+      {
+        "id": "tickets-entry-passes",
+        "name": "Tickets & entry passes",
+        "icon": "CalendarDots"
+      },
+      {
+        "id": "community-notices",
+        "name": "Community notices",
+        "icon": "CalendarDots"
       }
     ],
     "name": "What\u2019s On",
@@ -2545,6 +2565,56 @@
       "Age guidance",
       "Accessibility",
       "Event format"
+    ]
+  },
+  {
+    "id": "freebies",
+    "name": "Free & wanted",
+    "icon": "Gift",
+    "group_name": "Community exchange",
+    "theme": "general",
+    "fields": ["Listing type", "Pickup area"],
+    "position": 33,
+    "active": true,
+    "subcategories": [
+      { "id": "free-items", "name": "Free items", "icon": "Gift" },
+      { "id": "wanted-ads", "name": "Wanted ads", "icon": "MagnifyingGlass" },
+      { "id": "swap-trade", "name": "Swap & trade", "icon": "ArrowsLeftRight" },
+      { "id": "community-giveaways", "name": "Community giveaways", "icon": "Gift" }
+    ]
+  },
+  {
+    "id": "boats",
+    "name": "Boats & watercraft",
+    "icon": "Boat",
+    "group_name": "Vehicles & transport",
+    "theme": "vehicles",
+    "fields": ["Make", "Model", "Year", "Engine", "Condition"],
+    "position": 34,
+    "active": true,
+    "subcategories": [
+      { "id": "boats-watercraft", "name": "Boats & watercraft", "icon": "Boat" },
+      { "id": "jet-skis", "name": "Jet skis & personal watercraft", "icon": "Boat" },
+      { "id": "boat-engines-parts", "name": "Boat engines & parts", "icon": "Wrench" },
+      { "id": "boat-trailers-accessories", "name": "Boat trailers & accessories", "icon": "Boat" }
+    ]
+  },
+  {
+    "id": "music",
+    "name": "Musical instruments & audio",
+    "icon": "MusicNotes",
+    "group_name": "Shopping",
+    "theme": "electronics",
+    "fields": ["Brand", "Model", "Condition"],
+    "position": 35,
+    "active": true,
+    "subcategories": [
+      { "id": "guitars-string-instruments", "name": "Guitars & string instruments", "icon": "MusicNotes" },
+      { "id": "keyboards-pianos", "name": "Keyboards & pianos", "icon": "MusicNotes" },
+      { "id": "drums-percussion", "name": "Drums & percussion", "icon": "MusicNotes" },
+      { "id": "wind-brass-instruments", "name": "Wind & brass instruments", "icon": "MusicNotes" },
+      { "id": "recording-pa-equipment", "name": "Recording & PA equipment", "icon": "MusicNotes" },
+      { "id": "music-lessons", "name": "Music lessons & services", "icon": "MusicNotes" }
     ]
   }
 ]

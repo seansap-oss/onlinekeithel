@@ -84,7 +84,7 @@ export function Upload({
   multiple = false,
   labels = [],
   onBusyChange,
-  maxItems = 12,
+  maxItems = Infinity,
 }) {
   const { session } = useMarket();
   const [busy, setBusy] = useState(false),
@@ -133,7 +133,7 @@ export function Upload({
         {busy ? "Uploading…" : "Upload photos"}
         <input
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/*,.heic,.heif"
           multiple={multiple}
           disabled={busy}
           onChange={async (e) => {
@@ -143,7 +143,7 @@ export function Upload({
             try {
               if (!session) throw Error("Sign in to upload photos");
               const files = Array.from(e.target.files);
-              if (files.length + items.length > maxItems && multiple)
+              if (Number.isFinite(maxItems) && files.length + items.length > maxItems && multiple)
                 throw Error(`Up to ${maxItems} photos`);
               const uploaded = [];
               for (const file of files)
@@ -159,10 +159,7 @@ export function Upload({
           }}
         />
       </label>
-      <small>
-        JPG, PNG or WebP · up to 5 MB each
-        {multiple ? ` · up to ${maxItems} photos · use arrows to reorder` : ""}
-      </small>
+      <small>One photo is enough to post. Clear photos from more angles can help buyers choose.</small>
       <div className="media-url-row">
         <input
           aria-label="Photo URL"
@@ -178,7 +175,7 @@ export function Upload({
           onClick={() => {
             const safe = safeUrl(url);
             if (!safe) return setError("Enter an HTTPS photo URL");
-            if (multiple && items.length >= maxItems)
+            if (multiple && Number.isFinite(maxItems) && items.length >= maxItems)
               return setError(`Up to ${maxItems} photos`);
             onChange(multiple ? [...items, safe] : safe);
             setUrl("");

@@ -37,6 +37,11 @@ import {
   Wrench,
   Storefront,
   SquaresFour,
+  Gift,
+  MusicNotes,
+  Boat,
+  MagnifyingGlass,
+  ArrowsLeftRight,
 } from "@phosphor-icons/react";
 export const categoryIcons = {
   House,
@@ -75,6 +80,11 @@ export const categoryIcons = {
   Briefcase,
   Wrench,
   Storefront,
+  Gift,
+  MusicNotes,
+  Boat,
+  MagnifyingGlass,
+  ArrowsLeftRight,
 };
 export function CategoryIcon({ name, ...props }) {
   const Icon = categoryIcons[name] || SquaresFour;

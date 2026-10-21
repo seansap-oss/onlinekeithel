@@ -1,12 +1,13 @@
-export const motorCategories = ["vehicles", "motorcycles", "bicycles"];
+export const motorCategories = ["vehicles", "motorcycles", "bicycles", "boats"];
 export const categoryRoute = (id) =>
   ({
     property: "/homes",
     jobs: "/jobs",
     happenings: "/whats-on",
-    vehicles: "/motors",
-    motorcycles: "/motors",
-    bicycles: "/motors",
+    vehicles: "/motors?category=vehicles",
+    motorcycles: "/motors?category=motorcycles",
+    bicycles: "/motors?category=bicycles",
+    boats: "/motors?category=boats",
   })[id] || "/search?category=" + id;
 export const isClassified = (id) =>
   ["property", "jobs", "happenings"].includes(id);
@@ -90,6 +91,16 @@ export const departmentConfig = {
 };
 export function listingPrice(item, money) {
   const a = item.attributes || {};
+  if (item.category_id === "freebies") {
+    const kind = String(a["Listing type"] || "").toLowerCase();
+    if (kind.includes("wanted") || item.subcategory_id === "wanted-ads")
+      return "Wanted";
+    if (kind.includes("swap") || item.subcategory_id === "swap-trade")
+      return "Swap or trade";
+    if (kind.includes("free") || item.subcategory_id === "free-items")
+      return "Free";
+    return Number(item.price) > 0 ? money(item.price) : "Contact seller";
+  }
   if (item.category_id === "jobs")
     return Number(item.price) > 0
       ? money(item.price) +

@@ -53,6 +53,7 @@ const defaults = {
     price: 500,
     listing_limit: 50,
     image_limit: 8,
+    duration_days: 30,
     active: true,
   },
   campaigns: {},
@@ -125,13 +126,17 @@ export function Admin({ visual = false }) {
       "position",
       "active",
     ],
-    plans: ["id", "name", "price", "listing_limit", "image_limit", "active"],
+    plans: ["id", "name", "price", "listing_limit", "duration_days", "active"],
     campaigns: [
       "title",
       "description",
       "image",
       "video_url",
+      "social_url",
       "destination",
+      "placement",
+      "priority",
+      "display_seconds",
       "starts_at",
       "ends_at",
       "status",
@@ -146,7 +151,7 @@ export function Admin({ visual = false }) {
           <span className="eyebrow">MARKETPLACE ADMINISTRATION</span>
           <h1>Your market, thoughtfully managed.</h1>
           <p>
-            Content, people, packages and the things that make this place yours.
+            Content, people and the things that make this place yours.
           </p>
         </div>
         <ShieldCheck size={44} weight="light" />
@@ -235,7 +240,7 @@ export function Admin({ visual = false }) {
                       </strong>
                       <small>
                         {tab === "plans"
-                          ? `${r.listing_limit} listings · ₹${r.price} / 30 days`
+                          ? `${r.listing_limit} listings · ₹${r.price} / ${r.duration_days || 30} days`
                           : tab === "sellers"
                             ? `${r.type} · ${r.location} · ${r.suspended ? "Suspended" : "Active"}`
                             : tab === "campaigns"
@@ -450,6 +455,19 @@ export function Admin({ visual = false }) {
                     })
                   }
                 />
+              ) : k === "placement" && tab === "campaigns" ? (
+                <Field key={k} label="Homepage placement">
+                  <select
+                    value={editing.placement || "featured"}
+                    onChange={(e) =>
+                      setEditing({ ...editing, placement: e.target.value })
+                    }
+                  >
+                    <option value="hero">Main hero</option>
+                    <option value="featured">Featured ads</option>
+                    <option value="both">Hero and featured ads</option>
+                  </select>
+                </Field>
               ) : k === "status" ? (
                 <Field key={k} label="Review status">
                   <select

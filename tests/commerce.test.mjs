@@ -70,7 +70,7 @@ test("video and payment fields accept supported data and reject executable or de
   assert.throws(() => normalizePayments({ upi_qr: "javascript:alert(1)" }));
   assert.equal(normalizePayments({ upi_id: "shop@bank" }).upi_id, "shop@bank");
 });
-test("database enforces inventory, variants, clothing galleries, video and UPI validation", async () => {
+test("database permits one-photo clothing posts and validates inventory, galleries, videos and UPI", async () => {
   const db = new PGlite();
   try {
     await db.exec(
@@ -82,6 +82,12 @@ test("database enforces inventory, variants, clothing galleries, video and UPI v
         "utf8",
       ),
     );
+    const flexibleGallery = await readFile("database/migrations/012_simple_public_posting.sql", "utf8");
+    await db.exec(flexibleGallery);
+    await db.exec(flexibleGallery);
+    const noPhotoCount = await readFile("database/migrations/014_photo_count.sql", "utf8");
+    await db.exec(noPhotoCount);
+    await db.exec(noPhotoCount);
     const add = (id, commerce) =>
       db.query(
         "insert into listings(id,category_id,status,images,commerce) values($1,'electronics','published','[]',$2)",
@@ -118,22 +124,14 @@ test("database enforces inventory, variants, clothing galleries, video and UPI v
         add(2, { variants: [{ id: "s", label: "S", stock: 1, price: -1 }] }),
       /price/,
     );
-    await assert.rejects(
-      db.exec(
-        "insert into listings(id,category_id,status,images) values(2,'fashion','published','[\"a\"]')",
-      ),
-      /front, back/,
-    );
     await db.exec(
       "insert into listings(id,category_id,status,images) values(2,'fashion','draft','[\"a\"]')",
     );
-    await assert.rejects(
-      db.exec("update listings set status='published' where id=2"),
-      /front, back/,
-    );
-    await db.exec(
-      'update listings set images=\'["a","b","c","d"]\',status=\'published\' where id=2',
-    );
+    await db.exec("update listings set status='published' where id=2");
+    assert.equal((await db.query("select status from listings where id=2")).rows[0].status, "published");
+    await db.query("update listings set images=$1 where id=2", [JSON.stringify(Array(50).fill("https://example.com/a.jpg"))]);
+    await db.query("update listings set images=$1 where id=2", [JSON.stringify(Array(51).fill("https://example.com/a.jpg"))]);
+    assert.equal((await db.query("select jsonb_array_length(images) as count from listings where id=2")).rows[0].count, 51);
     await assert.rejects(
       db.exec(
         'update listings set videos=\'[{"url":"javascript:alert(1)"}]\' where id=1',

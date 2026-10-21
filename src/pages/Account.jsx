@@ -1,4 +1,5 @@
 import { normalizePayments } from "../lib/commerce";
+import { normalizePhoneNumber } from "../lib/phone-auth";
 import { templateForCategory, templates } from "../lib/templates";
 import React, { useState, useEffect } from "react";
 import {
@@ -15,13 +16,12 @@ import {
   configured,
   requireBackend,
   supabase,
-  checkout,
   result,
   preview,
 } from "../lib/backend";
 import { Field, Upload, Empty, Photo } from "../components/UI";
 import { CategoryOptions } from "../components/CategoryOptions";
-import { money, slugify, socialUrl, whatsappUrl, mediaUrl } from "../lib/utils";
+import { slugify, socialUrl, whatsappUrl, mediaUrl } from "../lib/utils";
 import {
   storefrontColors,
   storefrontFonts,
@@ -32,7 +32,11 @@ import {
 export function AuthPage({ reset = false, returnTo }) {
   const { session, navigate, notice } = useMarket();
   const [mode, setMode] = useState("login"),
+    [method, setMethod] = useState("email"),
     [email, setEmail] = useState(""),
+    [phone, setPhone] = useState(""),
+    [otp, setOtp] = useState(""),
+    [otpSent, setOtpSent] = useState(false),
     [password, setPassword] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -60,6 +64,27 @@ export function AuthPage({ reset = false, returnTo }) {
         await result(s.auth.updateUser({ password }));
         notice("Password updated");
         navigate(destination);
+      } else if (method === "phone" && mode !== "forgot") {
+        const phoneNumber = normalizePhoneNumber(phone);
+        if (!otpSent) {
+          await result(
+            s.auth.signInWithOtp({
+              phone: phoneNumber,
+              options: { shouldCreateUser: mode === "signup" },
+            }),
+          );
+          setOtpSent(true);
+          setDone("A verification code has been sent to " + phoneNumber + ".");
+        } else {
+          await result(
+            s.auth.verifyOtp({
+              phone: phoneNumber,
+              token: otp.trim(),
+              type: "sms",
+            }),
+          );
+          navigate(destination);
+        }
       } else if (mode === "login") {
         await result(s.auth.signInWithPassword({ email, password }));
         navigate(destination);
@@ -107,7 +132,7 @@ export function AuthPage({ reset = false, returnTo }) {
         <p>Join a marketplace that feels like your neighbourhood.</p>
         <ul>
           <li>
-            <Check /> Your first 3 listings, free
+            <Check /> Create your shop and post for free
           </li>
           <li>
             <Check /> Your own shop link and identity
@@ -138,8 +163,16 @@ export function AuthPage({ reset = false, returnTo }) {
             marketplace design, but sign-up is not live yet.
           </div>
         )}
+        {!reset && mode !== "forgot" && (
+          <div className="auth-methods" role="tablist" aria-label="Sign-in method">
+            <button type="button" role="tab" aria-selected={method === "email"} className={method === "email" ? "active" : ""} onClick={() => { setMethod("email"); setOtpSent(false); setOtp(""); setError(""); setDone(""); }}>Email</button>
+          </div>
+        )}
+        {method === "phone" && !reset && mode !== "forgot" && (
+          <p className="auth-hint">Phone verification uses an SMS code. The SMS provider must be enabled in your Supabase project.</p>
+        )}
         <form onSubmit={submit}>
-          {!reset && (
+          {!reset && method === "email" && (
             <Field
               label="Email address"
               type="email"
@@ -149,7 +182,41 @@ export function AuthPage({ reset = false, returnTo }) {
               onChange={(e) => setEmail(e.target.value)}
             />
           )}{" "}
-          {(reset || mode !== "forgot") && (
+          {!reset && method === "phone" && mode !== "forgot" && (
+            <Field
+              label="Phone number"
+              type="tel"
+              autoComplete="tel"
+              inputMode="tel"
+              placeholder="+91 98765 43210"
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          )}
+          {method === "phone" && otpSent && !reset && (
+            <>
+              <Field
+                label="SMS verification code"
+                type="text"
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                minLength={6}
+                maxLength={8}
+                required
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
+              />
+              <button
+                type="button"
+                className="text-button muted"
+                onClick={() => { setOtpSent(false); setOtp(""); setError(""); setDone(""); }}
+              >
+                Send a new code
+              </button>
+            </>
+          )}
+          {(reset || (method === "email" && mode !== "forgot")) && (
             <Field
               label="Password"
               type="password"
@@ -170,6 +237,12 @@ export function AuthPage({ reset = false, returnTo }) {
               ? "Please wait…"
               : reset
                 ? "Update password"
+                : method === "phone"
+                  ? otpSent
+                    ? "Verify code"
+                    : mode === "signup"
+                      ? "Send sign-up code"
+                      : "Send sign-in code"
                 : mode === "login"
                   ? "Sign in"
                   : mode === "signup"
@@ -194,6 +267,8 @@ export function AuthPage({ reset = false, returnTo }) {
               className="text-button"
               onClick={() => {
                 setMode(mode === "login" ? "signup" : "login");
+                setOtpSent(false);
+                setOtp("");
                 setError("");
                 setDone("");
               }}
@@ -202,12 +277,17 @@ export function AuthPage({ reset = false, returnTo }) {
                 ? "New here? Create an account"
                 : "Already a member? Sign in"}
             </button>
-            {mode === "login" && (
+            {mode === "login" && method === "email" && (
               <button
                 className="text-button muted"
-                onClick={() => setMode("forgot")}
+                onClick={() => { setMethod("email"); setMode("forgot"); setOtpSent(false); }}
               >
                 Forgot your password?
+              </button>
+            )}
+            {mode === "forgot" && (
+              <button className="text-button muted" onClick={() => setMode("login")}>
+                Back to sign in
               </button>
             )}
           </>
@@ -712,105 +792,14 @@ export function SellerForm({ existing, onSaved }) {
   );
 }
 export function Plans() {
-  const { plans, seller, navigate, notice, settings } = useMarket();
-  const [busy, setBusy] = useState("");
   return (
-    <div className="page">
+    <div className="page narrow">
       <div className="pricing-intro">
-        <span className="eyebrow">ROOM FOR YOUR NEXT CHAPTER</span>
-        <h1>Start small. Grow your own way.</h1>
-        <p>
-          Every plan includes your own shop page, social links and WhatsApp
-          enquiries.
-          <br />
-          Sizes, stock, UPI details and category tools are included on every
-          plan. Choose the space your products need.
-        </p>
-        <span className="pricing-pill">
-          Simple 30-day packages · No sales commission
-        </span>
-      </div>
-      <div className="plan-grid">
-        {plans.map((p) => (
-          <article
-            className={"plan-card " + (p.id === "starter" ? "featured" : "")}
-            key={p.id}
-          >
-            {p.id === "starter" && (
-              <span className="plan-badge">A GREAT PLACE TO START</span>
-            )}
-            <span className="eyebrow">{p.name}</span>
-            <h2>
-              {money(p.price)}
-              <small> / 30 days</small>
-            </h2>
-            <h3>{p.listing_limit.toLocaleString("en-IN")} active products</h3>
-            <ul>
-              <li>
-                <Check /> Your own storefront
-              </li>
-              <li>
-                <Check /> Mixed categories & shop collections
-              </li>
-              <li>
-                <Check /> Social links & WhatsApp enquiries
-              </li>
-              <li>
-                <Check /> Up to 12 photos, videos & product options
-              </li>
-              {p.price > 0 && (
-                <li>
-                  <Check /> CSV catalogue import
-                </li>
-              )}
-            </ul>
-            <button
-              className={
-                "button full " + (p.id === "starter" ? "primary" : "outline")
-              }
-              disabled={!!busy}
-              onClick={async () => {
-                if (!seller) return navigate("/sell");
-                if (p.price === 0) return navigate("/dashboard");
-                setBusy(p.id);
-                try {
-                  await checkout(p.id);
-                  notice("Payment confirmed. Your package is active.");
-                  navigate("/dashboard?tab=package");
-                } catch (e) {
-                  notice(e.message);
-                } finally {
-                  setBusy("");
-                }
-              }}
-            >
-              {busy === p.id
-                ? "Opening payment…"
-                : p.price
-                  ? "Choose " + p.name
-                  : "Start for free"}
-              <ArrowRight size={18} />
-            </button>
-          </article>
-        ))}
-      </div>
-      <div className="pricing-notes">
-        <h2>A bigger spotlight for your shop</h2>
-        <p>
-          Sponsored homepage placement is purchased separately from your listing
-          package. {settings.ads_price_note}
-        </p>
-        <Link className="button outline" to="/dashboard?tab=promotions">
-          Explore featured advertising <ArrowRight />
-        </Link>
-        <p>
-          <small>
-            Packages renew manually. Payments are enabled after the payment
-            account is connected. If a package expires, your catalogue is
-            retained; your newest free allowance remains public. Pause unwanted
-            listings to choose what stays visible.
-          </small>
-        </p>
+        <span className="eyebrow">FREE LAUNCH</span>
+        <h1>Your own corner of the market, free.</h1>
+        <p>Create a shop or individual profile, share your link, and post products across categories. Buyers can contact you directly on WhatsApp.</p>
+        <p>You can publish up to 100 active listings. One photo is enough for each; add more to help buyers choose. Your published listings stay visible until you pause or remove them.</p>
+        <Link className="button primary" to="/sell">Post your first ad <ArrowRight size={18} /></Link>
       </div>
     </div>
   );

@@ -70,10 +70,10 @@ test("rich ticker data cannot inject CSS or executable links", () => {
       },
     ],
   });
-  assert.equal(t.background, "#fff7df");
+  assert.equal(t.background, "#063c31");
   assert.equal(t.messages[0].runs[0].font, "sans");
   assert.equal(t.messages[0].runs[0].size, 36);
-  assert.equal(t.messages[0].runs[0].color, "#15352e");
+  assert.equal(t.messages[0].runs[0].color, "#ffffff");
   assert.equal(t.messages[0].link, "");
   assert.equal(destination("//evil.example"), "");
   assert.equal(destination("/\\evil.example"), "");
@@ -85,4 +85,16 @@ test("rich ticker data cannot inject CSS or executable links", () => {
       }),
     /HTTPS/,
   );
+});
+test("the saved starter ticker upgrades to the new high-contrast treatment", () => {
+  const old = tickerSettings({
+    background: "#fff7df",
+    messages: [{
+      id: "welcome",
+      enabled: true,
+      runs: [{ text: "Local updates · Discover shops near you · New arrivals this week", color: "#15352e" }],
+    }],
+  });
+  assert.equal(old.background, "#063c31");
+  assert.equal(old.messages[0].runs[0].color, "#ffffff");
 });

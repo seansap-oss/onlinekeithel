@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OnlineKeithel</string>
+    <string name="title_activity_main">OnlineKeithel</string>
+    <string name="package_name">tech.avitsolutions.onlinekeithel</string>
+    <string name="custom_url_scheme">tech.avitsolutions.onlinekeithel</string>
+</resources>

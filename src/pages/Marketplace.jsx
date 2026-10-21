@@ -1,5 +1,12 @@
 import { CategoryRail } from "../components/CategoryRail";
-import { defaultHeroSlides } from "../lib/hero";
+import {
+  defaultHeroSlides,
+  heroDisplaySettings,
+  heroItemPlacement,
+  heroLayouts,
+  isHeroItemActive,
+  orderHeroItems,
+} from "../lib/hero";
 import { ProductVideos as HeroVideo } from "../components/ProductMedia";
 import {
   isClassified,
@@ -108,9 +115,14 @@ export function ProductCard({ item }) {
                     ? "Listing purpose"
                     : "Entry type"
               ] || "Listing"
-            : outOfStock(item)
-              ? "Out of stock"
-              : item.condition}
+            : item.category_id === "freebies"
+              ? item.attributes?.["Listing type"] ||
+                (item.subcategory_id === "free-items"
+                  ? "Free"
+                  : "Community listing")
+              : outOfStock(item)
+                ? "Out of stock"
+                : item.condition}
         </span>
         <button
           className={"save-button " + (saved ? "saved" : "")}
@@ -198,93 +210,264 @@ export function ShopCard({ seller }) {
     </Link>
   );
 }
+function CampaignCard({ campaign }) {
+  const [video, setVideo] = useState(null);
+  const raw = campaign.destination || "/search";
+  const local = raw.startsWith("/") && !raw.startsWith("//");
+  const href = local ? raw : safeUrl(raw) || "/search";
+  const content = (
+    <>
+      <div className="campaign-photo">
+        <Photo src={campaign.image} alt={campaign.title} loading="lazy" />
+        <span className="campaign-label">Sponsored</span>
+        {(campaign.video_url || campaign.social_url) && (
+          <button
+            type="button"
+            className="campaign-play"
+            aria-label={`Play ${campaign.title}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setVideo(campaign.social_url || campaign.video_url);
+            }}
+          >
+            <Play size={20} weight="fill" />
+          </button>
+        )}
+      </div>
+      <div className="campaign-copy">
+        <strong>{campaign.title}</strong>
+        <span>{campaign.description || "Explore this local spotlight"}</span>
+        <small>{campaign.seller?.name || campaign.location || "Manipur"}</small>
+        <span className="first-local-link">
+          Visit offer <ArrowRight size={15} />
+        </span>
+      </div>
+    </>
+  );
+  return (
+    <article className="campaign-card">
+      {local ? (
+        <Link to={href}>{content}</Link>
+      ) : (
+        <a href={href} target="_blank" rel="noopener noreferrer">
+          {content}
+        </a>
+      )}
+      {video && (
+        <Modal
+          title={campaign.title || "Promotion video"}
+          onClose={() => setVideo(null)}
+        >
+          <HeroVideo videos={[{ url: video, title: campaign.title }]} />
+        </Modal>
+      )}
+    </article>
+  );
+}
+function FeaturedPromotions({ campaigns, settings }) {
+  const display = heroDisplaySettings(settings.hero_display);
+  const managed = (settings.hero_slides || defaultHeroSlides)
+    .filter((x) => heroItemPlacement(x) !== "hero" && isHeroItemActive(x))
+    .map((x) => ({ ...x, id: `managed-${x.id}`, paid: false }));
+  const ads = campaigns.filter((x) =>
+    ["featured", "both"].includes(x.placement || "featured"),
+  );
+  const items = orderHeroItems([...ads, ...managed], display.order);
+  const option =
+      heroLayouts.find((x) => x.id === display.layout) || heroLayouts[0],
+    count = option.count;
+  const pageCount =
+    display.layout === "swipe"
+      ? 1
+      : Math.max(1, Math.ceil(items.length / count));
+  const [page, setPage] = useState(0),
+    [interacting, setInteracting] = useState(false);
+  useEffect(() => setPage(0), [items.length, display.layout]);
+  useEffect(() => {
+    if (pageCount < 2 || interacting) return;
+    const timer = setInterval(
+      () => setPage((x) => (x + 1) % pageCount),
+      display.rotation_seconds * 1000,
+    );
+    return () => clearInterval(timer);
+  }, [pageCount, interacting, display.rotation_seconds]);
+  if (!items.length) return null;
+  const shown =
+    display.layout === "swipe"
+      ? items
+      : items.slice(page * count, (page + 1) * count);
+  return (
+    <section
+      className="section featured-section"
+      aria-label="Featured local promotions"
+      onMouseEnter={() => display.pause_on_interaction && setInteracting(true)}
+      onMouseLeave={() => setInteracting(false)}
+      onFocusCapture={() =>
+        display.pause_on_interaction && setInteracting(true)
+      }
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setInteracting(false);
+      }}
+      onTouchStart={() => display.pause_on_interaction && setInteracting(true)}
+      onTouchEnd={() => setInteracting(false)}
+    >
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">LOCAL SPOTLIGHT</span>
+          <h2>Featured around you</h2>
+        </div>
+        <div className="promotion-controls">
+          <Link to="/dashboard?tab=promotions">
+            Advertise here <ArrowRight size={18} />
+          </Link>
+          {pageCount > 1 && (
+            <>
+              <span>
+                {page + 1}/{pageCount}
+              </span>
+              <button
+                className="icon-button"
+                aria-label="Previous ads"
+                onClick={() => setPage((x) => (x + pageCount - 1) % pageCount)}
+              >
+                <CaretLeft />
+              </button>
+              <button
+                className="icon-button"
+                aria-label="Next ads"
+                onClick={() => setPage((x) => (x + 1) % pageCount)}
+              >
+                <CaretRight />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      <div className={`campaign-grid layout-${display.layout}`}>
+        {shown.map((x) => (
+          <CampaignCard key={x.id} campaign={x} />
+        ))}
+      </div>
+    </section>
+  );
+}
 export function Hero({ settingsOverride, editor = false } = {}) {
   const { settings: liveSettings, navigate } = useMarket();
-  const settings = settingsOverride || liveSettings;
+  const settings = settingsOverride || liveSettings,
+    display = heroDisplaySettings(settings.hero_display);
   const [campaigns, setCampaigns] = useState([]),
     [index, setIndex] = useState(0),
-    [video, setVideo] = useState(null);
-  const start = useRef(null);
-  const [paused, setPaused] = useState(false),
-    [hovered, setHovered] = useState(false),
-    [focused, setFocused] = useState(false),
+    [video, setVideo] = useState(null),
+    [paused, setPaused] = useState(false),
+    [interaction, setInteraction] = useState(false),
     [hidden, setHidden] = useState(document.hidden);
-  const [reduced, setReduced] = useState(
-    () => matchMedia("(prefers-reduced-motion: reduce)").matches,
-  );
+  const start = useRef(null),
+    slides = [
+      {
+        id: "welcome",
+        title: settings.hero_title,
+        description: settings.hero_description,
+        image: settings.hero_image,
+        destination: "/search",
+        button: "Explore nearby",
+        display_seconds: 5,
+      },
+      ...(settings.hero_slides || defaultHeroSlides).filter(
+        (x) =>
+          heroItemPlacement(x) !== "featured" &&
+          (editor ? x.enabled !== false : isHeroItemActive(x)),
+      ),
+      ...campaigns
+        .filter((x) => ["hero", "both"].includes(x.placement || "featured"))
+        .map((x) => ({
+          ...x,
+          id: `campaign-${x.id}`,
+          sponsored: true,
+          paid: true,
+        })),
+    ];
   useEffect(() => {
-    const media = matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduced(media.matches);
-    media.addEventListener("change", update);
-    const visibility = () => setHidden(document.hidden);
-    document.addEventListener("visibilitychange", visibility);
-    return () => {
-      media.removeEventListener("change", update);
-      document.removeEventListener("visibilitychange", visibility);
-    };
+    const vis = () => setHidden(document.hidden);
+    document.addEventListener("visibilitychange", vis);
+    return () => document.removeEventListener("visibilitychange", vis);
   }, []);
   useEffect(() => {
-    if (configured && !editor)
+    if (configured && !editor) {
+      const now = new Date().toISOString();
       result(
         supabase
           .from("campaigns")
           .select("*")
           .eq("status", "approved")
           .eq("paid", true)
-          .lte("starts_at", new Date().toISOString())
-          .gt("ends_at", new Date().toISOString())
-          .order("created_at")
-          .limit(12),
+          .lte("starts_at", now)
+          .gt("ends_at", now)
+          .order("priority", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(24),
       )
         .then(setCampaigns)
         .catch(() => {});
-  }, []);
-  const slides = [
-    ...(settings.hero_slides || defaultHeroSlides).filter(
-      (s) => s.enabled !== false,
-    ),
-    ...campaigns.map((s) => ({ ...s, sponsored: true })),
-  ];
-  const slide = slides[index - 1],
-    total = slides.length + 1;
+    }
+  }, [editor]);
   useEffect(() => {
-    if (index >= total) setIndex(0);
-  }, [total, index]);
+    if (index >= slides.length) setIndex(0);
+  }, [index, slides.length]);
+  const slide = slides[index] || slides[0],
+    total = slides.length,
+    seconds = Math.max(
+      3,
+      Math.min(60, Number(slide?.display_seconds) || display.rotation_seconds),
+    );
   useEffect(() => {
     if (
       total < 2 ||
       paused ||
-      hovered ||
-      focused ||
+      interaction ||
       video ||
       hidden ||
-      reduced ||
-      editor
+      editor ||
+      matchMedia("(prefers-reduced-motion: reduce)").matches
     )
       return;
-    const timer = setTimeout(() => setIndex((i) => (i + 1) % total), 5000);
-    return () => clearTimeout(timer);
-  }, [index, total, paused, hovered, focused, video, hidden, reduced, editor]);
+    const t = setTimeout(
+      () => setIndex((i) => (i + 1) % total),
+      seconds * 1000,
+    );
+    return () => clearTimeout(t);
+  }, [index, total, seconds, paused, interaction, video, hidden, editor]);
   const go = (n) => setIndex((n + total) % total);
+  const destination = () => {
+    const href = slide?.destination || "/search";
+    if (href.startsWith("/") && !href.startsWith("//")) navigate(href);
+    else if (safeUrl(href))
+      window.open(safeUrl(href), "_blank", "noopener,noreferrer");
+  };
   return (
     <section
       className="hero"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onFocusCapture={() => setFocused(true)}
-      onBlurCapture={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false);
-      }}
-      onTouchStart={(e) =>
-        (start.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })
+      onMouseEnter={() => display.pause_on_interaction && setInteraction(true)}
+      onMouseLeave={() => setInteraction(false)}
+      onFocusCapture={() =>
+        display.pause_on_interaction && setInteraction(true)
       }
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setInteraction(false);
+      }}
+      onTouchStart={(e) => {
+        start.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        if (display.pause_on_interaction) setInteraction(true);
+      }}
       onTouchEnd={(e) => {
-        if (!start.current) return;
-        const dx = e.changedTouches[0].clientX - start.current.x,
-          dy = e.changedTouches[0].clientY - start.current.y;
-        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy))
-          go(index + (dx < 0 ? 1 : -1));
+        if (start.current) {
+          const dx = e.changedTouches[0].clientX - start.current.x,
+            dy = e.changedTouches[0].clientY - start.current.y;
+          if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy))
+            go(index + (dx < 0 ? 1 : -1));
+        }
         start.current = null;
+        setInteraction(false);
       }}
       aria-roledescription="carousel"
       aria-label="Featured marketplace stories"
@@ -293,61 +476,52 @@ export function Hero({ settingsOverride, editor = false } = {}) {
         key={index}
         className="hero-image"
         src={slide?.image || settings.hero_image}
-        alt={slide?.title || "Local handloom shop and colourful textiles"}
+        alt={slide?.title || "Marketplace promotion"}
       />
-      <div className="hero-panel" key={"text-" + index}>
+      <div className="hero-panel" key={`copy-${index}`}>
         <span className="eyebrow">
-          {slide
-            ? slide.sponsored
-              ? "SPONSORED · LOCAL SPOTLIGHT"
-              : "YOUR LOCAL MARKETPLACE"
-            : "GOOD FINDS. GREAT NEIGHBOURS."}
+          {slide?.sponsored
+            ? "SPONSORED · LOCAL SPOTLIGHT"
+            : "YOUR LOCAL MARKETPLACE"}
         </span>
         <h1>{slide?.title || settings.hero_title}</h1>
         <p>{slide?.description || settings.hero_description}</p>
         <div className="button-row">
-          {slide?.video_url ? (
+          {slide?.video_url || slide?.social_url ? (
             <button
               className="button primary"
-              onClick={() => setVideo(slide.video_url)}
+              onClick={() => setVideo(slide.social_url || slide.video_url)}
             >
-              Watch video <ArrowRight />
+              Watch feature <Play size={17} />
             </button>
           ) : (
-            <button
-              className="button primary"
-              onClick={() => {
-                if (slide) {
-                  if (
-                    (slide.destination || "").startsWith("/") &&
-                    !(slide.destination || "").startsWith("//")
-                  )
-                    navigate(slide.destination);
-                  else if (safeUrl(slide.destination))
-                    window.open(
-                      safeUrl(slide.destination),
-                      "_blank",
-                      "noopener,noreferrer",
-                    );
-                } else navigate("/shops");
-              }}
-            >
-              {slide
-                ? slide.button || "Explore this shop"
-                : "Explore local shops"}{" "}
-              <ArrowRight size={18} />
+            <button className="button primary" onClick={destination}>
+              {slide?.button || "Explore nearby"} <ArrowRight size={18} />
             </button>
           )}
+          <Link className="button outline hero-post-ad" to="/sell">
+            Post an ad
+          </Link>
         </div>
         <small className="hero-caption">
           <MapPin size={14} /> From Manipur, with love.
         </small>
       </div>
+      {(slide?.video_url || slide?.social_url) && (
+        <button
+          className="hero-play"
+          type="button"
+          aria-label="Play promotion"
+          onClick={() => setVideo(slide.social_url || slide.video_url)}
+        >
+          <Play size={20} weight="fill" />
+        </button>
+      )}
       <div className="hero-controls">
         <div className="dots">
-          {Array.from({ length: total }, (_, i) => (
+          {slides.map((x, i) => (
             <button
-              key={i}
+              key={x.id || i}
               aria-label={`Show slide ${i + 1}`}
               aria-current={i === index}
               onClick={() => go(i)}
@@ -363,35 +537,34 @@ export function Hero({ settingsOverride, editor = false } = {}) {
           >
             {paused ? <Play size={18} /> : <Pause size={18} />}
           </button>
-          <button
-            aria-label="Previous featured story"
-            disabled={total < 2}
-            onClick={() => go(index - 1)}
-          >
+          <button aria-label="Previous promotion" onClick={() => go(index - 1)}>
             <CaretLeft size={20} />
           </button>
-          <button
-            aria-label="Next featured story"
-            disabled={total < 2}
-            onClick={() => go(index + 1)}
-          >
+          <button aria-label="Next promotion" onClick={() => go(index + 1)}>
             <CaretRight size={20} />
           </button>
         </div>
       </div>
       {video && (
-        <Modal title="Featured video" onClose={() => setVideo(null)}>
-          <HeroVideo videos={[{ url: video }]} />
+        <Modal
+          title={slide?.title || "Promotion"}
+          onClose={() => setVideo(null)}
+        >
+          <HeroVideo videos={[{ url: video, title: slide?.title }]} />
         </Modal>
       )}
     </section>
   );
 }
 export function Home() {
-  const { fixtures, categories, dataReady, notice } = useMarket();
+  const { fixtures, categories, dataReady, notice, settings } = useMarket();
   const [items, setItems] = useState([]),
     [shops, setShops] = useState([]),
-    [loading, setLoading] = useState(configured);
+    [campaigns, setCampaigns] = useState([]),
+    [loading, setLoading] = useState(configured),
+    [visibleCount, setVisibleCount] = useState(8),
+    [hasMore, setHasMore] = useState(false),
+    [moreBusy, setMoreBusy] = useState(false);
   useEffect(() => {
     if (fixtures) {
       setItems(fixtures.listings);
@@ -405,7 +578,8 @@ export function Home() {
             .select("*,seller:sellers(*)")
             .eq("status", "published")
             .order("created_at", { ascending: false })
-            .limit(8),
+            .order("id", { ascending: false })
+            .range(0, 23),
         ),
         result(
           supabase
@@ -418,21 +592,66 @@ export function Home() {
       ])
         .then(([a, b]) => {
           setItems(a);
+          setHasMore(a.length === 24);
           setShops(b);
         })
         .catch((e) => notice(e.message))
         .finally(() => setLoading(false));
   }, [fixtures]);
+  const showMore = async () => {
+    if (visibleCount < items.length) {
+      setVisibleCount((n) => n + 8);
+      return;
+    }
+    if (!hasMore || moreBusy || !configured) return;
+    setMoreBusy(true);
+    try {
+      const next = await result(
+        supabase
+          .from("listings")
+          .select("*,seller:sellers(*)")
+          .eq("status", "published")
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(items.length, items.length + 23),
+      );
+      setItems((current) => [...current, ...next]);
+      setHasMore(next.length === 24);
+      setVisibleCount((n) => n + 8);
+    } catch (e) {
+      notice(e.message);
+    } finally {
+      setMoreBusy(false);
+    }
+  };
+  useEffect(() => {
+    if (!configured) return;
+    const now = new Date().toISOString();
+    result(
+      supabase
+        .from("campaigns")
+        .select("*,seller:sellers(name,slug,location)")
+        .eq("status", "approved")
+        .eq("paid", true)
+        .lte("starts_at", now)
+        .gt("ends_at", now)
+        .order("created_at", { ascending: false })
+        .limit(24),
+    )
+      .then(setCampaigns)
+      .catch(() => {});
+  }, []);
   return (
     <div className="page home">
       <Hero />
+      <FeaturedPromotions campaigns={campaigns} settings={settings} />
       <CategoryRail />
       <section className="section">
         <div className="section-heading">
           <div>
-            <span className="eyebrow">A LITTLE LOCAL DISCOVERY</span>
-            <h2>Fresh finds near you</h2>
-            <p>Something for your everyday. Something unexpectedly good.</p>
+            <span className="eyebrow">REAL PEOPLE. REAL FINDS.</span>
+            <h2>Fresh local listings</h2>
+            <p>New things from people and businesses around Manipur.</p>
           </div>
           <Link to="/search">
             See all products <ArrowRight size={18} />
@@ -442,15 +661,25 @@ export function Home() {
           <p role="status">Loading local finds…</p>
         ) : items.length ? (
           <div className="product-grid">
-            {items.slice(0, 8).map((item) => (
+            {items.slice(0, visibleCount).map((item) => (
               <ProductCard key={item.id} item={item} />
             ))}
           </div>
         ) : (
           <Empty title="Your neighbourhood starts here">
-            Be the first to open a shop and share a listing.{" "}
-            <Link to="/sell">Start selling</Link>
+            Be the first to share a listing with your neighbourhood.{" "}
+            <Link to="/sell">Post an ad</Link>
           </Empty>
+        )}
+        {(visibleCount < items.length || hasMore) && (
+          <button
+            type="button"
+            className="button outline"
+            onClick={showMore}
+            disabled={moreBusy}
+          >
+            {moreBusy ? "Loading listings…" : "Show more listings"}
+          </button>
         )}
       </section>
       <section className="section">
@@ -490,7 +719,7 @@ export function Home() {
           <span className="eyebrow">YOUR NEXT CHAPTER STARTS HERE</span>
           <h2>A little idea. Your very own shop.</h2>
           <p>
-            Give your products a home online. Your first 3 listings are free.
+            Give your products a home online. Create your shop and post for free.
           </p>
         </div>
         <Link to="/sell" className="button primary">

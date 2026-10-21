@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { prepareImage } from "./image-upload";
 export const configured = Boolean(
   import.meta.env.VITE_SUPABASE_URL &&
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
@@ -7,9 +8,12 @@ export const preview =
   import.meta.env.DEV &&
   (import.meta.env.VITE_PREVIEW_MODE === "true" ||
     import.meta.env.MODE === "review");
-// Public catalogue showcase: disabled explicitly or when a real backend is connected.
+// Fictional content is available only in local preview/review builds.
+// Production remains clear until real seller listings exist.
 export const showSamples =
-  !configured && import.meta.env.VITE_SHOW_SAMPLES !== "false";
+  !configured &&
+  (preview ||
+    (import.meta.env.DEV && import.meta.env.VITE_SHOW_SAMPLES === "true"));
 export const supabase = configured
   ? createClient(
       import.meta.env.VITE_SUPABASE_URL,
@@ -29,17 +33,13 @@ export async function result(query) {
   return data;
 }
 export async function uploadImage(file, userId) {
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type))
-    throw Error("Choose a JPG, PNG or WebP photo");
-  if (file.size > 5 * 1024 * 1024)
-    throw Error("Each photo must be smaller than 5 MB");
-  const ext = file.type.split("/")[1];
-  const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+  const optimized = await prepareImage(file);
+  const path = `${userId}/${crypto.randomUUID()}.jpg`;
   const client = requireBackend();
   await result(
     client.storage
       .from("marketplace")
-      .upload(path, file, { contentType: file.type, upsert: false }),
+      .upload(path, optimized, { contentType: "image/jpeg", upsert: false }),
   );
   return client.storage.from("marketplace").getPublicUrl(path).data.publicUrl;
 }
@@ -74,7 +74,7 @@ export async function checkout(planId) {
       amount: data.amount,
       currency: "INR",
       name: "OnlineKeithel",
-      description: "30-day seller package",
+      description: "OnlineKeithel seller package",
       handler: async (payment) => {
         try {
           const v = await fetch("/api/verify-payment", {

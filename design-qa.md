@@ -1,3 +1,27 @@
+# Design QA — v0.14.1 crash fix
+
+The user's Edge console screenshot showed `ReferenceError: shuffle is not defined` at the homepage render. Removed the undefined calls in the homepage fixture and live listing paths. The server build and automated tests are rechecked, and the local browser should be rechecked on the user's Windows machine.
+
+---
+
+# Design QA — v0.14.0
+
+Result: blocked for rendered visual acceptance. The approved shopper and admin mockups were implemented. Automated verification passes: 32 project tests, 4 Sites tests, production build and whitespace check. The browser bridge refused the local preview, so responsive visual comparison could not be completed. Inspect the release locally before deploying. The Supabase migration is included and locally validated but not applied remotely.
+
+---
+
+# Design QA — v0.12.0, approved Option 1
+
+final result: blocked
+
+Reference: `/workspace/scratch/a97ebb7391f0/generated_images/exec-ce334df2-149e-4a4a-a4b0-a46ef8cc4723.png` (approved Option 1 Marketplace Focus board).
+
+The page changes compile and automated tests pass, but a rendered local screenshot could not be captured for same-viewport comparison. Vite runs on `127.0.0.1:4173`; the Work Mode browser returned `ERR_CONNECTION_REFUSED` for `http://terminal.local:4173/`. Binding to `0.0.0.0` failed with `uv_interface_addresses returned Unknown system error 1`. As a result, responsive layout, image crop, campaign cards and auth interactions are not visually accepted in this environment. Do not treat this as a passed design review.
+
+Build check: `npm run build` succeeded; 29 automated tests passed. Remaining visual QA: open the v0.12.0 local preview in the user's Windows browser at desktop and phone widths, compare the landing page with Option 1, test the ticker and category rail, and inspect email/phone sign-in states. Connected Supabase behavior is a separate acceptance gate after provider setup.
+
+---
+
 # Design and interaction QA — 3 October 2026
 
 Result: blocked
@@ -37,3 +61,13 @@ Reviewed the category directory in the managed browser, including warehouse keyw
 ## v0.6.0 product tools
 
 Browser checked at desktop and 390px width. Clothing mouse hover switches to back view; a pointer event implementation supports mouse/pen without triggering sticky hover on touch. Mobile thumbnails change the main photo without horizontal overflow. Selecting M and quantity 2 produces ₹1,300 for the sample T-shirt; sample enquiries expose no WhatsApp link. Sold-out toys disable purchase requests. Mixed-store electrical filtering returns the batteries only. Seller preview verified photo reordering, category-dependent vehicle fields, and video URL entry. Browser error report was empty. Screenshot files: product-v060.png, product-mobile-v060.png, seller-editor-v060.png in docs/qa. Full-page screenshots include the fixed compact navigation at the capture viewport boundary. Real device and connected-service checks remain pending.
+# Design QA — v0.14.3 simple posting and dark mode
+
+The managed local browser rendered the seller workspace and opened Add product. The posting panel places photos, title, category/subcategory, price, condition, location and keywords before three folded optional sections and the public/draft actions. The seller page initially crashed because `LinkSimple` was referenced but not imported; fixed and rerendered successfully. The dark homepage and seller workspace rendered with neutral charcoal content, legible hero text, and the original white header and dark green ticker. Light mode retained its white canvas. Mobile viewport and connected Supabase save/upload have not been exercised in this browser; acceptance remains pending on the user's Windows setup.
+
+---
+# Design QA — v0.14.4 photo and packages
+
+The user screenshot showed a one-photo fashion listing with a red “Add front, back, left and right clothing photos” error. The live database function contained that rule. After the migrations, the function no longer contains it, the gallery constraint checks only that photos form an array, and the draft count remained one. The local browser `/plans` page rendered the five new tiers with 14/30-day labels, 2/5/10/20/50 active ads and ₹0/₹100/₹200/₹400/₹600 prices. Connected seller posting and payment were not exercised in this workspace.
+
+---

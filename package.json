@@ -1,6 +1,6 @@
 {
   "name": "onlinekeithel",
-  "version": "0.11.0",
+  "version": "0.15.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,9 +9,13 @@
     "preview": "vite preview",
     "test:sites": "node --test tests/sites-worker.test.mjs",
     "test": "node --test tests/*.test.mjs",
-    "review": "vite --mode review --host 127.0.0.1 --port 5189 --strictPort"
+    "review": "vite --mode review --host 127.0.0.1 --port 5189 --strictPort",
+    "android:sync": "npm run build && cap sync android",
+    "android:open": "cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3",
     "@phosphor-icons/react": "2.1.10",
     "@supabase/supabase-js": "2.117.2",
     "@vitejs/plugin-react": "5.0.4",
@@ -21,6 +25,7 @@
     "vite": "6.4.2"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.5.3",
     "@electric-sql/pglite": "0.5.8",
     "prettier": "3.9.9"
   }

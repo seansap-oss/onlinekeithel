@@ -26,6 +26,7 @@ import {
   SignOut,
   ShieldCheck,
   ArrowRight,
+  CopySimple,
   LinkSimple,
 } from "@phosphor-icons/react";
 import { useMarket, Link } from "../lib/context";
@@ -37,6 +38,8 @@ import { shopPath } from "../lib/storefront";
 export function ListingEditor({
   seller,
   initial,
+  duplicateFrom,
+  existingListings = [],
   onClose,
   onSaved,
   collections = [],
@@ -48,7 +51,7 @@ export function ListingEditor({
     "category",
   );
   const [f, setF] = useState(
-      initial || {
+      initial || (duplicateFrom ? { ...duplicateFrom, id: undefined, images: [], sku: "", status: "published" } : null) || {
         title: "",
         price: "",
         category_id: categories.some((c) => c.id === requestedCategory)
@@ -70,25 +73,26 @@ export function ListingEditor({
         },
         tags: "",
         sku: "",
-        status: "draft",
+        status: "published",
       },
     ),
     [photoBusy, setPhotoBusy] = useState(false),
     [videoBusy, setVideoBusy] = useState(false),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [social, setSocial] = useState(false);
+    [error, setError] = useState("");
   const update = (k, v) => setF((p) => ({ ...p, [k]: v }));
   return (
     <Modal
-      title={initial ? "Edit your listing" : "Something good to share"}
+      title={initial ? "Edit your listing" : "Post an ad"}
       side
       onClose={onClose}
     >
-      <form
+      <form className="posting-form"
         onSubmit={async (e) => {
           e.preventDefault();
           if (photoBusy || videoBusy) return;
+          const action = e.nativeEvent.submitter?.value;
+          const status = action === "draft" ? "draft" : action === "keep" ? f.status : "published";
           setBusy(true);
           setError("");
           try {
@@ -99,15 +103,7 @@ export function ListingEditor({
             for (const u of Object.values(f.socials))
               if (u && !socialUrl(u))
                 throw Error("Add a valid social platform URL");
-            if (
-              f.status === "published" &&
-              f.category_id === "fashion" &&
-              f.images.length < 4
-            )
-              throw Error(
-                "Add front, back, left and right clothing photos before publishing.",
-              );
-            validateClassified(f);
+            validateClassified({ ...f, status });
             const payload = {
               seller_id: seller.id,
               title: f.title,
@@ -129,14 +125,14 @@ export function ListingEditor({
               videos: normalizeVideos(f.videos),
               tags: f.tags,
               sku: f.sku || null,
-              status: f.status,
+              status,
             };
             await result(
               initial
                 ? supabase.from("listings").update(payload).eq("id", initial.id)
                 : supabase.from("listings").insert(payload),
             );
-            notice("Listing saved");
+            notice(status === "published" ? "Ad posted publicly" : "Draft saved");
             onSaved();
             onClose();
           } catch (e) {
@@ -146,21 +142,25 @@ export function ListingEditor({
           }
         }}
       >
-        <span className="eyebrow">YOUR LISTING, IN ITS BEST LIGHT</span>
+        {!initial && existingListings.length > 0 && (
+          <Field label="Duplicate from an existing listing">
+            <select
+              value=""
+              onChange={(e) => {
+                const source = existingListings.find((item) => item.id === e.target.value);
+                if (source) setF({ ...source, id: undefined, images: [], sku: "", status: "published" });
+              }}
+            >
+              <option value="">Choose an ad to copy, then replace its photos</option>
+              {existingListings.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+            </select>
+          </Field>
+        )}
         <h3>Photos</h3>
-        <p className="muted">
-          {f.category_id === "fashion"
-            ? "Add front, back and side photos in that order. The second photo appears on hover; buyers can tap thumbnails on mobile."
-            : "Add exterior, interior and detail photos. The first photo is your cover."}
-        </p>
         <Upload
           multiple
           value={f.images}
-          labels={
-            f.category_id === "fashion"
-              ? ["Front", "Back", "Left side", "Right side", "Detail"]
-              : []
-          }
+          labels={[]}
           onBusyChange={setPhotoBusy}
           onChange={(v) => update("images", v)}
         />
@@ -185,7 +185,7 @@ export function ListingEditor({
           value={f.title}
           onChange={(e) => update("title", e.target.value)}
         />
-        <div className="form-grid">
+        <div className="listing-basics">
           <Field label="Marketplace category">
             <select
               value={f.category_id}
@@ -232,19 +232,6 @@ export function ListingEditor({
               ))}
             </select>
           </Field>
-          <Field label="Your shop collection">
-            <select
-              value={f.collection_id || ""}
-              onChange={(e) => update("collection_id", e.target.value)}
-            >
-              <option value="">No collection</option>
-              {collections.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </Field>
           <Field
             label={
               f.category_id === "jobs"
@@ -272,8 +259,23 @@ export function ListingEditor({
               </select>
             </Field>
           )}
+          <Field
+            label="Location"
+            required
+            value={f.location}
+            onChange={(e) => update("location", e.target.value)}
+          />
+          <Field
+            label="Search keywords"
+            placeholder="handwoven, cotton, kurta"
+            value={f.tags}
+            onChange={(e) => update("tags", e.target.value)}
+          />
         </div>
-        <Field label="Description">
+        <details className="posting-accordion">
+          <summary>Description, colour &amp; size <small>Optional</small></summary>
+          <div className="posting-accordion-body">
+        <Field label="Description (optional)">
           <textarea
             value={f.description}
             rows={4}
@@ -281,7 +283,33 @@ export function ListingEditor({
             onChange={(e) => update("description", e.target.value)}
           />
         </Field>
-        <h3>Category details</h3>
+        <Field label="Colour (optional)" value={f.attributes?.Colour || ""} onChange={(e) => update("attributes", { ...f.attributes, Colour: e.target.value })} />
+        {f.category_id === "fashion" && (
+          <fieldset className="posting-sizes">
+            <legend>Sizes (optional)</legend>
+            <small>Select all that apply</small>
+            <div>
+              {["XS", "S", "M", "L", "XL", "XXL"].map((size) => (
+                <label key={size}>
+                  <input
+                    type="checkbox"
+                    checked={(f.attributes?.Sizes || "").split(",").filter(Boolean).includes(size)}
+                    onChange={(e) => {
+                      const sizes = (f.attributes?.Sizes || "").split(",").filter(Boolean);
+                      const next = e.target.checked ? [...sizes, size] : sizes.filter((s) => s !== size);
+                      update("attributes", { ...f.attributes, Sizes: next.join(",") });
+                    }}
+                  /> {size}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
+          </div>
+        </details>
+        <details className="posting-accordion" open={isClassified(f.category_id) || undefined} key={f.category_id}>
+          <summary>{isClassified(f.category_id) ? "Category details" : "More category details"} <small>{isClassified(f.category_id) ? "Add the details buyers need" : "Optional"}</small></summary>
+          <div className="posting-accordion-body">
         <div className="form-grid">
           {productFields(categories.find((c) => c.id === f.category_id)).map(
             (k) => (
@@ -350,6 +378,12 @@ export function ListingEditor({
             ),
           )}
         </div>
+        <Field label="Your shop collection (optional)">
+          <select value={f.collection_id || ""} onChange={(e) => update("collection_id", e.target.value)}>
+            <option value="">No collection</option>
+            {collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </Field>
         {!isClassified(f.category_id) && (
           <InventoryEditor
             category={f.category_id}
@@ -357,38 +391,28 @@ export function ListingEditor({
             onChange={(v) => update("commerce", v)}
           />
         )}
+        <Field label="SKU / your reference (optional)" value={f.sku || ""} onChange={(e) => update("sku", e.target.value)} />
+        {initial && (
+          <>
+            <Field label="Listing state">
+              <select value={f.status} onChange={(e) => update("status", e.target.value)}>
+                {["published", "draft", "paused", "sold", "archived"].map((value) => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </Field>
+            <button className="button outline" type="submit" value="keep" disabled={busy || photoBusy || videoBusy}>Save listing state</button>
+          </>
+        )}
+          </div>
+        </details>
+        <details className="posting-accordion">
+          <summary>Video &amp; social posts <small>Optional</small></summary>
+          <div className="posting-accordion-body">
         <ProductVideosEditor
           value={f.videos || []}
           onChange={(v) => update("videos", v)}
           onBusyChange={setVideoBusy}
+          allowUpload={false}
         />
-        <Field
-          label="Search keywords"
-          placeholder="cotton, summer, local, handwoven"
-          value={f.tags}
-          onChange={(e) => update("tags", e.target.value)}
-        />
-        <div className="form-grid">
-          <Field
-            label="Location"
-            required
-            value={f.location}
-            onChange={(e) => update("location", e.target.value)}
-          />
-          <Field
-            label="SKU / your reference"
-            value={f.sku || ""}
-            onChange={(e) => update("sku", e.target.value)}
-          />
-        </div>
-        <button
-          type="button"
-          className="button outline"
-          onClick={() => setSocial(!social)}
-        >
-          <LinkSimple /> {social ? "Hide" : "Add"} social & video links
-        </button>
-        {social && (
           <div className="social-editor">
             {["instagram", "facebook", "youtube"].map((k) => (
               <Field
@@ -406,32 +430,21 @@ export function ListingEditor({
               product title or tags so people can find it.
             </small>
           </div>
-        )}
-        <Field label="Listing visibility">
-          <select
-            value={f.status}
-            onChange={(e) => update("status", e.target.value)}
-          >
-            {["draft", "published", "paused", "sold", "archived"].map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-        </Field>
+          </div>
+        </details>
         {error && (
           <p className="form-error" role="alert">
             {error}
           </p>
         )}
-        <button
-          className="button primary full"
-          disabled={busy || photoBusy || videoBusy}
-        >
-          {busy
-            ? "Saving…"
-            : f.status === "published"
-              ? "Publish listing"
-              : "Save listing"}
-        </button>
+        <div className="posting-actions">
+          <button className="button primary full" type="submit" value="published" disabled={busy || photoBusy || videoBusy}>
+            {busy ? "Saving…" : initial?.status === "published" ? "Save public changes" : "Post publicly"}
+          </button>
+          <button className="text-button" type="submit" value="draft" disabled={busy || photoBusy || videoBusy}>
+            Save draft
+          </button>
+        </div>
       </form>
       {moderationAction}
     </Modal>
@@ -447,6 +460,8 @@ export function Promotions({ seller, visual = false }) {
       description: "",
       image: "",
       video_url: "",
+      social_url: "",
+      placement: "featured",
       destination: shopPath(seller.slug),
       starts_at: "",
       ends_at: "",
@@ -483,6 +498,10 @@ export function Promotions({ seller, visual = false }) {
               throw Error("Connect your account to submit a campaign.");
             if (form.video_url && !socialUrl(form.video_url))
               throw Error("Use a supported social video URL");
+            if (form.social_url && !socialUrl(form.social_url))
+              throw Error(
+                "Use a supported Instagram, Facebook or YouTube post URL",
+              );
             if (
               !(
                 form.destination.startsWith("/") &&
@@ -531,6 +550,22 @@ export function Promotions({ seller, visual = false }) {
           value={form.video_url}
           onChange={(e) => change("video_url", e.target.value)}
         />
+        <Field
+          label="Instagram, Facebook or YouTube post URL (optional)"
+          type="url"
+          value={form.social_url}
+          onChange={(e) => change("social_url", e.target.value)}
+        />
+        <Field label="Placement request">
+          <select
+            value={form.placement}
+            onChange={(e) => change("placement", e.target.value)}
+          >
+            <option value="featured">Featured ads section</option>
+            <option value="hero">Main hero carousel</option>
+            <option value="both">Hero and featured ads</option>
+          </select>
+        </Field>
         <Field
           label="Where should this advertisement lead?"
           required
@@ -755,12 +790,14 @@ export function Dashboard({ startSell = false, visual = false }) {
   } = useMarket();
   const seller = visual ? fixtures?.sellers[0] : realSeller;
   const [tab, setTab] = useState(
-      new URLSearchParams(path.split("?")[1]).get("tab") || "products",
+      ["products", "profile", "collections", "import"].includes(new URLSearchParams(path.split("?")[1]).get("tab"))
+        ? new URLSearchParams(path.split("?")[1]).get("tab")
+        : "products",
     ),
     [rows, setRows] = useState([]),
     [collections, setCollections] = useState([]),
-    [entitlement, setEntitlement] = useState(null),
     [editing, setEditing] = useState(null),
+    [duplicating, setDuplicating] = useState(null),
     [add, setAdd] = useState(false),
     [collectionName, setCollectionName] = useState(""),
     [collectionEdit, setCollectionEdit] = useState(null),
@@ -775,7 +812,7 @@ export function Dashboard({ startSell = false, visual = false }) {
       return;
     }
     try {
-      const [l, c, e, n] = await Promise.all([
+      const [l, c, n] = await Promise.all([
         result(
           supabase
             .from("listings")
@@ -791,13 +828,6 @@ export function Dashboard({ startSell = false, visual = false }) {
             .eq("seller_id", seller.id)
             .order("position"),
         ),
-        result(
-          supabase
-            .from("entitlements")
-            .select("*")
-            .eq("seller_id", seller.id)
-            .maybeSingle(),
-        ),
         supabase
           .from("listings")
           .select("*", { head: true, count: "exact" })
@@ -807,7 +837,6 @@ export function Dashboard({ startSell = false, visual = false }) {
       setRows(l.slice(0, 24));
       setMore(l.length > 24);
       setCollections(c);
-      setEntitlement(e);
       setCount(n.count || 0);
     } catch (e) {
       notice(e.message);
@@ -825,24 +854,12 @@ export function Dashboard({ startSell = false, visual = false }) {
         <SellerForm onSaved={() => navigate("/dashboard")} />
       </div>
     );
-  const plan = plans.find(
-      (p) =>
-        p.id ===
-        (entitlement && new Date(entitlement.expires_at) > new Date()
-          ? entitlement.plan_id
-          : "free"),
-    ),
-    limit =
-      entitlement && new Date(entitlement.expires_at) > new Date()
-        ? entitlement.listing_limit
-        : plans.find((p) => p.id === "free")?.listing_limit || 3;
+  const limit = plans.find((p) => p.id === "free")?.listing_limit || 100;
   const tabs = [
     ["products", Package, "My products"],
     ["profile", Storefront, "Shop identity"],
     ["collections", Stack, "Collections"],
-    ["package", Package, "My package"],
     ["import", UploadSimple, "Import catalogue"],
-    ["promotions", Megaphone, "Promote my shop"],
   ];
   return (
     <div className="page dashboard">
@@ -922,14 +939,12 @@ export function Dashboard({ startSell = false, visual = false }) {
             </Link>
           )}
           <div className="usage">
-            <b>{plan?.name || "Free"} package</b>
+            <b>Free launch</b>
             <p>
               {count} / {limit.toLocaleString()} active products
             </p>
             <progress value={Math.min(count, limit)} max={limit} />
-            <Link to="/plans">
-              Find more room <ArrowRight size={14} />
-            </Link>
+            <small>Your published ads stay visible until you pause them.</small>
           </div>
           {session && (
             <button
@@ -965,7 +980,19 @@ export function Dashboard({ startSell = false, visual = false }) {
                           {money(i.price)} · {i.category_id}
                         </small>
                       </div>
-                      <span className={"status " + i.status}>{i.status}</span>
+                      <span className={"status " + i.status}>
+                        {i.status === "published" && (!entitlement || new Date(entitlement.expires_at) <= new Date())
+                          && i.published_at && new Date(i.published_at) < new Date(Date.now() - 14 * 86400000)
+                          ? "Expired · edit to renew" : i.status}
+                      </span>
+                      <button
+                        className="icon-button"
+                        aria-label={"Duplicate " + i.title}
+                        title="Duplicate this ad"
+                        onClick={() => setDuplicating(i)}
+                      >
+                        <CopySimple size={20} />
+                      </button>
                       <button
                         className="icon-button"
                         aria-label={"Edit " + i.title}
@@ -1082,46 +1109,21 @@ export function Dashboard({ startSell = false, visual = false }) {
               ))}
             </>
           )}
-          {tab === "package" && (
-            <>
-              <h2>Your space to grow</h2>
-              <div className="package-summary">
-                <span className="eyebrow">CURRENT PACKAGE</span>
-                <h2>{plan?.name || "Free"}</h2>
-                <p>
-                  {count} active listings out of {limit.toLocaleString()}
-                </p>
-                <p>
-                  {entitlement
-                    ? "Valid until " +
-                      new Date(entitlement.expires_at).toLocaleDateString()
-                    : "Your first 3 listings are free."}
-                </p>
-                <Link className="button primary" to="/plans">
-                  Explore packages <ArrowRight />
-                </Link>
-              </div>
-              <p>
-                Packages last 30 days and renew manually. On expiry your
-                catalogue is kept; only your newest free allowance stays public.
-              </p>
-            </>
-          )}
           {tab === "import" && <Importer seller={seller} visual={visual} />}{" "}
-          {tab === "promotions" && (
-            <Promotions seller={seller} visual={visual} />
-          )}
         </section>
       </div>
-      {(add || editing) && (
+      {(add || editing || duplicating) && (
         <ListingEditor
           visual={visual}
           seller={seller}
           initial={editing}
+          duplicateFrom={duplicating}
+          existingListings={rows}
           collections={collections}
           onClose={() => {
             setAdd(false);
             setEditing(null);
+            setDuplicating(null);
           }}
           onSaved={load}
         />

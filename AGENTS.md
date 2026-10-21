@@ -83,3 +83,45 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 - Keep event services under existing `events`; actual dated happenings use `happenings`. Preserve old category/subcategory IDs and custom administrator entries. Motors groups vehicles, motorcycles and bicycles.
 - Never invent real vacancies/events or show verification badges without verification. Event dates are entered in India time. Booking/application/WhatsApp links are handoffs, not completed transactions.
 - Existing backend needs 009_departments.sql. Production backend and browser acceptance remain pending. Include Windows ZIP install commands with each release.
+
+## Approved completion build — v0.12.0, 20 October 2026
+
+- Option 1 Marketplace Focus is the selected homepage target: split local handloom hero, paired nearby/post actions, high-contrast forest ticker, swipeable ten-first category rail, promoted placements then a mixed fresh feed. Keep the approved logo and OnlineKeithel wordmark.
+- Dark green ticker defaults use white text; the old stock welcome ticker is upgraded but editor-customized content is preserved. Campaigns must be approved, paid and currently scheduled before public display.
+- Additive discovery taxonomy: Free & Wanted, Boats & Watercraft, Musical Instruments & Audio; antiques/business-for-sale/tickets/community notices are subcategories. Do not add them as top-level header links; the all-category directory is the full catalogue.
+- Fixtures are local visual review only; do not expose invented public listings on production. WhatsApp remains the messaging handoff. No SMS, data persistence, admin permission, or payment is simulated when Supabase is disconnected.
+- Authentication UI supports email/password/reset and Supabase phone OTP. Phone registration requires an enabled SMS provider. `/admin` is still protected by verified auth plus the private admin membership table; no hidden bypass.
+- Existing storefront seller editor and admin editors are retained; verify them against the connected dedicated Supabase project before claiming launch readiness. Apply migration 010 after the existing department taxonomy and preserve administrator-added content.
+- User-facing visual verification must be recorded in `design-qa.md`; current v0.12 run is blocked by the unavailable browser bridge. Don't label the build visually passed until that is rerun successfully.
+
+## Approved hero placement build — v0.14.0, 21 October 2026
+
+- Preserve the approved OnlineKeithel logo/wordmark and the white header/footer. Keep the marketplace mobile-first.
+- The homepage hero and premium placements support photo/video/social links, destinations, schedule windows, timing, paid priority and hero/featured/both placement. Featured presentation supports swipe, feature, split, four/eight-card grids and compact list.
+- The admin homepage editor controls overall layout and rotation; each hero entry can set placement, media, destination, timing and schedule. Seller campaign requests may request placement; approval and payment review remain mandatory.
+- Existing Supabase databases need migration 011. Do not apply the remote migration or deploy without explicit instruction. Visual QA is still blocked until a rendered browser preview can be inspected.
+- User requires a mockup approval before coding visual changes; the v0.14 mockups were approved before this implementation.
+
+## Listing visibility and neutral canvas — 21 October 2026
+
+- User confirmed working local email sign-in and requested every published listing appear in newest-first home discovery. Preserve private drafts and require explicit seller publishing; the seller screenshot showed the item was still Draft. Clothing publication still requires front, back and two side photos.
+- The site opens in light mode even when the device prefers dark; use a neutral gray 65%-opacity wash on the content canvas. Preserve the approved header, ticker, footer, roof logo and wordmark.
+
+## Approved simple posting and dark mode — v0.14.3, 21 October 2026
+
+- The user approved the image mockups for a simple posting form and revised dark mode. Light mode remains white; gray/charcoal surfaces apply only to dark mode. Keep the white header/footer, dark green ticker, roof logo and wordmark.
+- Posting starts with photos, title, marketplace category/subcategory, price, condition, location and search keywords. Description/colour/sizes, category extras/inventory and hosted video/social links are expandable. New listings post publicly by default; Save draft is a secondary action.
+- A seller may duplicate an existing listing and replace its photos. One clothing photo is sufficient to post. Encourage useful additional photos. Optimize large phone photos in the browser to a 4 MB JPEG target and allow up to 50 gallery entries in the database.
+- Clothing sizes entered without stock variants are options for a WhatsApp enquiry, with seller confirmation of availability. Direct MP4 uploading is excluded from this simplified listing editor. Do not call real connected publishing verified without testing against Supabase after migration 012.
+
+## Photo and package correction — v0.14.4, 21 October 2026
+
+- The uploaded Windows screenshot exposed an old database trigger requiring front, back, left and right clothing photos. The OnlineKeithel Supabase project `plllhsjsruhasdvbzhpw` still had that trigger and 12-photo check; migrations `listing_packages_v0144` and `unlimited_listing_gallery_v0144` were applied and read-only verification showed the four-angle text gone, no count-based gallery check, five active plans, and one existing draft retained. Do not claim a connected seller post was performed.
+- One photo is sufficient in every category; sellers may add more without a count limit in the UI, import parser or database. Posting helper says: “One photo is enough to post. Clear photos from more angles can help buyers choose.” Compression remains behind the scenes. Per-file size and allowed image formats still apply.
+- New active packages: Free, 2 ads per 14 days; Quick Seller, 5 ads for ₹100 / 14 days; Individual, 10 ads for ₹200 / 30 days; Premium Business, 20 ads for ₹400 / 30 days; Business Plus, 50 ads for ₹600 / 30 days. Old plans are inactive but existing entitlement/order records remain. Free published ads age out after 14 days and may be renewed by editing and saving; paid entitlements use the purchased duration. Paid checkout remains gated by Razorpay setup and unverified.
+
+## Free Launch RC1 — v0.15.0, 21 October 2026
+
+- User chose an early free marketplace launch. Public pricing and checkout are suspended; preserve historical orders and paid plan records for a later release. The new free tier allows 100 active published listings per seller without a 14-day public expiry. The dedicated project's free-launch migration was applied and its plan rows read back. Do not rerun v0.14.4 package migration after it.
+- Keep one repository `seansap-oss/onlinekeithel`, one Vercel project and the user's existing Windows VS Code folder. Present push/deploy and Android Studio commands after a build. The Android project is a test APK shell; email recovery/confirmation redirects still target the web until native deep links are built.
+- WhatsApp OTP is not configured; email/password is the initial sign-in route. Enquiries remain WhatsApp handoffs without an app inbox. Do not claim public launch readiness until live email delivery, seller upload, listing discovery and mobile contact are exercised.

@@ -12,6 +12,7 @@ import { money, whatsappUrl } from "../lib/utils";
 export function PurchasePanel({ item }) {
   const { notice } = useMarket();
   const [variant, setVariant] = useState(""),
+    [sizeChoice, setSizeChoice] = useState(""),
     [quantity, setQuantity] = useState(1),
     [open, setOpen] = useState(location.search.includes("enquire=1")),
     [message, setMessage] = useState(
@@ -24,6 +25,7 @@ export function PurchasePanel({ item }) {
     option = c.variants.find((v) => v.id === variant),
     payments = item.seller?.payment_options || {},
     unavailable = outOfStock(item);
+  const displaySizes = c.variants.length ? [] : String(item.attributes?.Sizes || "").split(",").map((size) => size.trim()).filter(Boolean);
   const total = Math.round(price * quantity * 100) / 100;
   let error = "";
   try {
@@ -31,7 +33,9 @@ export function PurchasePanel({ item }) {
   } catch (e) {
     error = e.message;
   }
-  const summary = `${item.title}${option ? " · " + option.label : ""}\nQuantity: ${quantity} ${c.unit}\nItem subtotal: ${money(total)} (confirm delivery/fees)\nPreferred payment: ${method}\n${location.origin}/listing/${item.id}`;
+  if (!error && displaySizes.length && !sizeChoice) error = "Choose a size before contacting the seller.";
+  const chosenOption = option?.label || sizeChoice;
+  const summary = `${item.title}${chosenOption ? " · " + chosenOption : ""}\nQuantity: ${quantity} ${c.unit}\nItem subtotal: ${money(total)} (confirm delivery/fees)\nPreferred payment: ${method}\n${location.origin}/listing/${item.id}`;
   const wa =
     !item.sample && !error
       ? whatsappUrl(item.seller?.whatsapp, `${message}\n\n${summary}`)
@@ -47,7 +51,7 @@ export function PurchasePanel({ item }) {
       <p className={"stock-state " + (unavailable ? "unavailable" : "")}>
         {unavailable
           ? "Out of stock"
-          : c.variants.length
+          : c.variants.length || displaySizes.length
             ? "Choose an available option"
             : stock === null
               ? "Confirm availability with seller"
@@ -72,6 +76,19 @@ export function PurchasePanel({ item }) {
               {!v.stock ? " · sold out" : ""}
             </button>
           ))}
+        </fieldset>
+      )}
+      {displaySizes.length > 0 && (
+        <fieldset className="size-picker">
+          <legend>Choose size</legend>
+          {displaySizes.map((size) => (
+            <button type="button" key={size} aria-pressed={sizeChoice === size}
+              className={sizeChoice === size ? "active" : ""}
+              onClick={() => { setSizeChoice(size); setQuantity(1); }}>
+              {size}
+            </button>
+          ))}
+          <small>Confirm size availability with the seller.</small>
         </fieldset>
       )}
       {c.mode === "retail" && (
@@ -182,7 +199,7 @@ export function PurchasePanel({ item }) {
             <div>
               <strong>{item.title}</strong>
               <p>
-                {option?.label} · Quantity {quantity} · {money(total)}
+                {chosenOption ? `${chosenOption} · ` : ""}Quantity {quantity} · {money(total)}
               </p>
             </div>
           </div>

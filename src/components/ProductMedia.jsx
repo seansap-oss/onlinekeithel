@@ -28,7 +28,7 @@ export function ProductVideos({ videos = [] }) {
     </section>
   ) : null;
 }
-export function ProductVideosEditor({ value = [], onChange, onBusyChange }) {
+export function ProductVideosEditor({ value = [], onChange, onBusyChange, allowUpload = true }) {
   const { session } = useMarket();
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -73,7 +73,7 @@ export function ProductVideosEditor({ value = [], onChange, onBusyChange }) {
         >
           Add video link
         </button>
-        <label className="upload-button">
+        {allowUpload && <label className="upload-button">
           {busy ? "Uploading video…" : "Upload a short video"}
           <input
             type="file"
@@ -102,11 +102,9 @@ export function ProductVideosEditor({ value = [], onChange, onBusyChange }) {
               }
             }}
           />
-        </label>
+        </label>}
       </div>
-      <small>
-        MP4 / WebM · up to 6 MB. Use a hosted URL for longer videos.
-      </small>
+      <small>Paste a public YouTube, Instagram or Facebook link. Supported hosted video links can also be used.</small>
       {error && (
         <p className="form-error" role="alert">
           {error}

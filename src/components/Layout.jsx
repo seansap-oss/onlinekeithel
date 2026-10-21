@@ -44,21 +44,9 @@ export function Layout({ children }) {
   const { navigate, path, session, categories, settings, notice } = useMarket();
   const [menu, setMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    try {
-      return (
-        localStorage.getItem("ok-theme") ||
-        (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-      );
-    } catch {
-      return "light";
-    }
-  });
+  const [theme, setTheme] = useState("light");
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    try {
-      localStorage.setItem("ok-theme", theme);
-    } catch {}
   }, [theme]);
   useEffect(() => setSearchOpen(false), [path]);
   return (
@@ -147,8 +135,8 @@ export function Layout({ children }) {
         <div>
           <b>Start something</b>
           <Link to="/sell">Post ad</Link>
-          <Link to="/plans">Seller packages</Link>
-          <Link to="/dashboard?tab=promotions">Advertise with us</Link>
+          <Link to="/plans">Sell for free</Link>
+          <Link to="/shops">Explore shops</Link>
         </div>
         <div>
           <b>Here to help</b>
@@ -157,7 +145,7 @@ export function Layout({ children }) {
           <Link to="/terms">Marketplace terms</Link>
           <small>
             <AdminEntry /> {new Date().getFullYear()} {settings.name}
-            <span className="release-version"> · v0.11.0</span>
+            <span className="release-version"> · v0.15.0 Free Launch RC1</span>
           </small>
           <small className="creator-credit">
             Created by{" "}
@@ -259,7 +247,7 @@ export function Layout({ children }) {
               My seller dashboard
             </Link>
             <Link to="/plans" onClick={() => setMenu(false)}>
-              Packages & pricing
+              Sell for free
             </Link>
             <Link to="/help" onClick={() => setMenu(false)}>
               Help & contact

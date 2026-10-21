@@ -118,7 +118,6 @@ export function normalizeImport(row, seller, categories) {
     .map((x) => safeUrl(x.trim()));
   if (!images.length || images.some((x) => !x))
     throw Error("Add valid HTTPS image URLs");
-  if (images.length > 12) throw Error("Maximum 12 photos");
   const social = row.social_url ? socialUrl(row.social_url) : "";
   if (row.social_url && !social) throw Error("Unsupported social URL");
   const condition = row.condition || "New";

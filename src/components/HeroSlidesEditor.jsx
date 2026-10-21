@@ -3,6 +3,15 @@ import { Field, Upload } from "./UI";
 import { uploadVideo } from "../lib/backend";
 import { useMarket } from "../lib/context";
 import { defaultHeroSlides } from "../lib/hero";
+const localDate = (value) =>
+  value
+    ? new Date(
+        new Date(value).getTime() - new Date(value).getTimezoneOffset() * 60000,
+      )
+        .toISOString()
+        .slice(0, 16)
+    : "";
+const isoDate = (value) => (value ? new Date(value).toISOString() : "");
 export function HeroSlidesEditor({ value, onChange, onBusyChange }) {
   const slides = value || defaultHeroSlides;
   const { session, notice } = useMarket();
@@ -18,7 +27,17 @@ export function HeroSlidesEditor({ value, onChange, onBusyChange }) {
       </p>
       {slides.map((slide, i) => (
         <div className="child-category" key={slide.id}>
-          <h4>Slide {i + 2}</h4>
+          <h4>Promotion {i + 1}</h4>
+          <Field label="Placement">
+            <select
+              value={slide.placement || "hero"}
+              onChange={(e) => update(i, { placement: e.target.value })}
+            >
+              <option value="hero">Main hero</option>
+              <option value="featured">Featured ads</option>
+              <option value="both">Hero and featured ads</option>
+            </select>
+          </Field>
           {["title", "description", "button", "destination"].map((key) => (
             <Field
               key={key}
@@ -43,6 +62,52 @@ export function HeroSlidesEditor({ value, onChange, onBusyChange }) {
             value={slide.video_url || ""}
             onChange={(e) => update(i, { video_url: e.target.value })}
           />
+          <Field
+            label="Social post URL (Instagram, Facebook or YouTube)"
+            type="url"
+            value={slide.social_url || ""}
+            onChange={(e) => update(i, { social_url: e.target.value })}
+          />
+          <div className="form-grid">
+            <Field
+              label="Display duration (seconds)"
+              type="number"
+              min="3"
+              max="60"
+              value={slide.display_seconds ?? 6}
+              onChange={(e) =>
+                update(i, { display_seconds: Number(e.target.value) })
+              }
+            />
+            <Field
+              label="Priority"
+              type="number"
+              min="0"
+              max="999"
+              value={slide.priority ?? 0}
+              onChange={(e) => update(i, { priority: Number(e.target.value) })}
+            />
+          </div>
+          <div className="form-grid">
+            <Field label="Show from">
+              <input
+                type="datetime-local"
+                value={localDate(slide.starts_at)}
+                onChange={(e) =>
+                  update(i, { starts_at: isoDate(e.target.value) })
+                }
+              />
+            </Field>
+            <Field label="Show until">
+              <input
+                type="datetime-local"
+                value={localDate(slide.ends_at)}
+                onChange={(e) =>
+                  update(i, { ends_at: isoDate(e.target.value) })
+                }
+              />
+            </Field>
+          </div>
           <label className="upload-button">
             {uploading ? "Uploading…" : "Upload video (up to 6 MB)"}
             <input
@@ -115,6 +180,9 @@ export function HeroSlidesEditor({ value, onChange, onBusyChange }) {
               video_url: "",
               button: "Learn more",
               destination: "/shops",
+              placement: "hero",
+              display_seconds: 6,
+              priority: 0,
               enabled: true,
             },
           ])

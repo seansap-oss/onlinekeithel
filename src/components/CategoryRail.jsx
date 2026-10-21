@@ -19,24 +19,27 @@ export function CategoryRail() {
   });
   const list = categories.filter(
     (c) =>
-      !isConstructionCategory(c) && !["motorcycles", "bicycles"].includes(c.id),
+      !isConstructionCategory(c) &&
+      !["motorcycles", "bicycles"].includes(c.id),
   );
   if (categories.some(isConstructionCategory))
-    list.splice(4, 0, {
+    list.push({
       id: "construction",
       name: "Construction",
       icon: "HardHat",
       department: true,
     });
   const priority = [
-    "fashion",
-    "mobiles",
-    "electronics",
     "vehicles",
     "property",
     "jobs",
-    "happenings",
+    "electronics",
+    "fashion",
     "construction",
+    "home",
+    "services",
+    "happenings",
+    "freebies",
   ];
   const rank = (id) => (priority.includes(id) ? priority.indexOf(id) : 100);
   const ordered = [...list].sort(
@@ -56,12 +59,12 @@ export function CategoryRail() {
   };
   const short = {
     fashion: "Clothing",
-    mobiles: "Mobiles",
     electronics: "Electronics",
-    vehicles: "Motors",
-    property: "Homes & Stays",
-    jobs: "Jobs & Careers",
-    happenings: "What’s On",
+    vehicles: "Vehicles",
+    property: "Property",
+    jobs: "Jobs",
+    happenings: "Events",
+    freebies: "Free items",
     motorcycles: "Motorcycles",
     home: "Home",
     retail: "Retail",
@@ -69,7 +72,7 @@ export function CategoryRail() {
   return (
     <section className="category-rail-section" aria-label="Browse categories">
       <div className="section-heading">
-        <h2>Categories</h2>
+        <h2>Browse categories</h2>
         <Link to="/categories">See all categories →</Link>
       </div>
       <div className="category-rail-wrap">

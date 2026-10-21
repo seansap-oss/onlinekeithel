@@ -63,7 +63,7 @@ export function Information({ kind }) {
         <>
           <p>
             We use account details to sign you in, manage your listings and
-            record your seller package. Public shop details, product photographs
+            manage your free seller account. Public shop details, product photographs
             and your chosen WhatsApp number are visible to visitors.
           </p>
           <h2>WhatsApp enquiries</h2>
@@ -80,9 +80,8 @@ export function Information({ kind }) {
           </p>
           <h2>Account and billing data</h2>
           <p>
-            Authentication is handled through Supabase. Payment processing uses
-            Razorpay when enabled. Card details are not stored in this
-            application. Contact support to request access to, correction or
+            Authentication is handled through Supabase. The marketplace does not
+            charge sellers during the free launch. Contact support to request access to, correction or
             deletion of your account data.
           </p>
           <p>
@@ -104,18 +103,17 @@ export function Information({ kind }) {
             duplicate spam or private information belonging to others. The
             marketplace can remove listings or suspend sellers who misuse it.
           </p>
-          <h2>Packages and advertising</h2>
+          <h2>Free launch</h2>
           <p>
-            Seller packages provide listing capacity for the stated period.
-            Homepage advertising is a separate service subject to content
-            review, payment and available placement. We do not promise external
-            social-media views or sales.
+            Sellers can publish up to 100 active listings for free. Published
+            listings stay visible until the seller pauses or removes them.
+            Featured homepage content is selected by the marketplace team.
+            We do not promise external social-media views or sales.
           </p>
           <h2>Before launch</h2>
           <p>
-            The operator must publish its contact details, applicable
-            payment/refund policy and final business terms before accepting
-            paying customers.
+            The operator must publish its contact details and final business
+            terms before opening registration to the public.
           </p>
         </>
       )}

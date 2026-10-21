@@ -2,16 +2,13 @@
 import { categoryCatalog } from "./categories.js";
 export const categories = categoryCatalog;
 export const plans = [
-  ["free", "Free", 0, 3],
-  ["starter", "Starter", 500, 50],
-  ["growth", "Growth", 1000, 250],
-  ["business", "Business", 2000, 1000],
-  ["catalogue", "Large catalogue", 5000, 15000],
-].map(([id, name, price, listing_limit]) => ({
+  ["free", "Free Launch", 0, 100, 365],
+].map(([id, name, price, listing_limit, duration_days]) => ({
   id,
   name,
   price,
   listing_limit,
+  duration_days,
   active: true,
 }));
 export const settings = {
