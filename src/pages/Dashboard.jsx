@@ -939,7 +939,7 @@ export function Dashboard({ startSell = false, visual = false }) {
             </Link>
           )}
           <div className="usage">
-            <b>Free launch</b>
+            <b>Your listings</b>
             <p>
               {count} / {limit.toLocaleString()} active products
             </p>

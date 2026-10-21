@@ -135,7 +135,7 @@ export function Layout({ children }) {
         <div>
           <b>Start something</b>
           <Link to="/sell">Post ad</Link>
-          <Link to="/plans">Sell for free</Link>
+          <Link to="/plans">Post an ad</Link>
           <Link to="/shops">Explore shops</Link>
         </div>
         <div>
@@ -145,7 +145,6 @@ export function Layout({ children }) {
           <Link to="/terms">Marketplace terms</Link>
           <small>
             <AdminEntry /> {new Date().getFullYear()} {settings.name}
-            <span className="release-version"> · v0.15.0 Free Launch RC1</span>
           </small>
           <small className="creator-credit">
             Created by{" "}

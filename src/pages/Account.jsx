@@ -10,6 +10,8 @@ import {
   WhatsappLogo,
   ArrowLeft,
   SignOut,
+  Eye,
+  EyeSlash,
 } from "@phosphor-icons/react";
 import { useMarket, Link } from "../lib/context";
 import {
@@ -38,6 +40,7 @@ export function AuthPage({ reset = false, returnTo }) {
     [otp, setOtp] = useState(""),
     [otpSent, setOtpSent] = useState(false),
     [password, setPassword] = useState(""),
+    [passwordVisible, setPasswordVisible] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [done, setDone] = useState("");
@@ -219,15 +222,29 @@ export function AuthPage({ reset = false, returnTo }) {
           {(reset || (method === "email" && mode !== "forgot")) && (
             <Field
               label="Password"
-              type="password"
-              autoComplete={
-                mode === "login" ? "current-password" : "new-password"
-              }
-              minLength={8}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            >
+              <div className="password-field">
+                <input
+                  type={passwordVisible ? "text" : "password"}
+                  autoComplete={
+                    mode === "login" ? "current-password" : "new-password"
+                  }
+                  minLength={8}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="password-visibility"
+                  aria-label={passwordVisible ? "Hide password" : "Show password"}
+                  aria-pressed={passwordVisible}
+                  onClick={() => setPasswordVisible((visible) => !visible)}
+                >
+                  {passwordVisible ? <EyeSlash size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </Field>
           )}
           <button
             className="button primary full"
@@ -795,10 +812,10 @@ export function Plans() {
   return (
     <div className="page narrow">
       <div className="pricing-intro">
-        <span className="eyebrow">FREE LAUNCH</span>
-        <h1>Your own corner of the market, free.</h1>
+        <span className="eyebrow">ONLINEKEITHEL</span>
+        <h1>Your own corner of the market.</h1>
         <p>Create a shop or individual profile, share your link, and post products across categories. Buyers can contact you directly on WhatsApp.</p>
-        <p>You can publish up to 100 active listings. One photo is enough for each; add more to help buyers choose. Your published listings stay visible until you pause or remove them.</p>
+        <p>Add clear photos and useful details so buyers can find the right item. You can update or remove your listings from your account.</p>
         <Link className="button primary" to="/sell">Post your first ad <ArrowRight size={18} /></Link>
       </div>
     </div>

@@ -56,14 +56,14 @@ export function Information({ kind }) {
             </a>
           )}
           {!settings.support_email && !settings.support_whatsapp && (
-            <p>Support contact details will be published before launch.</p>
+            <p>Marketplace support contact details are not available yet.</p>
           )}
         </>
       ) : kind === "privacy" ? (
         <>
           <p>
             We use account details to sign you in, manage your listings and
-            manage your free seller account. Public shop details, product photographs
+            manage your seller account. Public shop details, product photographs
             and your chosen WhatsApp number are visible to visitors.
           </p>
           <h2>WhatsApp enquiries</h2>
@@ -81,12 +81,9 @@ export function Information({ kind }) {
           <h2>Account and billing data</h2>
           <p>
             Authentication is handled through Supabase. The marketplace does not
-            charge sellers during the free launch. Contact support to request access to, correction or
+            process seller payments. Buyers and sellers arrange payment through
+            WhatsApp. Contact support to request access to, correction or
             deletion of your account data.
-          </p>
-          <p>
-            Before public launch, the marketplace operator must publish its
-            legal contact details and final retention policy.
           </p>
         </>
       ) : (
@@ -103,17 +100,11 @@ export function Information({ kind }) {
             duplicate spam or private information belonging to others. The
             marketplace can remove listings or suspend sellers who misuse it.
           </p>
-          <h2>Free launch</h2>
+          <h2>Seller accounts and listings</h2>
           <p>
-            Sellers can publish up to 100 active listings for free. Published
-            listings stay visible until the seller pauses or removes them.
-            Featured homepage content is selected by the marketplace team.
-            We do not promise external social-media views or sales.
-          </p>
-          <h2>Before launch</h2>
-          <p>
-            The operator must publish its contact details and final business
-            terms before opening registration to the public.
+            Buyers and sellers arrange payment and collection directly with each
+            other. Featured homepage content is selected by the marketplace
+            team. We do not promise external social-media views or sales.
           </p>
         </>
       )}
