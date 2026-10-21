@@ -22,7 +22,9 @@ npm run build
 npm run dev
 ```
 
-Vite prints the local URL, usually `http://localhost:5173`. Production uses the existing GitHub repository `seansap-oss/onlinekeithel` and the existing OnlineKeithel Vercel project. A push to the project's configured production branch triggers the Vercel deployment. The build command is `npm run build`, output `dist/client`.
+Vite prints the local URL, usually `http://localhost:5173`. Production uses the existing GitHub repository `seansap-oss/onlinekeithel` and the existing OnlineKeithel Vercel project. The current Vercel project is a CLI deployment, so deploy it explicitly after pushing GitHub. The build command is `npm run build`, output `dist/client`.
+
+The release ZIP contains `OnlineKeithel-v0.15.0.bundle`, a complete Git commit for this release that descends from the current GitHub `main`. In your existing repository folder, preserve any uncommitted work with `git stash push -u -m "Before Free Launch RC1"`, then fetch the bundle, fast-forward `main` and push. If the fast-forward says your local branch has diverged, stop and inspect its commits before resolving it. The current Vercel project was deployed with the CLI; a GitHub push alone is not confirmed to redeploy it. Link the existing project by name and run `vercel deploy --prod` after pushing.
 
 ### Database
 
