@@ -1,5 +1,5 @@
 import { normalizePayments } from "../lib/commerce";
-import { normalizePhoneNumber } from "../lib/phone-auth";
+import { accountEmailUrl } from "../lib/auth-url";
 import { templateForCategory, templates } from "../lib/templates";
 import React, { useState, useEffect } from "react";
 import {
@@ -20,6 +20,7 @@ import {
   supabase,
   result,
   preview,
+  checkout,
 } from "../lib/backend";
 import { Field, Upload, Empty, Photo } from "../components/UI";
 import { CategoryOptions } from "../components/CategoryOptions";
@@ -34,11 +35,10 @@ import {
 export function AuthPage({ reset = false, returnTo }) {
   const { session, navigate, notice } = useMarket();
   const [mode, setMode] = useState("login"),
-    [method, setMethod] = useState("email"),
     [email, setEmail] = useState(""),
-    [phone, setPhone] = useState(""),
     [otp, setOtp] = useState(""),
     [otpSent, setOtpSent] = useState(false),
+    [passwordMode, setPasswordMode] = useState(false),
     [password, setPassword] = useState(""),
     [passwordVisible, setPasswordVisible] = useState(false),
     [busy, setBusy] = useState(false),
@@ -67,52 +67,19 @@ export function AuthPage({ reset = false, returnTo }) {
         await result(s.auth.updateUser({ password }));
         notice("Password updated");
         navigate(destination);
-      } else if (method === "phone" && mode !== "forgot") {
-        const phoneNumber = normalizePhoneNumber(phone);
-        if (!otpSent) {
-          await result(
-            s.auth.signInWithOtp({
-              phone: phoneNumber,
-              options: { shouldCreateUser: mode === "signup" },
-            }),
-          );
-          setOtpSent(true);
-          setDone("A verification code has been sent to " + phoneNumber + ".");
-        } else {
-          await result(
-            s.auth.verifyOtp({
-              phone: phoneNumber,
-              token: otp.trim(),
-              type: "sms",
-            }),
-          );
-          navigate(destination);
-        }
-      } else if (mode === "login") {
+      } else if (mode === "forgot") {
+        await result(s.auth.resetPasswordForEmail(email, { redirectTo: accountEmailUrl("/reset-password") }));
+        setDone("If this email has an account, a password reset link will arrive shortly.");
+      } else if (mode === "login" && passwordMode) {
         await result(s.auth.signInWithPassword({ email, password }));
         navigate(destination);
-      } else if (mode === "signup") {
-        const d = await result(
-          s.auth.signUp({
-            email,
-            password,
-            options: { emailRedirectTo: location.origin + destination },
-          }),
-        );
-        if (d.session) navigate(destination);
-        else
-          setDone(
-            "Check your email to confirm your account, then return to sign in.",
-          );
+      } else if (!otpSent) {
+        await result(s.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: mode === "signup" } }));
+        setOtpSent(true);
+        setDone("A one-time sign-in code has been sent to " + email.trim() + ".");
       } else {
-        await result(
-          s.auth.resetPasswordForEmail(email, {
-            redirectTo: location.origin + "/reset-password",
-          }),
-        );
-        setDone(
-          "If this email has an account, a password reset link will arrive shortly.",
-        );
+        await result(s.auth.verifyOtp({ email: email.trim(), token: otp.trim(), type: "email" }));
+        navigate(destination);
       }
     } catch (e) {
       setError(e.message);
@@ -146,15 +113,15 @@ export function AuthPage({ reset = false, returnTo }) {
         </ul>
       </div>
       <div className="auth-form">
-        <h2>
-          {reset
+        <h2>{!reset && returnTo === "/admin"
+          ? "Administrator sign in"
+          : reset
             ? "Choose a new password"
             : mode === "login"
               ? "Welcome back"
               : mode === "signup"
                 ? "Make yourself at home"
-                : "Reset your password"}
-        </h2>
+                : "Reset your password"}</h2>
         <p>
           {mode === "signup"
             ? "One account to discover, save and sell."
@@ -166,16 +133,11 @@ export function AuthPage({ reset = false, returnTo }) {
             marketplace design, but sign-up is not live yet.
           </div>
         )}
-        {!reset && mode !== "forgot" && (
-          <div className="auth-methods" role="tablist" aria-label="Sign-in method">
-            <button type="button" role="tab" aria-selected={method === "email"} className={method === "email" ? "active" : ""} onClick={() => { setMethod("email"); setOtpSent(false); setOtp(""); setError(""); setDone(""); }}>Email</button>
-          </div>
-        )}
-        {method === "phone" && !reset && mode !== "forgot" && (
-          <p className="auth-hint">Phone verification uses an SMS code. The SMS provider must be enabled in your Supabase project.</p>
+        {!reset && mode !== "forgot" && !passwordMode && (
+          <p className="auth-hint">Sign in securely with a one-time code sent to your email.</p>
         )}
         <form onSubmit={submit}>
-          {!reset && method === "email" && (
+          {!reset && (
             <Field
               label="Email address"
               type="email"
@@ -184,31 +146,19 @@ export function AuthPage({ reset = false, returnTo }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-          )}{" "}
-          {!reset && method === "phone" && mode !== "forgot" && (
-            <Field
-              label="Phone number"
-              type="tel"
-              autoComplete="tel"
-              inputMode="tel"
-              placeholder="+91 98765 43210"
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
           )}
-          {method === "phone" && otpSent && !reset && (
+          {!reset && !passwordMode && mode !== "forgot" && otpSent && (
             <>
               <Field
-                label="SMS verification code"
+                label="Email verification code"
                 type="text"
                 autoComplete="one-time-code"
                 inputMode="numeric"
                 minLength={6}
-                maxLength={8}
+                maxLength={6}
                 required
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
               />
               <button
                 type="button"
@@ -219,7 +169,7 @@ export function AuthPage({ reset = false, returnTo }) {
               </button>
             </>
           )}
-          {(reset || (method === "email" && mode !== "forgot")) && (
+          {(reset || (passwordMode && mode === "login")) && (
             <Field
               label="Password"
             >
@@ -254,17 +204,15 @@ export function AuthPage({ reset = false, returnTo }) {
               ? "Please wait…"
               : reset
                 ? "Update password"
-                : method === "phone"
-                  ? otpSent
-                    ? "Verify code"
-                    : mode === "signup"
-                      ? "Send sign-up code"
-                      : "Send sign-in code"
-                : mode === "login"
-                  ? "Sign in"
-                  : mode === "signup"
-                    ? "Create free account"
-                    : "Send reset link"}
+                : mode === "forgot"
+                  ? "Send reset link"
+                  : mode === "login" && passwordMode
+                    ? "Sign in"
+                    : otpSent
+                      ? "Verify email code"
+                      : mode === "signup"
+                        ? "Send sign-up code"
+                        : "Send sign-in code"}
             <ArrowRight size={18} />
           </button>
           {error && (
@@ -286,6 +234,7 @@ export function AuthPage({ reset = false, returnTo }) {
                 setMode(mode === "login" ? "signup" : "login");
                 setOtpSent(false);
                 setOtp("");
+                setPasswordMode(false);
                 setError("");
                 setDone("");
               }}
@@ -294,10 +243,20 @@ export function AuthPage({ reset = false, returnTo }) {
                 ? "New here? Create an account"
                 : "Already a member? Sign in"}
             </button>
-            {mode === "login" && method === "email" && (
+            {mode === "login" && !passwordMode && (
+              <button className="text-button muted" onClick={() => { setPasswordMode(true); setOtpSent(false); setOtp(""); setError(""); setDone(""); }}>
+                Use password instead
+              </button>
+            )}
+            {mode === "login" && passwordMode && (
+              <button className="text-button muted" onClick={() => { setPasswordMode(false); setError(""); setDone(""); }}>
+                Use email code instead
+              </button>
+            )}
+            {mode === "login" && (
               <button
                 className="text-button muted"
-                onClick={() => { setMethod("email"); setMode("forgot"); setOtpSent(false); }}
+                onClick={() => { setMode("forgot"); setOtpSent(false); }}
               >
                 Forgot your password?
               </button>
@@ -809,6 +768,22 @@ export function SellerForm({ existing, onSaved }) {
   );
 }
 export function Plans() {
+  const { settings, plans, session, seller, navigate, notice } = useMarket();
+  const [busyPlan, setBusyPlan] = useState("");
+  const available = plans.filter((plan) => plan.active && Number(plan.price) > 0);
+  const choose = async (plan) => {
+    if (!session) return navigate("/login");
+    if (!seller) return navigate("/dashboard");
+    setBusyPlan(plan.id);
+    try {
+      await checkout(plan.id);
+      notice("Package payment confirmed and your allowance is updated.");
+    } catch (e) {
+      notice(e.message);
+    } finally {
+      setBusyPlan("");
+    }
+  };
   return (
     <div className="page narrow">
       <div className="pricing-intro">
@@ -818,6 +793,28 @@ export function Plans() {
         <p>Add clear photos and useful details so buyers can find the right item. You can update or remove your listings from your account.</p>
         <Link className="button primary" to="/sell">Post your first ad <ArrowRight size={18} /></Link>
       </div>
+      {settings.payments_enabled && (
+        <section className="package-cards" aria-labelledby="seller-packages-heading">
+          <h2 id="seller-packages-heading">Seller packages</h2>
+          <p>Choose an active package if you need a higher listing allowance.</p>
+          {available.length ? (
+            <div className="plan-grid">
+              {available.map((plan) => (
+                <article className="plan-card" key={plan.id}>
+                  <h3>{plan.name}</h3>
+                  <strong className="plan-price">₹{Number(plan.price).toLocaleString("en-IN")}</strong>
+                  <p>Up to {plan.listing_limit} active ads · {plan.duration_days || 30} days</p>
+                  <button className="button primary" disabled={!!busyPlan} onClick={() => choose(plan)}>
+                    {busyPlan === plan.id ? "Opening secure checkout…" : "Choose package"}
+                  </button>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="muted">No paid packages are active right now.</p>
+          )}
+        </section>
+      )}
     </div>
   );
 }

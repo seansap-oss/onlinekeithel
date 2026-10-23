@@ -1,15 +1,17 @@
-# OnlineKeithel — Free Launch Candidate 1 (v0.15.0)
+# OnlineKeithel (v0.15.6)
 
-A mobile-first Manipur marketplace with shop and individual pages, searchable listings, WhatsApp enquiries, an admin editor, a PWA and an Android Studio test project. This release does not charge sellers.
+A mobile-first Manipur marketplace with shop and individual pages, searchable listings, email-code sign-in, WhatsApp enquiries, an admin editor, a PWA and an Android Studio test project.
 
 ## What the free release does
 
-- Account creation with Supabase email/password, confirmation and recovery. Phone OTP UI still requires an SMS provider; WhatsApp OTP is not configured.
+- Account creation and sign-in with Supabase email OTP. Existing account holders can use email/password as a fallback; password recovery remains available.
 - A seller can publish up to 100 active listings. Published ads stay visible until paused or removed; one photo is sufficient, and extra photos are welcome.
 - Buyers find listings by category, shop and keyword. Contact buttons open WhatsApp with an enquiry; sending happens in WhatsApp.
-- Seller storefronts, uploads and editing, administrator controls, hero/ticker editors and PWA remain available. Paid packages are inactive and checkout is disabled. Existing payment and entitlement records are preserved for a later release.
+- Seller storefronts, uploads and editing, administrator controls, hero/ticker editors and PWA remain available. Admin can enable paid packages globally and per plan; checkout also requires Razorpay credentials. Existing payment and entitlement records are preserved.
 
 **Launch status:** local tests and build pass. The live release still needs two-account signup/posting/enquiry testing, a production email sender, mobile checks and final operator/contact details. See [BUILD-STATUS.md](BUILD-STATUS.md).
+
+Account email setup for the existing Vercel site and a later host move: [docs/EMAIL-SETUP.md](docs/EMAIL-SETUP.md). The website does not store an SMTP password; Supabase Auth sends confirmation and recovery emails through the configured provider.
 
 ## One Windows folder and one Vercel project
 
@@ -24,7 +26,7 @@ npm run dev
 
 Vite prints the local URL, usually `http://localhost:5173`. Production uses the existing GitHub repository `seansap-oss/onlinekeithel` and the existing OnlineKeithel Vercel project. The current Vercel project is a CLI deployment, so deploy it explicitly after pushing GitHub. The build command is `npm run build`, output `dist/client`.
 
-The release ZIP contains `OnlineKeithel-v0.15.0.bundle`, a complete Git commit for this release that descends from the current GitHub `main`. In your existing repository folder, preserve any uncommitted work with `git stash push -u -m "Before Free Launch RC1"`, then fetch the bundle, fast-forward `main` and push. If the fast-forward says your local branch has diverged, stop and inspect its commits before resolving it. The current Vercel project was deployed with the CLI; a GitHub push alone is not confirmed to redeploy it. Link the existing project by name and run `vercel deploy --prod` after pushing.
+The v0.15.6 source ZIP contains project files at its root. In the **existing** repository folder, check `git status` and save any personal edits before copying the ZIP's contents into the same folder. The ZIP excludes `.git`, `.env.local`, `node_modules` and build output, so it does not create another repository or overwrite the local keys. After installing, build and test with the commands above. A GitHub push alone does not guarantee a Vercel deployment when the project was linked through the CLI; use the existing linked Vercel project and verify the live address after deployment.
 
 ### Database
 

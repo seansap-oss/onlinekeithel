@@ -709,6 +709,10 @@ hr {
   font-size: 11px;
   color: #6a796c;
 }
+.site-footer .build-version {
+  font-size: 11px;
+  color: #7b897d;
+}
 .bottom-nav,
 .mobile-categories {
   display: none;
@@ -3981,6 +3985,15 @@ th {
   border-radius: 9px;
   background: #eef2eb;
 }
+.package-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 18px;
+}
+.package-control p { margin: 5px 0 0; font-size: 13px; }
+.package-control .button { flex: 0 0 auto; }
 .auth-methods button {
   padding: 10px 12px;
   border-radius: 7px;
@@ -3994,6 +4007,14 @@ th {
   box-shadow: 0 1px 4px #183a2b18;
 }
 .auth-hint { color: #68776c; font-size: 12px; line-height: 1.5; }
+.package-cards { margin: 36px 0 20px; }
+.package-cards > p { color: #68776c; }
+.plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-top: 18px; }
+.plan-card { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 20px; border: 1px solid #dfe7df; border-radius: 14px; background: #fff; }
+.plan-card h3, .plan-card p { margin: 0; }
+.plan-card p { color: #68776c; font-size: 13px; }
+.plan-card .button { margin-top: auto; }
+.plan-price { color: #145441; font-size: 26px; }
 @media (max-width: 900px) {
   .hero { height: 350px; }
   .hero-panel { width: 52%; padding: 32px 28px; }
@@ -4001,6 +4022,7 @@ th {
   .campaign-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
+  .package-control { align-items: stretch; flex-direction: column; }
   .hero { height: 310px; }
   .hero-image { left: 40%; width: 60%; object-position: 58% center; }
   .hero-panel {

@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { storefrontSettings, shopPath } from "../src/lib/storefront.js";
+import {
+  storefrontSettings,
+  shopPath,
+  sellerRouteKey,
+  isSellerId,
+} from "../src/lib/storefront.js";
 
 test("storefront settings preserve template defaults and constrain design choices", () => {
   assert.equal(shopPath("leikai-handlooms"), "/shop/leikai-handlooms");
@@ -48,4 +53,17 @@ test("storefront settings preserve template defaults and constrain design choice
     storefrontSettings({ storefront: { font: "malicious" } }).font,
     "classic",
   );
+});
+
+test("seller links use a safe slug and fall back to the seller id", () => {
+  assert.equal(shopPath({ slug: "jassstore", id: "seller-id" }), "/shop/jassstore");
+  assert.equal(shopPath({ id: "seller-id" }), "/shop/seller-id");
+  assert.equal(shopPath({}), "/shops");
+  assert.equal(shopPath("shop name/one"), "/shop/shop%20name%2Fone");
+  assert.equal(sellerRouteKey("jass%20store"), "jass store");
+  assert.equal(
+    isSellerId("fb13cbb1-7013-4d9d-8847-397e80426fed"),
+    true,
+  );
+  assert.equal(isSellerId("jassstore"), false);
 });

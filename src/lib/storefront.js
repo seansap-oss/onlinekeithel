@@ -46,4 +46,25 @@ export function storefrontSettings(seller = {}) {
   };
 }
 
-export const shopPath = (slug) => `/shop/${slug}`;
+export function shopPath(sellerOrSlug) {
+  const value =
+    typeof sellerOrSlug === "object" && sellerOrSlug !== null
+      ? sellerOrSlug.slug || sellerOrSlug.id
+      : sellerOrSlug;
+  const key = String(value || "").trim();
+  return key ? `/shop/${encodeURIComponent(key)}` : "/shops";
+}
+
+export function sellerRouteKey(value) {
+  try {
+    return decodeURIComponent(String(value || "")).trim();
+  } catch {
+    return String(value || "").trim();
+  }
+}
+
+export function isSellerId(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || "").trim(),
+  );
+}
