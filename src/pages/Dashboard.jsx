@@ -981,9 +981,7 @@ export function Dashboard({ startSell = false, visual = false }) {
                         </small>
                       </div>
                       <span className={"status " + i.status}>
-                        {i.status === "published" && (!entitlement || new Date(entitlement.expires_at) <= new Date())
-                          && i.published_at && new Date(i.published_at) < new Date(Date.now() - 14 * 86400000)
-                          ? "Expired · edit to renew" : i.status}
+                        {i.status}
                       </span>
                       <button
                         className="icon-button"

@@ -1,12 +1,18 @@
-import { authenticated, gateway, fail } from "./_lib/server.js";
+import { authenticated, gateway, fail, paidPackagesAreEnabled } from "./_lib/server.js";
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
-  if (process.env.ENABLE_PAID_PACKAGES !== "true")
-    return res.status(403).json({ error: "OnlineKeithel is free during launch. Payments are not available." });
   try {
     const { client, seller } = await authenticated(req);
+    const { data: marketplaceSettings, error: settingsError } = await client
+      .from("settings")
+      .select("value")
+      .eq("id", "marketplace")
+      .single();
+    if (settingsError) throw settingsError;
+    if (!paidPackagesAreEnabled(marketplaceSettings?.value))
+      return res.status(403).json({ error: "Paid packages are currently turned off." });
     const { planId } =
       typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
     if (typeof planId !== "string")

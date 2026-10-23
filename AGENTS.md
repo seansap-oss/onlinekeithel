@@ -125,3 +125,22 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 - User chose an early free marketplace launch. Public pricing and checkout are suspended; preserve historical orders and paid plan records for a later release. The new free tier allows 100 active published listings per seller without a 14-day public expiry. The dedicated project's free-launch migration was applied and its plan rows read back. Do not rerun v0.14.4 package migration after it.
 - Keep one repository `seansap-oss/onlinekeithel`, one Vercel project and the user's existing Windows VS Code folder. Present push/deploy and Android Studio commands after a build. The Android project is a test APK shell; email recovery/confirmation redirects still target the web until native deep links are built.
 - WhatsApp OTP is not configured; email/password is the initial sign-in route. Enquiries remain WhatsApp handoffs without an app inbox. Do not claim public launch readiness until live email delivery, seller upload, listing discovery and mobile contact are exercised.
+
+## Build identification — v0.15.3, 21 October 2026
+
+- User now requests a visible, discreet version at the left of the footer. Show the package version as plain `vX.Y.Z`, without any release or launch wording. Keep the current footer branding and layout.
+- The Windows source ZIP keeps `docs/EMAIL-SETUP.md` inside the `docs` folder. Provide a separate copy on request, and give commands that identify the existing VS Code folder and installed package version.
+
+## WhatsApp sign-in and package controls — v0.15.5, 22 October 2026
+
+- User selected WhatsApp as the phone OTP channel. Keep email/password as an available sign-in fallback. The WhatsApp method uses Supabase `signInWithOtp` with `channel: "whatsapp"`; production requires Supabase phone auth plus a Twilio WhatsApp sender. Do not imply this is configured or free. MSG91 is not required for Supabase's native WhatsApp channel.
+- Phone-only auth identities are separate from existing email identities unless a deliberate, verified linking flow is built. Supabase's standard `updateUser({phone})` phone-change flow sends SMS; do not tell the user an existing email account can be switched to WhatsApp without further setup.
+- Admin signs in at `/admin` using their existing authorized account. Never create or expose a shared admin password. Verified membership remains enforced by `is_admin()`.
+- The Admin > Packages page has a site-wide paid-packages switch using the existing protected homepage publishing RPC. Each plan also has its own `active` flag. The API refuses checkout unless both gates are on and Razorpay credentials are configured. Keep packages off until the operator intentionally enables them.
+- Sellers continue to customize individual/shop pages through the existing profile editor: logo/avatar, cover, text, share URL, preset color/font, gallery, and social/video links.
+
+## Email OTP preference — v0.15.6, 22 October 2026
+
+- User chose email OTP as the first sign-in method. The login and signup screen requests a Supabase email code and verifies it; existing users can switch to email/password. Keep password recovery. Do not expose WhatsApp OTP in the sign-in form until the operator asks to enable it and the provider is configured.
+- Supabase sends a magic link by default through `signInWithOtp`; email OTP needs the Supabase Magic Link template to display `{{ .Token }}`. Signup confirmation template may also need the code placeholder. The application source cannot configure dashboard templates or remove provider rate limits.
+- Preserve the existing admin account/membership model, `/admin` route, user management, and Admin > Packages site-wide/per-plan toggles. Do not create a shared admin password. Paid package checkout still requires package switches and Razorpay credentials.

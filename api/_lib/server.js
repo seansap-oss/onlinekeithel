@@ -1,5 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "node:crypto";
+export function paidPackagesAreEnabled(settings) {
+  return settings?.payments_enabled === true;
+}
 export function db() {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)
     throw Object.assign(Error("Account services are not configured."), {

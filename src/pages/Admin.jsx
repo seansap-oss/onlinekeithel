@@ -113,6 +113,24 @@ export function Admin({ visual = false }) {
     await refresh();
     load();
   };
+  const setPaymentsEnabled = async (enabled) => {
+    if (visual) return notice("Administrator preview only. Connect your admin account to change settings.");
+    setBusy(true);
+    try {
+      await result(
+        supabase.rpc("publish_homepage", {
+          p_value: { ...settings, payments_enabled: enabled },
+          p_expected: settings,
+        }),
+      );
+      await refresh();
+      notice(enabled ? "Paid packages enabled" : "Paid packages turned off");
+    } catch (e) {
+      notice(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
   const editFields = {
     categories: [
       "id",
@@ -215,6 +233,27 @@ export function Admin({ visual = false }) {
                   </button>
                 )}
               </div>
+              {tab === "plans" && (
+                <div className="notice-box package-control">
+                  <div>
+                    <strong>Paid packages</strong>
+                    <p>
+                      {settings.payments_enabled
+                        ? "Payment requests are enabled. Each package must also be active and Razorpay must be configured."
+                        : "Paid packages are off. Sellers continue using the current free allowance."}
+                    </p>
+                  </div>
+                  <button
+                    className={settings.payments_enabled ? "button outline" : "button primary"}
+                    type="button"
+                    disabled={busy || visual}
+                    onClick={() => setPaymentsEnabled(!settings.payments_enabled)}
+                    aria-pressed={Boolean(settings.payments_enabled)}
+                  >
+                    {busy ? "Saving…" : settings.payments_enabled ? "Turn paid packages off" : "Turn paid packages on"}
+                  </button>
+                </div>
+              )}
               {[
                 "sellers",
                 "listings",

@@ -4,6 +4,7 @@ import { categoryIcons, CategoryIcon } from "./CategoryIcon";
 import { Ticker } from "./Ticker";
 import { SearchPanel } from "./SearchPanel";
 import React, { useState, useEffect } from "react";
+import packageJson from "../../package.json";
 import {
   List,
   Moon,
@@ -125,6 +126,7 @@ export function Layout({ children }) {
             <br />
             Made for the neighbourhoods of Manipur.
           </p>
+          <small className="build-version">v{packageJson.version}</small>
         </div>
         <div>
           <b>Explore</b>

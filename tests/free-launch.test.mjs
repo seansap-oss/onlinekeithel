@@ -3,18 +3,18 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import createOrder from "../api/create-order.js";
+import { paidPackagesAreEnabled } from "../api/_lib/server.js";
 
-test("free launch declines payment creation before contacting a gateway", async () => {
-  const previous = process.env.ENABLE_PAID_PACKAGES;
-  delete process.env.ENABLE_PAID_PACKAGES;
-  try {
-    const response = { statusCode: 0, headers: {}, setHeader(k,v){this.headers[k]=v;}, status(n){this.statusCode=n;return this;}, json(body){this.body=body;return this;} };
-    await createOrder({ method: "POST", body: { planId: "quick" } }, response);
-    assert.equal(response.statusCode, 403);
-    assert.match(response.body.error, /free during launch/i);
-  } finally {
-    if (previous !== undefined) process.env.ENABLE_PAID_PACKAGES = previous;
-  }
+test("paid package checkout requires the admin-controlled marketplace switch", async () => {
+  assert.equal(paidPackagesAreEnabled(undefined), false);
+  assert.equal(paidPackagesAreEnabled({}), false);
+  assert.equal(paidPackagesAreEnabled({ payments_enabled: false }), false);
+  assert.equal(paidPackagesAreEnabled({ payments_enabled: true }), true);
+
+  const response = { statusCode: 0, headers: {}, setHeader(k,v){this.headers[k]=v;}, status(n){this.statusCode=n;return this;}, json(body){this.body=body;return this;} };
+  await createOrder({ method: "POST", body: { planId: "quick" } }, response);
+  assert.equal(response.statusCode, 503);
+  assert.match(response.body.error, /not configured/i);
 });
 
 test("free launch keeps old ads public, protects seller edits, and caps active ads", async () => {
