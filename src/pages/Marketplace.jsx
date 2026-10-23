@@ -66,6 +66,8 @@ import {
   storefrontFonts,
   storefrontSettings,
   shopPath,
+  sellerRouteKey,
+  isSellerId,
 } from "../lib/storefront";
 import { icons } from "../components/Layout";
 export function ProductCard({ item }) {
@@ -166,7 +168,7 @@ export function ProductCard({ item }) {
           {item.title}
         </Link>
         <strong className="price">{listingPrice(item, money)}</strong>
-        <Link to={shopPath(item.seller?.slug)} className="seller-line">
+        <Link to={shopPath(item.seller)} className="seller-line">
           <Storefront size={14} />
           {item.seller?.name || "Local seller"}
         </Link>
@@ -187,7 +189,7 @@ export function ProductCard({ item }) {
 }
 export function ShopCard({ seller }) {
   return (
-    <Link className="shop-card" to={shopPath(seller.slug)}>
+    <Link className="shop-card" to={shopPath(seller)}>
       <Photo src={seller.cover} alt={seller.name} loading="lazy" />
       <div>
         <span className="shop-avatar">
@@ -1169,6 +1171,9 @@ export function SellerPage({ slug }) {
   const [shopCategory, setShopCategory] = useState(""),
     [shopQuery, setShopQuery] = useState("");
   const [seller, setSeller] = useState(null),
+    [sellerLoading, setSellerLoading] = useState(true),
+    [sellerError, setSellerError] = useState(""),
+    [sellerAttempt, setSellerAttempt] = useState(0),
     [items, setItems] = useState([]),
     [collections, setCollections] = useState([]),
     [collection, setCollection] = useState(""),
@@ -1177,19 +1182,39 @@ export function SellerPage({ slug }) {
     [more, setMore] = useState(false);
   useEffect(() => {
     let live = true;
+    const routeKey = sellerRouteKey(slug);
     async function run() {
+      setSellerLoading(true);
+      setSellerError("");
       try {
-        const s = fixtures
-          ? fixtures.sellers.find((s) => s.slug === slug)
-          : configured
-            ? await result(
-                supabase
-                  .from("sellers")
-                  .select("*")
-                  .eq("slug", slug)
-                  .maybeSingle(),
-              )
-            : null;
+        let s = fixtures
+          ? fixtures.sellers.find(
+              (seller) =>
+                seller.slug?.toLowerCase() === routeKey.toLowerCase() ||
+                seller.id?.toLowerCase() === routeKey.toLowerCase(),
+            )
+          : null;
+        if (!fixtures && configured) {
+          s = await result(
+            supabase
+              .from("sellers")
+              .select("*")
+              .eq("slug", routeKey)
+              .eq("suspended", false)
+              .maybeSingle(),
+          );
+          // Older seller links used the seller UUID in place of a slug.
+          if (!s && isSellerId(routeKey)) {
+            s = await result(
+              supabase
+                .from("sellers")
+                .select("*")
+                .eq("id", routeKey)
+                .eq("suspended", false)
+                .maybeSingle(),
+            );
+          }
+        }
         if (!live) return;
         setSeller(s);
         if (s) {
@@ -1245,24 +1270,55 @@ export function SellerPage({ slug }) {
             );
             if (live) setCollections(c);
           }
+        } else {
+          setItems([]);
+          setCollections([]);
+          setSellerError(
+            configured
+              ? "not-found"
+              : "Seller pages are unavailable until the marketplace database is connected.",
+          );
         }
       } catch (e) {
-        notice(e.message);
+        if (live) {
+          setSellerError(e.message);
+          notice(e.message);
+        }
+      } finally {
+        if (live) setSellerLoading(false);
       }
     }
     run();
     return () => {
       live = false;
     };
-  }, [fixtures, slug, collection, page, shopCategory, shopQuery]);
+  }, [fixtures, slug, collection, page, shopCategory, shopQuery, sellerAttempt]);
   useEffect(() => {
     if (seller) document.title = `${seller.name} | OnlineKeithel`;
   }, [seller]);
+  if (!seller && sellerLoading)
+    return (
+      <div className="page">
+        <p role="status">Loading seller page…</p>
+      </div>
+    );
   if (!seller)
     return (
       <div className="page">
-        <Empty title="Shop unavailable">
-          This shop may not be published yet.
+        <Empty title={sellerError === "not-found" ? "Seller page not found" : "Couldn’t load seller page"}>
+          {sellerError === "not-found"
+            ? "This seller page is not available. Check the link or return to the marketplace."
+            : sellerError || "Check your connection, then try again."}
+          {sellerError !== "not-found" && (
+            <button
+              className="button outline"
+              type="button"
+              onClick={() => setSellerAttempt((attempt) => attempt + 1)}
+            >
+              Try again
+            </button>
+          )}
+          <Link to="/">Return to the marketplace</Link>
         </Empty>
       </div>
     );
@@ -1628,7 +1684,7 @@ export function ProductPage({ id }) {
           <div className="detail-seller">
             <Storefront size={30} />
             <div>
-              <Link to={shopPath(item.seller?.slug)}>
+              <Link to={shopPath(item.seller)}>
                 <strong>{item.seller?.name}</strong>
               </Link>
               <small>
