@@ -18,6 +18,9 @@ import { preview } from "./lib/backend";
 const Dashboard = lazy(() =>
   import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })),
 );
+const Messages = lazy(() =>
+  import("./pages/Messages").then((m) => ({ default: m.Messages })),
+);
 const Admin = lazy(() =>
   import("./pages/Admin").then((m) => ({ default: m.Admin })),
 );
@@ -60,6 +63,12 @@ function Router() {
     page = (
       <Guard>
         <Dashboard startSell={p === "/sell"} />
+      </Guard>
+    );
+  else if (p === "/messages")
+    page = (
+      <Guard>
+        <Messages />
       </Guard>
     );
   else if (p === "/plans") page = <Plans />;
