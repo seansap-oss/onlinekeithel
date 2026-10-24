@@ -36,6 +36,8 @@ export function AuthPage({ reset = false, returnTo }) {
   const { session, navigate, notice } = useMarket();
   const [mode, setMode] = useState("login"),
     [email, setEmail] = useState(""),
+    [username, setUsername] = useState(""),
+    [phone, setPhone] = useState(""),
     [otp, setOtp] = useState(""),
     [otpSent, setOtpSent] = useState(false),
     [passwordMode, setPasswordMode] = useState(true),
@@ -81,7 +83,7 @@ export function AuthPage({ reset = false, returnTo }) {
           s.auth.signUp({
             email: email.trim(),
             password,
-            options: { emailRedirectTo: accountEmailUrl(destination) },
+            options: { emailRedirectTo: accountEmailUrl(destination), data: { username: username.trim(), phone: phone.trim() } },
           }),
         );
         if (data.session) navigate(destination);
@@ -165,6 +167,13 @@ export function AuthPage({ reset = false, returnTo }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+          )}
+          {mode === "signup" && !reset && (
+            <>
+              <Field label="Username" required minLength={3} maxLength={24} pattern="[A-Za-z0-9_]+" value={username} onChange={(e) => setUsername(e.target.value.replace(/[^A-Za-z0-9_]/g, "").slice(0, 24))} />
+              <Field label="Phone number" type="tel" autoComplete="tel" required minLength={7} maxLength={20} value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <small>Your phone number stays private. You can separately choose to publish it as WhatsApp on your seller listings.</small>
+            </>
           )}
           {!reset && mode === "login" && !passwordMode && otpSent && (
             <>
@@ -388,6 +397,7 @@ export function SellerForm({ existing, onSaved }) {
               showVideo: display.showVideo,
             },
             user_id: existing?.user_id || session.user.id,
+            whatsapp_enabled: form.whatsapp_enabled === true,
           };
           delete payload.created_at;
           delete payload.suspended;
@@ -505,6 +515,7 @@ export function SellerForm({ existing, onSaved }) {
           }
         />
       </div>
+      <label className="whatsapp-consent"><input type="checkbox" checked={!!form.whatsapp_enabled} onChange={(e) => change("whatsapp_enabled", e.target.checked)} /> <span><strong>Show WhatsApp on my listings</strong><small> I approve displaying this number so buyers can contact me on WhatsApp. If off, buyers can use private in-house chat.</small></span></label>
       <div className="notice-box">
         <WhatsappLogo size={21} /> Buyers can contact this number. Their
         messages open in WhatsApp and are not stored here.

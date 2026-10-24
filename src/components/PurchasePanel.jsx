@@ -37,7 +37,7 @@ export function PurchasePanel({ item }) {
   const chosenOption = option?.label || sizeChoice;
   const summary = `${item.title}${chosenOption ? " · " + chosenOption : ""}\nQuantity: ${quantity} ${c.unit}\nItem subtotal: ${money(total)} (confirm delivery/fees)\nPreferred payment: ${method}\n${location.origin}/listing/${item.id}`;
   const wa =
-    !item.sample && !error
+    !item.sample && !error && item.seller?.whatsapp_enabled
       ? whatsappUrl(item.seller?.whatsapp, `${message}\n\n${summary}`)
       : "";
   const methods = [
