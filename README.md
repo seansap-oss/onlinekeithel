@@ -1,6 +1,6 @@
-# OnlineKeithel (v0.15.6)
+# OnlineKeithel (v0.15.8)
 
-A mobile-first Manipur marketplace with shop and individual pages, searchable listings, email-code sign-in, WhatsApp enquiries, an admin editor, a PWA and an Android Studio test project.
+A mobile-first Manipur marketplace with shop and individual pages, searchable listings, email-code sign-in, public buyer questions, private buyer/seller messages and WhatsApp enquiries, an admin editor, a PWA and an Android Studio test project.
 
 ## What the free release does
 
