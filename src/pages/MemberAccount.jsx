@@ -5,9 +5,9 @@ import {
   DeviceMobile,
   Heart,
   House,
+  ShieldCheck,
   SignOut,
   SquaresFour,
-  Storefront,
   User,
   WarningCircle,
 } from "@phosphor-icons/react";
@@ -129,9 +129,13 @@ export function MemberAccount() {
   }
 
   async function signOut() {
-    const { error: signOutError } = await supabase.auth.signOut();
-    if (signOutError) notice(signOutError.message);
-    else navigate("/");
+    try {
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) notice(signOutError.message);
+      else navigate("/");
+    } catch (e) {
+      notice(e.message);
+    }
   }
 
   return (
@@ -152,7 +156,7 @@ export function MemberAccount() {
             <User size={20} /> My seller profile
           </Link>
           <button className="member-action-link" onClick={sendPasswordLink} disabled={busy}>
-            <Storefront size={20} /> {busy ? "Sending link…" : "Set or reset password"}
+            <ShieldCheck size={20} /> {busy ? "Sending link…" : "Set or reset password"}
           </button>
           <button className="button outline member-signout" onClick={signOut}>
             <SignOut size={19} /> Sign out
