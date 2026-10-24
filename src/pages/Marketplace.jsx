@@ -41,6 +41,8 @@ import {
   Flag,
   CheckCircle,
   MagnifyingGlass,
+  ChatCircleDots,
+  PaperPlaneRight,
 } from "@phosphor-icons/react";
 import { useMarket, Link } from "../lib/context";
 import { CategoryOptions } from "../components/CategoryOptions";
@@ -1729,6 +1731,7 @@ export function ProductPage({ id }) {
           </button>
         </section>
       </div>
+      <ListingQuestions item={item} />
       {social && (
         <Modal title="Social & video" side onClose={() => setSocial(false)}>
           <SocialLinks values={item.seller?.socials} />
@@ -1783,5 +1786,282 @@ export function ProductPage({ id }) {
         </Modal>
       )}
     </div>
+  );
+}
+
+function ListingQuestions({ item }) {
+  const { session, navigate, notice } = useMarket();
+  const [questions, setQuestions] = useState([]);
+  const [question, setQuestion] = useState("");
+  const [reply, setReply] = useState({});
+  const [reporting, setReporting] = useState("");
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const seller = item.seller?.user_id === session?.user?.id;
+
+  const load = async () => {
+    if (!configured || item.sample) return;
+    try {
+      setQuestions(
+        await result(
+          supabase
+            .from("listing_questions")
+            .select("*")
+            .eq("listing_id", item.id)
+            .order("created_at", { ascending: true }),
+        ),
+      );
+    } catch (e) {
+      notice(e.message);
+    }
+  };
+  useEffect(() => {
+    load();
+    if (!configured || item.sample) return;
+    const channel = supabase
+      .channel("listing-questions-" + item.id)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "listing_questions",
+          filter: "listing_id=eq." + item.id,
+        },
+        load,
+      )
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [item.id, item.sample, session?.user?.id]);
+
+  async function ask(e) {
+    e.preventDefault();
+    const text = question.trim();
+    if (!text || !session || busy) return;
+    setBusy(true);
+    try {
+      await result(
+        supabase.from("listing_questions").insert({
+          listing_id: item.id,
+          author_id: session.user.id,
+          body: text,
+        }),
+      );
+      setQuestion("");
+      await load();
+      notice("Your question is now visible on this listing.");
+    } catch (e) {
+      notice(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startPrivateMessage() {
+    if (!session) {
+      navigate("/login?returnTo=" + encodeURIComponent("/listing/" + item.id));
+      return;
+    }
+    if (seller) {
+      navigate("/messages");
+      return;
+    }
+    setBusy(true);
+    try {
+      const existing = await result(
+        supabase
+          .from("direct_conversations")
+          .select("id")
+          .eq("listing_id", item.id)
+          .eq("buyer_id", session.user.id)
+          .maybeSingle(),
+      );
+      let conversation = existing;
+      if (!conversation)
+        conversation = await result(
+          supabase
+            .from("direct_conversations")
+            .insert({ listing_id: item.id, buyer_id: session.user.id })
+            .select("id")
+            .single(),
+        );
+      navigate("/messages?conversation=" + conversation.id);
+    } catch (e) {
+      notice(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveReply(questionId) {
+    try {
+      await result(
+        supabase
+          .from("listing_questions")
+          .update({ seller_reply: reply[questionId]?.trim() || null })
+          .eq("id", questionId),
+      );
+      setReply((old) => ({ ...old, [questionId]: undefined }));
+      await load();
+      notice("Your public reply has been posted.");
+    } catch (e) {
+      notice(e.message);
+    }
+  }
+
+  async function reportQuestion(e) {
+    e.preventDefault();
+    try {
+      await result(
+        supabase.rpc("report_listing_message", {
+          p_question_id: reporting,
+          p_message_id: null,
+          p_reason: reason.trim(),
+        }),
+      );
+      setReporting("");
+      setReason("");
+      notice("Message sent to the admin team for review.");
+    } catch (e) {
+      notice(e.message);
+    }
+  }
+
+  return (
+    <section className="listing-questions" aria-labelledby="questions-title">
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">BUYER & SELLER MESSAGES</span>
+          <h2 id="questions-title">Questions about this listing</h2>
+          <p>Questions and seller replies are visible to everyone.</p>
+        </div>
+        <div className="button-row">
+          <button
+            className="button primary"
+            disabled={item.sample || !configured}
+            onClick={() => {
+              if (!session) {
+                navigate("/login?returnTo=" + encodeURIComponent("/listing/" + item.id));
+                return;
+              }
+              document.querySelector(".question-compose textarea")?.focus();
+            }}
+          >
+            Ask publicly
+          </button>
+          <button
+            className="button outline"
+            disabled={busy || item.sample || !configured}
+            onClick={startPrivateMessage}
+          >
+            <ChatCircleDots size={19} /> Message privately
+          </button>
+        </div>
+      </div>
+      {item.sample ? (
+        <p className="notice-box">Public questions and private messaging are available on live listings.</p>
+      ) : !configured ? (
+        <p className="notice-box">Connect the marketplace Supabase project to post or read live questions.</p>
+      ) : (
+        <>
+          {session ? (
+            <form className="question-compose" onSubmit={ask}>
+              <textarea
+                aria-label="Ask the seller a public question"
+                placeholder="Ask the seller a question…"
+                rows={3}
+                minLength={1}
+                maxLength={2000}
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+              />
+              <button
+                className="button primary"
+                disabled={!question.trim() || busy}
+              >
+                <PaperPlaneRight size={18} /> Post question
+              </button>
+            </form>
+          ) : (
+            <p className="notice-box">
+              <Link to={"/login?returnTo=" + encodeURIComponent("/listing/" + item.id)}>
+                Sign in
+              </Link>{" "}
+              to ask a public question or message this seller.
+            </p>
+          )}
+          <div className="question-list">
+            {!questions.length ? (
+              <p className="muted">No questions yet. Start the conversation.</p>
+            ) : (
+              questions.map((entry) => (
+                <article className="listing-question" key={entry.id}>
+                  <div className="question-heading">
+                    <strong>Marketplace member</strong>
+                    <small>{new Date(entry.created_at).toLocaleString()}</small>
+                  </div>
+                  <p>{entry.body}</p>
+                  {entry.seller_reply && (
+                    <div className="seller-answer">
+                      <strong>{item.seller?.name || "Seller"} replied</strong>
+                      <p>{entry.seller_reply}</p>
+                      {entry.seller_replied_at && (
+                        <small>{new Date(entry.seller_replied_at).toLocaleString()}</small>
+                      )}
+                    </div>
+                  )}
+                  {seller && (
+                    <div className="question-actions">
+                      {reporting === entry.id ? (
+                        <form className="message-report-form" onSubmit={reportQuestion}>
+                          <Field label="Why should the admin review this message?">
+                            <textarea
+                              required
+                              minLength={5}
+                              maxLength={500}
+                              value={reason}
+                              onChange={(e) => setReason(e.target.value)}
+                            />
+                          </Field>
+                          <div className="button-row">
+                            <button className="button primary">Send report</button>
+                            <button type="button" className="button outline" onClick={() => setReporting("")}>Cancel</button>
+                          </div>
+                        </form>
+                      ) : (
+                        <>
+                          {reply[entry.id] !== undefined ? (
+                            <div className="reply-editor">
+                              <textarea
+                                aria-label="Write a public seller reply"
+                                rows={2}
+                                maxLength={2000}
+                                value={reply[entry.id]}
+                                onChange={(e) => setReply((old) => ({ ...old, [entry.id]: e.target.value }))}
+                              />
+                              <button className="button primary" disabled={!reply[entry.id]?.trim()} onClick={() => saveReply(entry.id)}>Post reply</button>
+                            </div>
+                          ) : (
+                            <button
+                              className="text-button muted"
+                              onClick={() => setReply((old) => ({ ...old, [entry.id]: entry.seller_reply || "" }))}
+                            >
+                              {entry.seller_reply ? "Edit your reply" : "Reply publicly"}
+                            </button>
+                          )}
+                          <button className="text-button muted" onClick={() => setReporting(entry.id)}>
+                            <Flag size={15} /> Report to admin
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </article>
+              ))
+            )}
+          </div>
+        </>
+      )}
+    </section>
   );
 }
