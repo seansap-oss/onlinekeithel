@@ -150,3 +150,10 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 - Email/password is the primary sign-in route. Every new account sets and confirms a password; Supabase email confirmation remains part of registration. Email-code sign-in is available only as a fallback for existing accounts.
 - Signed-in users land on `/account`, which contains visible sign-out, account email, password setup/reset, and saved listings grouped by their marketplace categories. Saved groups derive from `saved_listings` plus each listing's `category_id`; they do not create manual albums or alter saved data.
 - Keep seller storefront identity and seller dashboard separate from the member account screen.
+
+## OO Online Offer visual correction — v0.17.2, 25 October 2026
+
+- Keep the previous OnlineKeithel production deployment available for rollback. OO lives on the separate GitHub preview branch until the user approves production replacement.
+- The public header must visibly spell out OO and ONLINE OFFER. The first hero slide uses “Good offers. Right around the corner.” and rotates after five seconds to a featured local listing. Ignore stale legacy hero slides titled “Something to sell?” or “Your own little corner.”
+- On phones show at least five compact category tiles in the continuous horizontal rail. Include every active category and put the most recently selected category first on the next visit. Keep the existing hamburger and five-item bottom navigation unchanged.
+- Generated editorial category photography is displayed as browsing examples, not seller inventory. Admins can edit, remove or add those cards via the existing homepage publishing flow. Real listing cards continue to come from Supabase.

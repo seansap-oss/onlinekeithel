@@ -9,6 +9,7 @@ import { useMarket } from "../lib/context";
 import { result, supabase } from "../lib/backend";
 import { Field, Upload } from "./UI";
 import { Hero } from "../pages/Marketplace";
+import { defaultShowcase } from "../lib/showcase";
 export function HomepageEditor({
   visual = false,
   mode = "homepage",
@@ -83,10 +84,16 @@ export function HomepageEditor({
         throw Error("Connect an administrator account to save or publish.");
       const value = {
         ...draft,
-        name: "OO",
+        name: "OnlineKeithel",
         ticker: validateTicker(draft.ticker),
         hero_display: display,
       };
+      for (const card of value.showcase_ads || []) {
+        if (!card.title?.trim() || !mediaUrl(card.image))
+          throw Error("Each showcase card needs a title and a valid photograph.");
+        if (!card.destination?.startsWith("/") || card.destination.startsWith("//"))
+          throw Error("Showcase links must point to a page in this marketplace.");
+      }
       for (const slide of value.hero_slides || []) {
         if (slide.enabled !== false && !slide.title?.trim())
           throw Error("Every enabled hero slide needs a headline.");
@@ -258,6 +265,28 @@ export function HomepageEditor({
             onChange={(v) => change("hero_slides", v)}
             onBusyChange={setUploading}
           />
+          <section className="hero-display-editor">
+            <h3>Category showcase photos</h3>
+            <p>These cards link to browse categories. They are examples, not seller advertisements. Edit their photos and links, or remove any card.</p>
+            {(Array.isArray(draft.showcase_ads) ? draft.showcase_ads : defaultShowcase).map((ad, i) => (
+              <div className="showcase-editor-row" key={ad.id || i}>
+                <Upload value={ad.image} onChange={(image) => {
+                  const next = [...(Array.isArray(draft.showcase_ads) ? draft.showcase_ads : defaultShowcase)];
+                  next[i] = {...ad,image};
+                  change("showcase_ads",next);
+                }} />
+                {[
+                  ["title","Title"],["description","Description"],["destination","Link (local path)"]
+                ].map(([key,label]) => <Field key={key} label={label} value={ad[key] || ""} onChange={(e) => {
+                  const next = [...(Array.isArray(draft.showcase_ads) ? draft.showcase_ads : defaultShowcase)];
+                  next[i] = {...ad,[key]:e.target.value};
+                  change("showcase_ads",next);
+                }} />)}
+                <button className="button outline small" type="button" onClick={() => change("showcase_ads", (Array.isArray(draft.showcase_ads) ? draft.showcase_ads : defaultShowcase).filter((_, index) => index !== i))}>Remove card</button>
+              </div>
+            ))}
+            <button className="button outline" type="button" onClick={() => change("showcase_ads",[...(Array.isArray(draft.showcase_ads) ? draft.showcase_ads : defaultShowcase), {id:crypto.randomUUID(),title:"New category",description:"",image:"",destination:"/categories"}])}>Add card</button>
+          </section>
           <h3>Live hero preview</h3>
           <div className="button-row">
             {[

@@ -63,6 +63,7 @@ import {
   Video,
 } from "../components/UI";
 import { templates } from "../lib/templates";
+import { defaultShowcase } from "../lib/showcase";
 import {
   storefrontColors,
   storefrontFonts,
@@ -695,6 +696,24 @@ export function Home() {
             {moreBusy ? "Loading listings…" : "Show more listings"}
           </button>
         )}
+      </section>
+      <section className="section oo-showcase">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">EXPLORE ONLINE OFFER</span>
+            <h2>Find more around you</h2>
+            <p>Explore the kinds of listings local people and businesses can share.</p>
+          </div>
+          <Link to="/categories">Browse all categories <ArrowRight size={18} /></Link>
+        </div>
+        <div className="oo-showcase-grid">
+          {(Array.isArray(settings.showcase_ads) ? settings.showcase_ads : defaultShowcase).filter((ad) => ad.title && ad.image).map((ad) => (
+            <Link className="oo-showcase-card" key={ad.id} to={ad.destination?.startsWith("/") ? ad.destination : "/search?category=" + encodeURIComponent(ad.category || "")}>
+              <Photo src={ad.image} alt="" loading="lazy" />
+              <span className="oo-showcase-copy"><strong>{ad.title}</strong><small>{ad.description}</small><span>Explore <ArrowRight size={15} /></span></span>
+            </Link>
+          ))}
+        </div>
       </section>
       <FeaturedPromotions campaigns={campaigns} settings={settings} />
       <section className="section">
