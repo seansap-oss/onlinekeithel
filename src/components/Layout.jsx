@@ -247,6 +247,11 @@ export function Layout({ children }) {
             <Link to="/dashboard" onClick={() => setMenu(false)}>
               My seller dashboard
             </Link>
+            {session && (
+              <Link to="/messages" onClick={() => setMenu(false)}>
+                Messages
+              </Link>
+            )}
             <Link to="/plans" onClick={() => setMenu(false)}>
               Sell for free
             </Link>
