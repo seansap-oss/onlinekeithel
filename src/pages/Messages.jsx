@@ -15,6 +15,7 @@ export function Messages() {
   const [conversations, setConversations] = useState([]);
   const [active, setActive] = useState(requested || "");
   const [messages, setMessages] = useState([]);
+  const [profiles, setProfiles] = useState({});
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
   const [reportId, setReportId] = useState("");
@@ -30,6 +31,11 @@ export function Messages() {
           .order("created_at", { ascending: false }),
       );
       setConversations(rows);
+      const ids = [...new Set(rows.flatMap((c) => [c.buyer_id, c.listing?.seller?.user_id]).filter(Boolean))];
+      if (ids.length) {
+        const people = await result(supabase.from("member_profiles").select("user_id,username").in("user_id", ids));
+        setProfiles(Object.fromEntries(people.map((person) => [person.user_id, person.username])));
+      }
       if (!active && rows[0]) setActive(rows[0].id);
     } catch (e) {
       notice(e.message);
@@ -177,8 +183,8 @@ export function Messages() {
               const mine = conversation.buyer_id === session.user.id;
               const title = listing?.title || "Marketplace listing";
               const partner = mine
-                ? listing?.seller?.name || "Seller"
-                : "Buyer";
+                ? profiles[listing?.seller?.user_id] || listing?.seller?.name || "Seller"
+                : profiles[conversation.buyer_id] || "Marketplace member";
               return (
                 <button
                   key={conversation.id}
@@ -207,8 +213,8 @@ export function Messages() {
                 <div>
                   <strong>
                     {current.buyer_id === session.user.id
-                      ? current.listing?.seller?.name || "Marketplace seller"
-                      : "Buyer"}
+                      ? profiles[current.listing?.seller?.user_id] || current.listing?.seller?.name || "Marketplace seller"
+                      : profiles[current.buyer_id] || "Marketplace member"}
                   </strong>
                   <small>{current.listing?.title || "Listing conversation"}</small>
                 </div>
@@ -225,6 +231,7 @@ export function Messages() {
                     }
                     key={message.id}
                   >
+                    <strong className="chat-username">@{profiles[message.sender_id] || (message.sender_id === session.user.id ? session.user.user_metadata?.username : null) || "member"}</strong>
                     <p>{message.body}</p>
                     <small>{new Date(message.created_at).toLocaleString()}</small>
                     {isSeller && message.sender_id !== session.user.id && (
