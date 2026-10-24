@@ -15,7 +15,7 @@ export function ClassifiedContact({ item }) {
         ? Date.now() > indiaTime(a["Event ends"])
         : false;
   const wa =
-    !item.sample && !closed
+    !item.sample && !closed && item.seller?.whatsapp_enabled
       ? whatsappUrl(
           item.seller?.whatsapp,
           `Hi, I’m interested in ${item.title}. ${location.origin}/listing/${item.id}`,
