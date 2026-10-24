@@ -38,8 +38,9 @@ export function AuthPage({ reset = false, returnTo }) {
     [email, setEmail] = useState(""),
     [otp, setOtp] = useState(""),
     [otpSent, setOtpSent] = useState(false),
-    [passwordMode, setPasswordMode] = useState(false),
+    [passwordMode, setPasswordMode] = useState(true),
     [password, setPassword] = useState(""),
+    [confirmPassword, setConfirmPassword] = useState(""),
     [passwordVisible, setPasswordVisible] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -53,7 +54,7 @@ export function AuthPage({ reset = false, returnTo }) {
     (location.pathname === "/admin" ? "/admin" : null) ||
     (Object.hasOwn(templates, chosenTemplate)
       ? "/dashboard?template=" + chosenTemplate
-      : "/dashboard");
+      : "/account");
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
@@ -73,8 +74,23 @@ export function AuthPage({ reset = false, returnTo }) {
       } else if (mode === "login" && passwordMode) {
         await result(s.auth.signInWithPassword({ email, password }));
         navigate(destination);
+      } else if (mode === "signup") {
+        if (password !== confirmPassword)
+          throw Error("Your passwords do not match.");
+        const { data } = await result(
+          s.auth.signUp({
+            email: email.trim(),
+            password,
+            options: { emailRedirectTo: accountEmailUrl(destination) },
+          }),
+        );
+        if (data.session) navigate(destination);
+        else
+          setDone(
+            "Your account is created. Check your email and confirm your address. You’ll be signed in after confirmation.",
+          );
       } else if (!otpSent) {
-        await result(s.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: mode === "signup" } }));
+        await result(s.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: false } }));
         setOtpSent(true);
         setDone("A one-time sign-in code has been sent to " + email.trim() + ".");
       } else {
@@ -133,8 +149,11 @@ export function AuthPage({ reset = false, returnTo }) {
             marketplace design, but sign-up is not live yet.
           </div>
         )}
-        {!reset && mode !== "forgot" && !passwordMode && (
-          <p className="auth-hint">Sign in securely with a one-time code sent to your email.</p>
+        {!reset && mode === "login" && passwordMode && (
+          <p className="auth-hint">Sign in with your email address and password.</p>
+        )}
+        {!reset && mode === "login" && !passwordMode && (
+          <p className="auth-hint">We’ll email you a one-time sign-in code.</p>
         )}
         <form onSubmit={submit}>
           {!reset && (
@@ -147,7 +166,7 @@ export function AuthPage({ reset = false, returnTo }) {
               onChange={(e) => setEmail(e.target.value)}
             />
           )}
-          {!reset && !passwordMode && mode !== "forgot" && otpSent && (
+          {!reset && mode === "login" && !passwordMode && otpSent && (
             <>
               <Field
                 label="Email verification code"
@@ -196,6 +215,19 @@ export function AuthPage({ reset = false, returnTo }) {
               </div>
             </Field>
           )}
+          {mode === "signup" && (
+            <>
+              <Field label="Create password">
+                <div className="password-field">
+                  <input type={passwordVisible ? "text" : "password"} autoComplete="new-password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <button type="button" className="password-visibility" aria-label={passwordVisible ? "Hide password" : "Show password"} aria-pressed={passwordVisible} onClick={() => setPasswordVisible((visible) => !visible)}>{passwordVisible ? <EyeSlash size={20} /> : <Eye size={20} />}</button>
+                </div>
+              </Field>
+              <Field label="Confirm password">
+                <input type="password" autoComplete="new-password" minLength={8} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+              </Field>
+            </>
+          )}
           <button
             className="button primary full"
             disabled={busy || !configured}
@@ -208,11 +240,11 @@ export function AuthPage({ reset = false, returnTo }) {
                   ? "Send reset link"
                   : mode === "login" && passwordMode
                     ? "Sign in"
+                    : mode === "signup"
+                      ? "Create account"
                     : otpSent
                       ? "Verify email code"
-                      : mode === "signup"
-                        ? "Send sign-up code"
-                        : "Send sign-in code"}
+                      : "Send sign-in code"}
             <ArrowRight size={18} />
           </button>
           {error && (
@@ -235,6 +267,8 @@ export function AuthPage({ reset = false, returnTo }) {
                 setOtpSent(false);
                 setOtp("");
                 setPasswordMode(false);
+                setPassword("");
+                setConfirmPassword("");
                 setError("");
                 setDone("");
               }}
@@ -243,14 +277,14 @@ export function AuthPage({ reset = false, returnTo }) {
                 ? "New here? Create an account"
                 : "Already a member? Sign in"}
             </button>
+            {mode === "login" && passwordMode && (
+              <button className="text-button muted" onClick={() => { setPasswordMode(false); setOtpSent(false); setOtp(""); setError(""); setDone(""); }}>
+                Use email code instead
+              </button>
+            )}
             {mode === "login" && !passwordMode && (
               <button className="text-button muted" onClick={() => { setPasswordMode(true); setOtpSent(false); setOtp(""); setError(""); setDone(""); }}>
                 Use password instead
-              </button>
-            )}
-            {mode === "login" && passwordMode && (
-              <button className="text-button muted" onClick={() => { setPasswordMode(false); setError(""); setDone(""); }}>
-                Use email code instead
               </button>
             )}
             {mode === "login" && (

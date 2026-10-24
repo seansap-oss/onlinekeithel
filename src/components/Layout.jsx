@@ -93,7 +93,7 @@ export function Layout({ children }) {
           <Link
             className="account-link"
             aria-label={session ? "My account" : "Sign in"}
-            to={session ? "/dashboard" : "/login"}
+            to={session ? "/account" : "/login"}
           >
             <User size={22} />
             <span>{session ? "My account" : "Sign in"}</span>
@@ -168,7 +168,7 @@ export function Layout({ children }) {
           ["/categories", SquaresFour, "Categories"],
           ["/sell", Plus, "Post ad"],
           ["/saved", Heart, "Saved"],
-          [session ? "/dashboard" : "/login", User, "Account"],
+          [session ? "/account" : "/login", User, "Account"],
         ].map(([to, Icon, label]) => (
           <Link
             to={to}
