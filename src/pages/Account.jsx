@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 7499)
-Total output lines: 854
-
 import { normalizePayments } from "../lib/commerce";
 import { accountEmailUrl } from "../lib/auth-url";
 import { templateForCategory, templates } from "../lib/templates";
@@ -277,7 +274,292 @@ export function AuthPage({ reset = false, returnTo }) {
               }}
             >
               {mode === "login"
-                ? "New here? Create …2499 tokens truncated…    }
+                ? "New here? Create an account"
+                : "Already a member? Sign in"}
+            </button>
+            {mode === "login" && passwordMode && (
+              <button className="text-button muted" onClick={() => { setPasswordMode(false); setOtpSent(false); setOtp(""); setError(""); setDone(""); }}>
+                Use email code instead
+              </button>
+            )}
+            {mode === "login" && !passwordMode && (
+              <button className="text-button muted" onClick={() => { setPasswordMode(true); setOtpSent(false); setOtp(""); setError(""); setDone(""); }}>
+                Use password instead
+              </button>
+            )}
+            {mode === "login" && (
+              <button
+                className="text-button muted"
+                onClick={() => { setMode("forgot"); setOtpSent(false); }}
+              >
+                Forgot your password?
+              </button>
+            )}
+            {mode === "forgot" && (
+              <button className="text-button muted" onClick={() => setMode("login")}>
+                Back to sign in
+              </button>
+            )}
+          </>
+        )}
+        <small>
+          By creating an account, you agree to our{" "}
+          <Link to="/terms">terms</Link> and{" "}
+          <Link to="/privacy">privacy notice</Link>.
+        </small>
+      </div>
+    </div>
+  );
+}
+export function Guard({ children, adminOnly = false }) {
+  const { session, authReady, admin, path } = useMarket();
+  if (!authReady) return <div className="page">Checking your session…</div>;
+  if (!session) return <AuthPage returnTo={path} />;
+  if (adminOnly && !admin)
+    return (
+      <div className="page">
+        <Empty title="Administrator access required">
+          This account does not have permission to manage the marketplace.
+        </Empty>
+      </div>
+    );
+  return children;
+}
+export function SellerForm({ existing, onSaved }) {
+  const { session, refreshUser, notice, categories } = useMarket();
+  const [form, setForm] = useState(
+      existing || {
+        name: "",
+        slug: "",
+        type: "individual",
+        theme: Object.hasOwn(
+          templates,
+          new URLSearchParams(location.search).get("template"),
+        )
+          ? new URLSearchParams(location.search).get("template")
+          : "general",
+        description: "",
+        location: "Imphal",
+        whatsapp: "",
+        logo: "",
+        cover: "",
+        socials: {},
+      },
+    ),
+    [uploads, setUploads] = useState({}),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  const change = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  return (
+    <form
+      className="editor-form"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (Object.values(uploads).some(Boolean)) return;
+        setError("");
+        setBusy(true);
+        try {
+          if (!/^[1-9]\d{7,14}$/.test(form.whatsapp))
+            throw Error(
+              "Enter WhatsApp number with country code, for example 91 followed by 10 digits.",
+            );
+          for (const u of Object.values(form.socials))
+            if (u && !socialUrl(u))
+              throw Error("Use a valid Instagram, Facebook or YouTube URL");
+          const display = storefrontSettings(form);
+          if (display.videoUrl && !socialUrl(display.videoUrl))
+            throw Error("Use a valid YouTube, Instagram or Facebook video URL");
+          if (display.gallery.some((url) => !mediaUrl(url)))
+            throw Error("Gallery photos need valid HTTPS image URLs");
+          const payload = {
+            ...form,
+            payment_options: normalizePayments(form.payment_options),
+            storefront: {
+              headline: display.headline.trim().slice(0, 100),
+              tagline: display.tagline.trim().slice(0, 100),
+              introduction: display.introduction.trim().slice(0, 1200),
+              color: display.color,
+              font: display.font,
+              videoUrl: display.videoUrl.trim(),
+              gallery: display.gallery,
+              sections: display.sections,
+              showAbout: display.showAbout,
+              showGallery: display.showGallery,
+              showVideo: display.showVideo,
+            },
+            user_id: existing?.user_id || session.user.id,
+          };
+          delete payload.created_at;
+          delete payload.suspended;
+          await result(
+            existing
+              ? supabase.from("sellers").update(payload).eq("id", existing.id)
+              : supabase.from("sellers").insert(payload),
+          );
+          await refreshUser();
+          notice("Your seller profile is saved");
+          onSaved?.();
+        } catch (e) {
+          setError(e.message);
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      <h2>{existing ? "Your shop identity" : "Let’s make it yours"}</h2>
+      <p>
+        Your own name, your own look. Sell across any category: your shop theme
+        does not limit the products or services you can add.
+      </p>
+      <div className="form-grid">
+        <Field label="Sell as">
+          <select
+            value={form.type}
+            onChange={(e) => change("type", e.target.value)}
+          >
+            <option value="individual">An individual</option>
+            <option value="shop">A shop / business</option>
+          </select>
+        </Field>
+        <Field label="What does your shop sell?">
+          <select
+            aria-label="What does your shop sell?"
+            defaultValue=""
+            onChange={(e) =>
+              change("theme", templateForCategory(e.target.value))
+            }
+          >
+            <option value="" disabled>
+              Choose a category to apply its template
+            </option>
+            <CategoryOptions categories={categories} />
+          </select>
+        </Field>
+        <Field label="Shop presentation">
+          <select
+            value={form.theme}
+            onChange={(e) => change("theme", e.target.value)}
+          >
+            <option value="general">Neighbourhood · General</option>
+            <option value="fashion">Atelier · Clothing & fashion</option>
+            <option value="electronics">Circuit · Electronics</option>
+            <option value="vehicles">Showroom · Cars</option>
+            <option value="motorcycles">Ride · Motorcycles</option>
+          </select>
+        </Field>
+      </div>
+      <div className={"template-choice theme-" + form.theme}>
+        <strong>{templates[form.theme]?.name} storefront</strong>
+        <p>{templates[form.theme]?.description}</p>
+        <Link to="/templates">View template examples</Link>
+      </div>
+      <Field
+        label="Public name"
+        required
+        minLength={2}
+        maxLength={80}
+        value={form.name}
+        onChange={(e) => {
+          change("name", e.target.value);
+          if (!existing) change("slug", slugify(e.target.value));
+        }}
+      />
+      <Field
+        label="Unique shop address"
+        required
+        pattern="[a-z0-9][a-z0-9-]{2,59}"
+        value={form.slug}
+        readOnly={!!existing}
+        onChange={(e) => change("slug", slugify(e.target.value))}
+      />
+      <small>
+        {location.origin}
+        {shopPath(form.slug || "your-name")}
+        {existing
+          ? " · This address stays the same so shared links keep working."
+          : ""}
+      </small>
+      <Field label="About your shop">
+        <textarea
+          rows={4}
+          maxLength={2000}
+          value={form.description}
+          onChange={(e) => change("description", e.target.value)}
+        />
+      </Field>
+      <div className="form-grid">
+        <Field
+          label="Location"
+          required
+          value={form.location}
+          onChange={(e) => change("location", e.target.value)}
+        />
+        <Field
+          label="Public WhatsApp number (with country code)"
+          type="tel"
+          required
+          placeholder="91…"
+          value={form.whatsapp}
+          onChange={(e) =>
+            change("whatsapp", e.target.value.replace(/[\s()+-]/g, ""))
+          }
+        />
+      </div>
+      <div className="notice-box">
+        <WhatsappLogo size={21} /> Buyers can contact this number. Their
+        messages open in WhatsApp and are not stored here.
+      </div>
+      <h3>Your logo / profile photo</h3>
+      <Upload
+        value={form.logo}
+        onBusyChange={(v) => setUploads((p) => ({ ...p, logo: v }))}
+        onChange={(v) => change("logo", v)}
+      />
+      <h3>Your cover photo</h3>
+      <Upload
+        value={form.cover}
+        onBusyChange={(v) => setUploads((p) => ({ ...p, cover: v }))}
+        onChange={(v) => change("cover", v)}
+      />
+      <h3>Your storefront landing page</h3>
+      <p className="muted">
+        Make this page feel like yours. Your cover photo appears above the
+        headline; shoppers can still find your items in marketplace search.
+      </p>
+      <div className="form-grid">
+        <Field
+          label="Hero headline"
+          maxLength={100}
+          value={form.storefront?.headline ?? ""}
+          placeholder={templates[form.theme]?.headline}
+          onChange={(e) =>
+            change("storefront", {
+              ...form.storefront,
+              headline: e.target.value,
+            })
+          }
+        />
+        <Field
+          label="Short tagline"
+          maxLength={100}
+          value={form.storefront?.tagline ?? ""}
+          placeholder="Discover our collection"
+          onChange={(e) =>
+            change("storefront", {
+              ...form.storefront,
+              tagline: e.target.value,
+            })
+          }
+        />
+        <Field label="Accent colour">
+          <select
+            value={form.storefront?.color || "theme"}
+            onChange={(e) =>
+              change("storefront", {
+                ...form.storefront,
+                color: e.target.value,
+              })
+            }
           >
             {Object.entries(storefrontColors).map(([key, choice]) => (
               <option key={key} value={key}>
