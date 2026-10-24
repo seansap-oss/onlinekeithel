@@ -2,12 +2,11 @@ import { categoryRoute } from "../lib/departments";
 import React, { useRef, useState } from "react";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { Link, useMarket } from "../lib/context";
-import { isConstructionCategory } from "../lib/categories";
 import { CategoryIcon } from "./CategoryIcon";
 export function CategoryRail() {
   const { categories } = useMarket(),
     rail = useRef(null);
-  const [usage] = useState(() => {
+  const [usage, setUsage] = useState(() => {
     try {
       const data = JSON.parse(
         localStorage.getItem("ok-category-usage-v1") || "{}",
@@ -17,18 +16,7 @@ export function CategoryRail() {
       return {};
     }
   });
-  const list = categories.filter(
-    (c) =>
-      !isConstructionCategory(c) &&
-      !["motorcycles", "bicycles"].includes(c.id),
-  );
-  if (categories.some(isConstructionCategory))
-    list.push({
-      id: "construction",
-      name: "Construction",
-      icon: "HardHat",
-      department: true,
-    });
+  const list = categories.filter((c) => c.active !== false);
   const priority = [
     "vehicles",
     "property",
@@ -53,8 +41,9 @@ export function CategoryRail() {
         localStorage.getItem("ok-category-usage-v1") || "{}",
       );
       const counts = parsed && typeof parsed === "object" ? parsed : {};
-      counts[id] = (Number(counts[id]) || 0) + 1;
+      counts[id] = Date.now();
       localStorage.setItem("ok-category-usage-v1", JSON.stringify(counts));
+      setUsage(counts);
     } catch {}
   };
   const short = {
@@ -90,11 +79,7 @@ export function CategoryRail() {
           {ordered.map((c) => (
             <Link
               key={c.id}
-              to={
-                c.department
-                  ? "/search?department=" + c.id
-                  : categoryRoute(c.id)
-              }
+              to={categoryRoute(c.id)}
               onClick={() => remember(c.id)}
             >
               <span>

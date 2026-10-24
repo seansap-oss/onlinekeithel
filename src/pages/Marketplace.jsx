@@ -356,10 +356,11 @@ function FeaturedPromotions({ campaigns, settings }) {
     </section>
   );
 }
-export function Hero({ settingsOverride, editor = false } = {}) {
+export function Hero({ settingsOverride, featuredItem, editor = false } = {}) {
   const { settings: liveSettings, navigate } = useMarket();
   const settings = settingsOverride || liveSettings,
     display = heroDisplaySettings(settings.hero_display);
+  const legacyWelcome = /^(your neighbourhood\. every shop\.|something to sell\?)$/i.test((settings.hero_title || "").trim());
   const [campaigns, setCampaigns] = useState([]),
     [index, setIndex] = useState(0),
     [video, setVideo] = useState(null),
@@ -370,15 +371,25 @@ export function Hero({ settingsOverride, editor = false } = {}) {
     slides = [
       {
         id: "welcome",
-        title: settings.hero_title,
-        description: settings.hero_description,
-        image: settings.hero_image,
+        title: legacyWelcome ? "Good offers. Right around the corner." : (settings.hero_title || "Good offers. Right around the corner."),
+        description: legacyWelcome ? "Find products, services and local shops around Manipur." : (settings.hero_description || "Find products, services and local shops around Manipur."),
+        image: legacyWelcome || settings.hero_image === "/images/hero-handloom.webp" ? "/images/shop.jpg" : (settings.hero_image || "/images/shop.jpg"),
         destination: "/search",
-        button: "Explore nearby",
+        button: "Browse offers",
         display_seconds: 5,
       },
-      ...(settings.hero_slides || defaultHeroSlides).filter(
+      ...(featuredItem ? [{
+        id: "featured-listing",
+        title: "Featured local offer",
+        description: featuredItem.title,
+        image: featuredItem.images?.[0] || "/images/shop.jpg",
+        destination: "/listing/" + featuredItem.id,
+        button: "View offer",
+        display_seconds: 5,
+      }] : [defaultHeroSlides[0]]),
+      ...(settings.hero_slides || []).filter(
         (x) =>
+          !/^(something to sell\?|your own little corner\.)$/i.test((x.title || "").trim()) &&
           heroItemPlacement(x) !== "featured" &&
           (editor ? x.enabled !== false : isHeroItemActive(x)),
       ),
@@ -647,7 +658,7 @@ export function Home() {
   }, []);
   return (
     <div className="page home">
-      <Hero />
+      <Hero featuredItem={items[0]} />
       <CategoryRail />
       <section className="section">
         <div className="section-heading">

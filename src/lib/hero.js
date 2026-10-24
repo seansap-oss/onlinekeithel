@@ -1,11 +1,11 @@
 export const defaultHeroSlides = [
   {
     id: "post",
-    title: "Something to sell?",
-    description: "Post an ad and connect with buyers in your neighbourhood.",
-    image: "/images/hero-handloom.webp",
-    destination: "/sell",
-    button: "Post ad",
+    title: "Featured local offers",
+    description: "Discover something good close to home.",
+    image: "/images/shop.jpg",
+    destination: "/search",
+    button: "View offers",
     enabled: true,
   },
   {

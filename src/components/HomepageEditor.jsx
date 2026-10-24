@@ -83,7 +83,7 @@ export function HomepageEditor({
         throw Error("Connect an administrator account to save or publish.");
       const value = {
         ...draft,
-        name: "OnlineKeithel",
+        name: "OO",
         ticker: validateTicker(draft.ticker),
         hero_display: display,
       };
@@ -161,7 +161,7 @@ export function HomepageEditor({
         <>
           <h2>Your homepage</h2>
           <p>Edit, preview, save a draft, then publish when ready.</p>
-          <Field label="Marketplace name" value="OnlineKeithel" readOnly />
+          <Field label="Marketplace name" value="OO — Online Offer" readOnly />
           {[
             ["tagline", "Brand tagline"],
             ["hero_title", "Hero headline"],

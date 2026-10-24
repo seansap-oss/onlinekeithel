@@ -63,11 +63,9 @@ export function Layout({ children }) {
           </button>
           <Link to="/" className="brand">
             <BrandMark />
-            <span>
-              <b>{settings.name}</b>
-              <small>
-                {settings.tagline || "Our people. Our neighbourhood."}
-              </small>
+            <span className="brand-copy">
+              <b>OO</b>
+              <small>ONLINE OFFER</small>
             </span>
           </Link>
           <button
