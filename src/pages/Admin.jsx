@@ -436,6 +436,20 @@ export function Admin({ visual = false }) {
             onClose={() => setEditing(null)}
             moderationAction={
               <div className="moderation-action">
+                <div className="admin-listing-visibility">
+                  <button className="button outline" onClick={async () => {
+                    try { await save("listings", { status: "paused" }, editing.id); setEditing({...editing,status:"paused"}); notice("Listing paused and hidden from browse"); }
+                    catch (e) { notice(e.message); }
+                  }}>Pause</button>
+                  <button className="button outline" onClick={async () => {
+                    try { await save("listings", { status: "on_hold" }, editing.id); setEditing({...editing,status:"on_hold"}); notice("Listing placed on hold and hidden from browse"); }
+                    catch (e) { notice(e.message); }
+                  }}>On hold</button>
+                  <button className="button primary" onClick={async () => {
+                    try { await save("listings", { status: "published" }, editing.id); setEditing({...editing,status:"published"}); notice("Listing published"); }
+                    catch (e) { notice(e.message); }
+                  }}>Publish</button>
+                </div>
                 <button
                   className="button danger"
                   onClick={async () => {
@@ -555,7 +569,7 @@ export function Admin({ visual = false }) {
                     }
                   >
                     {["pending", "approved", "rejected", "paused"].map((s) => (
-                      <option key={s}>{s}</option>
+                      <option key={s} value={s}>{s === "paused" ? "On hold" : s}</option>
                     ))}
                   </select>
                 </Field>

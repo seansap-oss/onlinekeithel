@@ -12,13 +12,13 @@ export const plans = [
   active: true,
 }));
 export const settings = {
-  name: "OnlineKeithel",
-  tagline: "Our people. Our neighbourhood.",
-  hero_title: "Your neighbourhood. Every shop.",
+  name: "OO",
+  tagline: "ONLINE OFFER · Good offers. Right around the corner.",
+  hero_title: "Good offers. Right around the corner.",
   hero_description:
     "A little closer. A little more local. Discover great finds from the people and shops around you.",
-  hero_image: "/images/hero-handloom.webp",
-  announcement: "Made for Manipur. Open to everyone.",
+  hero_image: "/images/shop.jpg",
+  announcement: "Local people. Real finds. Stronger neighbourhoods.",
   support_whatsapp: "",
   support_email: "",
   ads_price_note: "Get in touch for featured placement prices.",

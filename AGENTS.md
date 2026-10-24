@@ -144,3 +144,9 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 - User chose email OTP as the first sign-in method. The login and signup screen requests a Supabase email code and verifies it; existing users can switch to email/password. Keep password recovery. Do not expose WhatsApp OTP in the sign-in form until the operator asks to enable it and the provider is configured.
 - Supabase sends a magic link by default through `signInWithOtp`; email OTP needs the Supabase Magic Link template to display `{{ .Token }}`. Signup confirmation template may also need the code placeholder. The application source cannot configure dashboard templates or remove provider rate limits.
 - Preserve the existing admin account/membership model, `/admin` route, user management, and Admin > Packages site-wide/per-plan toggles. Do not create a shared admin password. Paid package checkout still requires package switches and Razorpay credentials.
+
+## Account, password signup and saved library — v0.15.9, 24 October 2026
+
+- Email/password is the primary sign-in route. Every new account sets and confirms a password; Supabase email confirmation remains part of registration. Email-code sign-in is available only as a fallback for existing accounts.
+- Signed-in users land on `/account`, which contains visible sign-out, account email, password setup/reset, and saved listings grouped by their marketplace categories. Saved groups derive from `saved_listings` plus each listing's `category_id`; they do not create manual albums or alter saved data.
+- Keep seller storefront identity and seller dashboard separate from the member account screen.

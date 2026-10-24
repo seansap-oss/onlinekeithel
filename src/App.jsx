@@ -12,6 +12,7 @@ import {
   ProductPage,
 } from "./pages/Marketplace";
 import { AuthPage, Guard, Plans } from "./pages/Account";
+import { MemberAccount } from "./pages/MemberAccount";
 import { Information } from "./pages/Information";
 import { Empty } from "./components/UI";
 import { preview } from "./lib/backend";
@@ -59,6 +60,12 @@ function Router() {
     page = <ProductPage key={p} id={decodeURIComponent(p.split("/")[2])} />;
   else if (p === "/login" || p === "/reset-password")
     page = <AuthPage reset={p === "/reset-password"} />;
+  else if (p === "/account")
+    page = (
+      <Guard>
+        <MemberAccount />
+      </Guard>
+    );
   else if (p === "/dashboard" || p === "/sell")
     page = (
       <Guard>

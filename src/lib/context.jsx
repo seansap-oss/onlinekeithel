@@ -18,11 +18,11 @@ export function MarketProvider({ children }) {
     [categories, setCategories] = useState(categoryCatalog),
     [plans, setPlans] = useState([]),
     [settings, setSettings] = useState({
-      name: "OnlineKeithel",
-      hero_title: "Your neighbourhood. Every shop.",
-      hero_description:
-        "Discover products and independent shops across Manipur.",
-      hero_image: "/images/hero-handloom.webp",
+      name: "OO",
+      tagline: "ONLINE OFFER · Good offers. Right around the corner.",
+      hero_title: "Good offers. Right around the corner.",
+      hero_description: "Local people. Real finds. Stronger neighbourhoods.",
+      hero_image: "/images/shop.jpg",
     }),
     [fixtures, setFixtures] = useState(null),
     [notice, setNotice] = useState(""),
@@ -100,7 +100,8 @@ export function MarketProvider({ children }) {
         setPlans(ps);
         setSettings({
           ...st.value,
-          name: /^(Leikai Market|onlinekeithell?)$/i.test(st.value.name || "") ? "OnlineKeithel" : st.value.name,
+          name: "OO",
+          tagline: "ONLINE OFFER · Good offers. Right around the corner.",
         });
       } else if (import.meta.env.DEV && showSamples) {
         const d = await import("./preview-data.js");

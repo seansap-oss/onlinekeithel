@@ -64,7 +64,7 @@ export function CategoryRail() {
     property: "Property",
     jobs: "Jobs",
     happenings: "Events",
-    freebies: "Free items",
+    freebies: "Giveaways",
     motorcycles: "Motorcycles",
     home: "Home",
     retail: "Retail",

@@ -121,9 +121,7 @@ export function ProductCard({ item }) {
               ] || "Listing"
             : item.category_id === "freebies"
               ? item.attributes?.["Listing type"] ||
-                (item.subcategory_id === "free-items"
-                  ? "Free"
-                  : "Community listing")
+                (Number(item.price) === 0 ? "Giveaway" : "Community listing")
               : outOfStock(item)
                 ? "Out of stock"
                 : item.condition}
@@ -171,7 +169,9 @@ export function ProductCard({ item }) {
         </Link>
         <strong className="price">{listingPrice(item, money)}</strong>
         <Link to={shopPath(item.seller)} className="seller-line">
-          <Storefront size={14} />
+          <span className="seller-initial" aria-hidden="true">
+            {(item.seller?.name || "Local seller").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase()}
+          </span>
           {item.seller?.name || "Local seller"}
         </Link>
         <span className="location-line">
@@ -648,13 +648,12 @@ export function Home() {
   return (
     <div className="page home">
       <Hero />
-      <FeaturedPromotions campaigns={campaigns} settings={settings} />
       <CategoryRail />
       <section className="section">
         <div className="section-heading">
           <div>
-            <span className="eyebrow">REAL PEOPLE. REAL FINDS.</span>
-            <h2>Fresh local listings</h2>
+            <span className="eyebrow">OO · ONLINE OFFER</span>
+            <h2>Featured local offers</h2>
             <p>New things from people and businesses around Manipur.</p>
           </div>
           <Link to="/search">
@@ -686,6 +685,7 @@ export function Home() {
           </button>
         )}
       </section>
+      <FeaturedPromotions campaigns={campaigns} settings={settings} />
       <section className="section">
         <div className="section-heading">
           <div>
@@ -1363,7 +1363,7 @@ export function SellerPage({ slug }) {
           </p>
         </div>
         <SocialLinks values={seller.socials} />
-        {whatsappUrl(
+        {seller.whatsapp_enabled && whatsappUrl(
           seller.whatsapp,
           "Hello, I found your shop on OnlineKeithel.",
         ) && (
