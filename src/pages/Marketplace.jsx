@@ -1363,7 +1363,7 @@ export function SellerPage({ slug }) {
           </p>
         </div>
         <SocialLinks values={seller.socials} />
-        {whatsappUrl(
+        {seller.whatsapp_enabled && whatsappUrl(
           seller.whatsapp,
           "Hello, I found your shop on OnlineKeithel.",
         ) && (
