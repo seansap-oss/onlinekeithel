@@ -32,6 +32,7 @@ const sections = [
   ["plans", "Packages", Package],
   ["campaigns", "Advertisements", Megaphone],
   ["reports", "Reports", Flag],
+  ["message_reports", "Message reports", Flag],
   ["audit_log", "Activity log", ClockCounterClockwise],
 ];
 const defaults = {
@@ -77,9 +78,16 @@ export function Admin({ visual = false }) {
         setRows(fixtures?.[tab] || []);
         return;
       }
+      const messageReports = tab === "message_reports";
       let q = supabase
-        .from(tab)
-        .select(tab === "listings" ? "*,seller:sellers(*)" : "*")
+        .from(messageReports ? "listing_message_reports" : tab)
+        .select(
+          messageReports
+            ? "*,question:listing_questions(id,body,listing_id),message:direct_messages(id,body,conversation_id)"
+            : tab === "listings"
+              ? "*,seller:sellers(*)"
+              : "*",
+        )
         .range(page * 30, page * 30 + 30);
       if (["sellers", "categories", "plans"].includes(tab)) {
         q = q.order("name");
@@ -275,10 +283,14 @@ export function Admin({ visual = false }) {
                   <div className="admin-row" key={r.id || r.user_id}>
                     <div>
                       <strong>
-                        {r.name || r.title || r.reason || r.action}
+                        {tab === "message_reports"
+                          ? r.question?.body || r.message?.body || "Reported message"
+                          : r.name || r.title || r.reason || r.action}
                       </strong>
                       <small>
-                        {tab === "plans"
+                        {tab === "message_reports"
+                          ? r.reason + " · " + (r.question ? "Public listing question" : "Private message") + " · " + new Date(r.created_at).toLocaleString()
+                          : tab === "plans"
                           ? `${r.listing_limit} listings · ₹${r.price} / ${r.duration_days || 30} days`
                           : tab === "sellers"
                             ? `${r.type} · ${r.location} · ${r.suspended ? "Suspended" : "Active"}`
@@ -289,7 +301,34 @@ export function Admin({ visual = false }) {
                                 : r.status || r.id}
                       </small>
                     </div>
-                    {tab !== "audit_log" && (
+                    {tab === "message_reports" && (
+                      <button
+                        className="button outline small"
+                        onClick={async () => {
+                          const questionId = r.question?.id;
+                          const messageId = r.message?.id;
+                          if (!questionId && !messageId) {
+                            await load();
+                            return;
+                          }
+                          if (!window.confirm("Delete this reported message? This cannot be undone.")) return;
+                          try {
+                            await result(
+                              questionId
+                                ? supabase.from("listing_questions").delete().eq("id", questionId)
+                                : supabase.from("direct_messages").delete().eq("id", messageId),
+                            );
+                            await load();
+                            notice("Reported message deleted");
+                          } catch (e) {
+                            notice(e.message);
+                          }
+                        }}
+                      >
+                        Delete message
+                      </button>
+                    )}
+                    {tab !== "audit_log" && tab !== "message_reports" && (
                       <button
                         className="icon-button"
                         aria-label={"Edit " + (r.name || r.title || "report")}

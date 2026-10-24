@@ -1,4 +1,8 @@
-# Build status — v0.15.6
+# Build status — v0.15.8
+
+Buyer and seller messaging (24 October 2026): signed-in buyers can post public listing questions and start private real-time conversations; sellers can reply publicly or in the inbox. Buyers and sellers can report inappropriate content, and admins can delete reported questions/messages. Added RLS-backed tables, report RPC hardening, indexes and realtime publication migrations. Carried forward v0.15.7 features. Tests/build will be recorded after verification.
+
+## Previous v0.15.7
 
 Email OTP sign-in (22 October 2026): the sign-in and sign-up page now sends and verifies Supabase email OTP codes. Existing users retain the email/password fallback and password recovery; WhatsApp OTP is removed from the form until configured and requested. Supabase's Magic Link template must display `{{ .Token }}` to send a numeric code, and signup confirmation may need the same template change. See `docs/EMAIL-SETUP.md`. Existing Admin > Users, Admin > Packages global paid-package switch and per-plan active switches remain in this same source. Admin checkout still requires Razorpay credentials and both package gates. No dashboard template was changed, no live test was performed, and no GitHub push or Vercel deployment was made. Verification: all 38 tests pass; production build succeeds with the existing Vite large-chunk advisory; `git diff --check` is clean.
 
