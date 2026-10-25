@@ -1,0 +1,40 @@
+name: Build OO Android APK
+on:
+  push:
+    branches: [oo-online-offer-v0.17.0]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Install dependencies
+        run: npm ci
+      - name: Build connected OO web app
+        env:
+          VITE_SUPABASE_URL: 'https://plllhsjsruhasdvbzhpw.supabase.co'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_mVqjk4rf3xhnNAg3h2xO2A_5gs-KOrB'
+        run: npm run build
+      - name: Sync Android project
+        run: npx cap sync android
+      - name: Build installable debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OO-Online-Offer-v0.18.1-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
