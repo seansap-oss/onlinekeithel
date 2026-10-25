@@ -11,6 +11,7 @@ import { Field, Upload } from "./UI";
 import { Hero } from "../pages/Marketplace";
 import { defaultShowcase } from "../lib/showcase";
 import { exampleEntries } from "../lib/examples";
+import { exampleProfiles } from "../pages/Examples";
 export function HomepageEditor({
   visual = false,
   mode = "homepage",
@@ -98,6 +99,10 @@ export function HomepageEditor({
       for (const entry of value.example_entries || []) {
         if (!entry.title?.trim() || !mediaUrl(entry.image))
           throw Error("Every example needs a title and a valid photograph.");
+      }
+      for (const profile of value.example_profiles || []) {
+        if (!profile.name?.trim() || !mediaUrl("/images/" + profile.hero))
+          throw Error("Every example profile needs a name and a photograph.");
       }
       for (const slide of value.hero_slides || []) {
         if (slide.enabled !== false && !slide.title?.trim())
@@ -282,6 +287,16 @@ export function HomepageEditor({
                 <button type="button" className="button outline small" onClick={() => change("example_entries",exampleEntries(categories,draft).filter((_,index)=>index!==i))}>Remove example</button>
               </div>
             ))}
+          </details>
+          <details className="hero-display-editor">
+            <summary>Example shop and worker pages</summary>
+            <p>Edit or remove these shareable example pages. Their sample products and projects are illustrative.</p>
+            {exampleProfiles(draft).map((profile,i) => <div className="showcase-editor-row" key={profile.slug}>
+              {["name","intro","hero"].map(key => <Field key={key} label={key === "hero" ? "Hero image filename in /images" : key} value={profile[key] || ""} onChange={(e) => {
+                const next=[...exampleProfiles(draft)]; next[i]={...profile,[key]:e.target.value}; change("example_profiles",next);
+              }} />)}
+              <button type="button" className="button outline small" onClick={() => change("example_profiles",exampleProfiles(draft).filter((_,index)=>index!==i))}>Remove page</button>
+            </div>)}
           </details>
           <HeroSlidesEditor
             value={draft.hero_slides}
