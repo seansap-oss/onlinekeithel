@@ -10,12 +10,13 @@ import { result, supabase } from "../lib/backend";
 import { Field, Upload } from "./UI";
 import { Hero } from "../pages/Marketplace";
 import { defaultShowcase } from "../lib/showcase";
+import { exampleEntries } from "../lib/examples";
 export function HomepageEditor({
   visual = false,
   mode = "homepage",
   onDirtyChange,
 }) {
-  const { settings, refresh, notice } = useMarket();
+  const { settings, refresh, notice, categories } = useMarket();
   const [draft, setDraft] = useState(settings),
     [baseline, setBaseline] = useState(settings);
   const [busy, setBusy] = useState(false),
@@ -93,6 +94,10 @@ export function HomepageEditor({
           throw Error("Each showcase card needs a title and a valid photograph.");
         if (!card.destination?.startsWith("/") || card.destination.startsWith("//"))
           throw Error("Showcase links must point to a page in this marketplace.");
+      }
+      for (const entry of value.example_entries || []) {
+        if (!entry.title?.trim() || !mediaUrl(entry.image))
+          throw Error("Every example needs a title and a valid photograph.");
       }
       for (const slide of value.hero_slides || []) {
         if (slide.enabled !== false && !slide.title?.trim())
@@ -260,6 +265,24 @@ export function HomepageEditor({
               Pause while visitors interact
             </label>
           </section>
+          <details className="hero-display-editor">
+            <summary>Category and profile examples</summary>
+            <p>There are two illustrative examples for every category by default. Edit or remove entries here, then Save & publish. Removing all examples from a category leaves its live listings untouched.</p>
+            {exampleEntries(categories, draft).map((entry, i) => (
+              <div className="showcase-editor-row" key={entry.id || i}>
+                <strong>{entry.category} · {entry.title}</strong>
+                {["title","subtitle","description"].map((key) => (
+                  <Field key={key} label={key} value={entry[key] || ""} onChange={(e) => {
+                    const next=[...exampleEntries(categories,draft)]; next[i]={...entry,[key]:e.target.value}; change("example_entries",next);
+                  }} />
+                ))}
+                <Upload value={entry.image} onChange={(image) => {
+                  const next=[...exampleEntries(categories,draft)]; next[i]={...entry,image}; change("example_entries",next);
+                }} />
+                <button type="button" className="button outline small" onClick={() => change("example_entries",exampleEntries(categories,draft).filter((_,index)=>index!==i))}>Remove example</button>
+              </div>
+            ))}
+          </details>
           <HeroSlidesEditor
             value={draft.hero_slides}
             onChange={(v) => change("hero_slides", v)}

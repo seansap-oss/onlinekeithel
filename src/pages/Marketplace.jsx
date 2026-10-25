@@ -64,6 +64,8 @@ import {
 } from "../components/UI";
 import { templates } from "../lib/templates";
 import { defaultShowcase } from "../lib/showcase";
+import { exampleEntries } from "../lib/examples";
+import { ExampleCard, ExampleShops } from "./Examples";
 import {
   storefrontColors,
   storefrontFonts,
@@ -716,6 +718,7 @@ export function Home() {
         </div>
       </section>
       <FeaturedPromotions campaigns={campaigns} settings={settings} />
+      <ExampleShops />
       <section className="section">
         <div className="section-heading">
           <div>
@@ -764,7 +767,7 @@ export function Home() {
   );
 }
 export function Search({ saved = false }) {
-  const { path, fixtures, categories, session, navigate, notice } = useMarket();
+  const { path, fixtures, categories, settings, session, navigate, notice } = useMarket();
   const params = new URLSearchParams(path.split("?")[1]);
   const q = params.get("q") || "",
     cat = params.get("category") || "",
@@ -1124,6 +1127,11 @@ export function Search({ saved = false }) {
               Next <ArrowRight />
             </button>
           </div>
+          {!saved && cat && !q && <div className="category-example-results">
+            <h2>How people can use this category</h2>
+            <p>Example pages to help you create your own listing or shop.</p>
+            <div className="example-grid">{exampleEntries(categories, settings).filter(x => x.category === cat).map(x => <ExampleCard key={x.id} entry={x} />)}</div>
+          </div>}
         </section>
       </div>
     </div>

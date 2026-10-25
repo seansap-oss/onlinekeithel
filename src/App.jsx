@@ -15,6 +15,7 @@ import { AuthPage, Guard, Plans } from "./pages/Account";
 import { MemberAccount } from "./pages/MemberAccount";
 import { Information } from "./pages/Information";
 import { Empty } from "./components/UI";
+import { ExamplePage, ExampleShopPage } from "./pages/Examples";
 import { preview } from "./lib/backend";
 const Dashboard = lazy(() =>
   import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })),
@@ -31,12 +32,12 @@ function Router() {
   useEffect(() => {
     document.title =
       (p === "/"
-        ? "Your neighbourhood. Every shop."
+        ? "Good offers. Right around the corner."
         : p.startsWith("/admin")
           ? "Marketplace administration"
           : p.startsWith("/dashboard")
             ? "Your seller workspace"
-            : "Explore your local marketplace") + " | OnlineKeithel";
+            : "Explore your local marketplace") + " | OO Online Offer";
   }, [p]);
   useEffect(() => {
     if (p.startsWith("/seller/")) {
@@ -86,6 +87,10 @@ function Router() {
       </Guard>
     );
   else if (p === "/categories") page = <Categories />;
+  else if (p.startsWith("/example/"))
+    page = <ExamplePage id={decodeURIComponent(p.slice(9))} />;
+  else if (p.startsWith("/example-shop/"))
+    page = <ExampleShopPage slug={decodeURIComponent(p.slice(14))} />;
   else if (p === "/templates") page = <Templates />;
   else if (preview && p === "/preview/seller") page = <Dashboard visual />;
   else if (preview && p === "/preview/admin") page = <Admin visual />;

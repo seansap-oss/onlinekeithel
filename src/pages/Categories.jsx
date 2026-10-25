@@ -3,8 +3,10 @@ import React, { useState } from "react";
 import { useMarket, Link } from "../lib/context";
 import { categoryMatches, isConstructionCategory } from "../lib/categories";
 import { CategoryIcon } from "../components/CategoryIcon";
+import { exampleEntries } from "../lib/examples";
+import { ExampleCard } from "./Examples";
 export default function Categories() {
-  const { categories } = useMarket();
+  const { categories, settings } = useMarket();
   const [query, setQuery] = useState(""),
     [group, setGroup] = useState("");
   const active = categories.filter((c) => c.active !== false);
@@ -50,6 +52,9 @@ export default function Categories() {
       <Link className="category-view-all" to={categoryRoute(c.id)}>
         Browse all in this category →
       </Link>
+      <div className="category-examples">
+        {exampleEntries(categories, settings).filter(x => x.category === c.id).slice(0,2).map(x => <ExampleCard key={x.id} entry={x} />)}
+      </div>
     </section>
   );
   return (
