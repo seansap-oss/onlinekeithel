@@ -157,3 +157,9 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 - The public header must visibly spell out OO and ONLINE OFFER. The first hero slide uses “Good offers. Right around the corner.” and rotates after five seconds to a featured local listing. Ignore stale legacy hero slides titled “Something to sell?” or “Your own little corner.”
 - On phones show at least five compact category tiles in the continuous horizontal rail. Include every active category and put the most recently selected category first on the next visit. Keep the existing hamburger and five-item bottom navigation unchanged.
 - Generated editorial category photography is displayed as browsing examples, not seller inventory. Admins can edit, remove or add those cards via the existing homepage publishing flow. Real listing cards continue to come from Supabase.
+
+## Approved grid/list browsing — v0.18.2, 5 November 2026
+
+- Preserve the OO hero, spacing, swipeable category rail, hamburger and bottom navigation. The homepage's Featured local offers grid remains the default.
+- Add only a small grid/list control alongside Featured local offers. List opens a separate full browse view with compact rows, category filters and continuous scrolling through current published listings. The list and grid views share the existing listing links and filters.
+- Keep this release on the OO preview branch until the user explicitly asks to replace the previous production deployment.

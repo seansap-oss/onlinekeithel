@@ -43,6 +43,8 @@ import {
   MagnifyingGlass,
   ChatCircleDots,
   PaperPlaneRight,
+  SquaresFour,
+  ListBullets,
 } from "@phosphor-icons/react";
 import { useMarket, Link } from "../lib/context";
 import { CategoryOptions } from "../components/CategoryOptions";
@@ -75,12 +77,12 @@ import {
   isSellerId,
 } from "../lib/storefront";
 import { icons } from "../components/Layout";
-export function ProductCard({ item }) {
+export function ProductCard({ item, compact = false }) {
   const { session, navigate, notice } = useMarket();
   const [saved, setSaved] = useState(false),
     [flipped, setFlipped] = useState(false);
   return (
-    <article className="product-card">
+    <article className={compact ? "product-card product-card-list" : "product-card"}>
       <div className="product-photo">
         <Link
           to={"/listing/" + item.id}
@@ -170,6 +172,7 @@ export function ProductCard({ item }) {
         <Link to={"/listing/" + item.id} className="product-title">
           {item.title}
         </Link>
+        {compact && item.description && <p className="product-summary">{item.description}</p>}
         <strong className="price">{listingPrice(item, money)}</strong>
         <Link to={shopPath(item.seller)} className="seller-line">
           <span className="seller-initial" aria-hidden="true">
@@ -670,9 +673,13 @@ export function Home() {
             <h2>Featured local offers</h2>
             <p>New things from people and businesses around Manipur.</p>
           </div>
-          <Link to="/search">
-            See all products <ArrowRight size={18} />
-          </Link>
+          <div className="offers-heading-actions">
+            <div className="offer-view-toggle" role="group" aria-label="Offer layout">
+              <span className="selected" aria-label="Grid view selected" title="Grid view"><SquaresFour size={17} weight="fill" /></span>
+              <Link to="/search?view=list" aria-label="Open offers in list view" title="List view"><ListBullets size={17} /></Link>
+            </div>
+            <Link className="offers-see-all" to="/search">See all products <ArrowRight size={18} /></Link>
+          </div>
         </div>
         {loading || !dataReady ? (
           <p role="status">Loading local finds…</p>
@@ -769,6 +776,9 @@ export function Home() {
 export function Search({ saved = false }) {
   const { path, fixtures, categories, settings, session, navigate, notice } = useMarket();
   const params = new URLSearchParams(path.split("?")[1]);
+  const listView = !saved && params.get("view") === "list";
+  const listEnd = useRef(null);
+  const searchUrl = (values) => "/search?" + new URLSearchParams({ ...values, ...(listView ? { view: "list" } : {}) });
   const q = params.get("q") || "",
     cat = params.get("category") || "",
     department = params.get("department") || "",
@@ -788,7 +798,7 @@ export function Search({ saved = false }) {
     [filters, setFilters] = useState(false);
   useEffect(
     () => setPage(0),
-    [q, cat, department, sub, loc, sort, condition, type, min, max],
+    [q, cat, department, sub, loc, sort, condition, type, min, max, listView],
   );
   useEffect(() => {
     let live = true;
@@ -824,6 +834,7 @@ export function Search({ saved = false }) {
               );
           if (sort === "low") list.sort((a, b) => a.price - b.price);
           if (sort === "high") list.sort((a, b) => b.price - a.price);
+          list = list.slice(page * 24, page * 24 + 25);
         } else if (configured) {
           let query = supabase
             .rpc("search_listings", { p_query: q })
@@ -874,7 +885,7 @@ export function Search({ saved = false }) {
         }
         if (live) {
           setMore(list.length > 24);
-          setItems(list.slice(0, 24));
+          setItems((previous) => listView && page > 0 ? [...previous, ...list.slice(0, 24)] : list.slice(0, 24));
         }
       } catch (e) {
         if (live) notice(e.message);
@@ -898,13 +909,22 @@ export function Search({ saved = false }) {
     page,
     session?.user?.id,
     saved,
+    listView,
   ]);
+  useEffect(() => {
+    if (!listView || !more || loading || !listEnd.current) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setPage((current) => current + 1);
+    }, { rootMargin: "250px" });
+    observer.observe(listEnd.current);
+    return () => observer.disconnect();
+  }, [listView, more, loading, page]);
   return (
     <div className="page">
       <div className="breadcrumb">
         <Link to="/">Home</Link>
         <span>/</span>
-        {saved ? "Saved items" : "Explore the marketplace"}
+        {saved ? "Saved items" : listView ? "Browse offers" : "Explore the marketplace"}
       </div>
       <div className="section-heading">
         <div>
@@ -919,7 +939,7 @@ export function Search({ saved = false }) {
                   : cat
                     ? subcategoryName(categories, cat, sub) ||
                       categoryName(categories, cat)
-                    : "Explore the marketplace"}
+                    : listView ? "Browse offers" : "Explore the marketplace"}
           </h1>
           <p>Listings from people and businesses across Manipur.</p>
           {attribute && attributeValue && (
@@ -927,8 +947,7 @@ export function Search({ saved = false }) {
               Filter: {attribute} — {attributeValue}{" "}
               <Link
                 to={
-                  "/search?" +
-                  new URLSearchParams({
+                  searchUrl({
                     category: cat,
                     q,
                     location: loc,
@@ -958,8 +977,7 @@ export function Search({ saved = false }) {
               value={cat}
               onChange={(e) =>
                 navigate(
-                  "/search?" +
-                    new URLSearchParams({
+                  searchUrl({
                       q,
                       category: e.target.value,
                       department: e.target.value ? "" : department,
@@ -982,8 +1000,7 @@ export function Search({ saved = false }) {
                 value={sub}
                 onChange={(e) =>
                   navigate(
-                    "/search?" +
-                      new URLSearchParams({
+                    searchUrl({
                         q,
                         category: cat,
                         subcategory: e.target.value,
@@ -1042,8 +1059,7 @@ export function Search({ saved = false }) {
               value={loc}
               onChange={(e) =>
                 navigate(
-                  "/search?" +
-                    new URLSearchParams({
+                  searchUrl({
                       q,
                       category: cat,
                       location: e.target.value,
@@ -1072,19 +1088,28 @@ export function Search({ saved = false }) {
               setType("");
               setMin("");
               setMax("");
-              navigate("/search");
+              navigate(listView ? "/search?view=list" : "/search");
             }}
           >
             Clear all filters
           </button>
         </aside>
         <section>
+          {listView && <nav className="offer-category-chips" aria-label="Browse offer categories">
+            {[{ id: "", name: "All" }, ...["vehicles", "property", "jobs", "electronics", "fashion"].map(id => categories.find(c => c.id === id)).filter(Boolean)].map(c =>
+              <Link key={c.id || "all"} className={cat === c.id ? "active" : ""} to={searchUrl({ q, category: c.id, location: loc })}>{c.id === "fashion" ? "Clothing" : c.name}</Link>
+            )}
+          </nav>}
           <div className="results-bar">
             <span>
               {loading
                 ? "Finding local products…"
-                : `${items.length}${more ? "+" : ""} products on this page`}
+                : `${items.length}${more ? "+" : ""} products${listView ? "" : " on this page"}`}
             </span>
+            {!saved && <div className="offer-view-toggle" role="group" aria-label="Offer layout">
+              <Link to={"/search?" + new URLSearchParams([...params].filter(([key]) => key !== "view"))} className={!listView ? "selected" : ""} aria-label="Grid view" aria-current={!listView ? "page" : undefined} title="Grid view"><SquaresFour size={17} /></Link>
+              <Link to={"/search?" + new URLSearchParams({ ...Object.fromEntries(params), view: "list" })} className={listView ? "selected" : ""} aria-label="List view" aria-current={listView ? "page" : undefined} title="List view"><ListBullets size={17} /></Link>
+            </div>}
             <select
               aria-label="Sort products"
               value={sort}
@@ -1096,9 +1121,9 @@ export function Search({ saved = false }) {
             </select>
           </div>
           {items.length ? (
-            <div className="product-grid results-grid">
+            <div className={listView ? "offer-list" : "product-grid results-grid"}>
               {items.map((i) => (
-                <ProductCard key={i.id} item={i} />
+                <ProductCard key={i.id} item={i} compact={listView} />
               ))}
             </div>
           ) : (
@@ -1118,7 +1143,8 @@ export function Search({ saved = false }) {
               </Empty>
             )
           )}
-          <div className="pagination">
+          {listView && <div ref={listEnd} className="offer-list-end" role="status">{loading && page > 0 ? "Loading more offers…" : more ? "Scroll for more offers" : items.length ? "You're up to date" : ""}</div>}
+          {!listView && <div className="pagination">
             <button disabled={page === 0} onClick={() => setPage(page - 1)}>
               <ArrowLeft /> Previous
             </button>
@@ -1126,7 +1152,7 @@ export function Search({ saved = false }) {
             <button disabled={!more} onClick={() => setPage(page + 1)}>
               Next <ArrowRight />
             </button>
-          </div>
+          </div>}
           {!saved && cat && !q && <div className="category-example-results">
             <h2>How people can use this category</h2>
             <p>Example pages to help you create your own listing or shop.</p>
