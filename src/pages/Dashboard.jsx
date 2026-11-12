@@ -39,6 +39,27 @@ import { SellerForm } from "./Account";
 import { shopPath } from "../lib/storefront";
 import { shopCategoryId, shopCategoryProfile, shopListingLabel } from "../lib/storefront-categories";
 import { shopStarterCollections } from "../lib/shop-departments";
+function DepartmentIdeas({ category, collections, onAdd }) {
+  const [names, setNames] = useState(() => shopStarterCollections(category));
+  const [busy, setBusy] = useState(false);
+  const existing = new Set(collections.map((c) => c.name.trim().toLocaleLowerCase()));
+  return <div className="department-ideas">
+    <p>Optional starting names. Change any name before adding it to your shop. Only added departments appear on your storefront.</p>
+    <div className="department-idea-grid">
+      {names.map((name, index) => {
+        const clean = name.trim();
+        const added = existing.has(clean.toLocaleLowerCase());
+        return <div className="department-idea" key={index}>
+          <input aria-label={`Edit suggested department ${index + 1}`} maxLength={60} value={name} onChange={(e) => setNames((current) => current.map((value, i) => i === index ? e.target.value : value))} />
+          <button type="button" className="button outline" disabled={busy || !clean || added} onClick={async () => {
+            setBusy(true);
+            try { await onAdd(clean); } finally { setBusy(false); }
+          }}>{added ? "Added" : "Add"}</button>
+        </div>;
+      })}
+    </div>
+  </div>;
+}
 export function ListingEditor({
   seller,
   preferredCategory,
@@ -1053,24 +1074,20 @@ export function Dashboard({ startSell = false, visual = false }) {
           {tab === "collections" && (
             <>
               <h2>Manage your store departments</h2>
-              <label>Collection ideas by category <select value={starterCategory || mainCategoryId} onChange={e=>setStarterCategory(e.target.value)}><option value="">Choose a category</option>{categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-              {(starterCategory || mainCategoryId) && <div className="chips studio-chips">{shopStarterCollections(categories.find(c=>c.id === (starterCategory || mainCategoryId))).map(name=><button type="button" key={name} onClick={()=>{setCollectionEdit(null);setCollectionName(name)}}>{name}</button>)}</div>}
+              <label>Starting ideas by category <select value={starterCategory || mainCategoryId} onChange={e=>setStarterCategory(e.target.value)}><option value="">Choose a category</option>{categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+              {(starterCategory || mainCategoryId) && <DepartmentIdeas key={starterCategory || mainCategoryId} category={categories.find(c=>c.id === (starterCategory || mainCategoryId))} collections={collections} onAdd={async (name) => {
+                try {
+                  if (visual) throw Error("Connect your account to save departments.");
+                  await result(supabase.from("collections").insert({seller_id:seller.id,name,position:collections.length}));
+                  await load();
+                  notice(name + " added to your shop.");
+                } catch (e) { notice(e.message); }
+              }} />}
               <p>
                 Add, rename or remove your own departments. Assign each item to a
                 department when editing its listing. Your departments appear in
                 your shop menu; OO marketplace categories stay admin-managed.
               </p>
-              {(starterCategory || mainCategoryId) && <button type="button" className="button outline" onClick={async()=>{
-                try {
-                  if (visual) throw Error("Connect your account to save departments.");
-                  const ideas = shopStarterCollections(categories.find(c=>c.id === (starterCategory || mainCategoryId)));
-                  const existing = new Set(collections.map(c=>c.name.toLocaleLowerCase()));
-                  const fresh = ideas.filter(name=>!existing.has(name.toLocaleLowerCase()));
-                  if (!fresh.length) return notice("These departments are already in your shop.");
-                  await result(supabase.from("collections").insert(fresh.map((name,index)=>({seller_id:seller.id,name,position:collections.length+index}))));
-                  load();
-                } catch(e) { notice(e.message); }
-              }}>Add suggested departments</button>}
               <form
                 className="inline-form"
                 onSubmit={async (e) => {
@@ -1078,15 +1095,17 @@ export function Dashboard({ startSell = false, visual = false }) {
                   try {
                     if (visual)
                       throw Error("Connect your account to save collections.");
+                    const name = collectionName.trim();
+                    if (!name) throw Error("Enter a department name.");
                     await result(
                       collectionEdit
                         ? supabase
                             .from("collections")
-                            .update({ name: collectionName })
+                            .update({ name })
                             .eq("id", collectionEdit)
                         : supabase.from("collections").insert({
                             seller_id: seller.id,
-                            name: collectionName,
+                            name,
                             position: collections.length,
                           }),
                     );
@@ -1107,9 +1126,11 @@ export function Dashboard({ startSell = false, visual = false }) {
                   placeholder="e.g. New arrivals"
                 />
                 <button className="button primary">
-                  {collectionEdit ? "Save" : "Add collection"}
+                  {collectionEdit ? "Save new name" : "Add custom department"}
                 </button>
+                {collectionEdit && <button type="button" className="button outline" onClick={() => {setCollectionEdit(null);setCollectionName("")}}>Cancel</button>}
               </form>
+              <h3>Your storefront departments</h3>
               {collections.map((c) => (
                 <div className="table-row" key={c.id}>
                   <strong>{c.name}</strong>
@@ -1124,19 +1145,19 @@ export function Dashboard({ startSell = false, visual = false }) {
                     try { await result(supabase.from("collections").update({position:index+1}).eq("id",c.id).eq("seller_id",seller.id));await result(supabase.from("collections").update({position:index}).eq("id",other.id).eq("seller_id",seller.id));load(); } catch(e){notice(e.message)}
                   }}>↓</button>
                   <button
-                    aria-label={"Edit " + c.name}
+                    aria-label={"Rename " + c.name}
                     onClick={() => {
                       setCollectionEdit(c.id);
                       setCollectionName(c.name);
                     }}
                   >
-                    <PencilSimple />
+                    <PencilSimple /> <span className="department-action-label">Rename</span>
                   </button>
                   <button
                     aria-label={"Delete " + c.name}
                     onClick={() => {setDeleteCollection(c);setMoveCollectionTo("")}}
                   >
-                    <Trash />
+                    <Trash /> <span className="department-action-label">Delete</span>
                   </button>
                 </div>
               ))}

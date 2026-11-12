@@ -1,3 +1,9 @@
+# Build status — v0.22.1 (12 November 2026)
+
+Seller shop starter names are editable before they are individually added. The existing department list now labels Rename and Delete, and renaming has a Cancel action. This avoids adding the entire fixed fashion set when a shop only needs custom names. Global marketplace categories remain managed by admins. No database migration is needed. All 46 local tests and the production build pass. The live signed-in editor is not acceptance-tested from this environment because the preview redirects its cloud browser to Vercel login.
+
+## Previous release
+
 # Build status — v0.22.0 (12 November 2026)
 
 Added department reordering and a deletion dialog that retains listings, with optional move to another department. The installed OO PWA now registers as a text share target and opens `/share` with an allowed public video link prefilled. The Android source registers an `ACTION_SEND` text target for a future rebuilt APK. Listing cards expose one-click embeds and original-post links; searches index seller-entered names, categories and video URLs. The live Supabase `listing_guard` now permits a validated public video instead of a required photo; read-back verified the quota and video validation trigger remain. Version 0.22.0 appears in the footer and Android metadata. The production site remains separate from the OO preview branch.

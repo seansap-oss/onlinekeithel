@@ -182,3 +182,8 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 - Owners may add, rename, reorder and delete shop departments. Deleting a department keeps its listings, optionally moving them into another department. Global categories and subcategories remain administrator controlled.
 - A shared public YouTube, Instagram or Facebook video link opens the OO listing editor on installed Android PWA or rebuilt Capacitor app. Seller enters the searchable title, category, subcategory and price. Published video listings can omit photos; validation of supported video URLs remains on the database. Social platforms may restrict playback for individual posts, so keep an original-post link.
 - Publish this release to the existing `shop-studio-v0.19.0` Vercel preview branch that the user checks; retain production separately. Every release changes package, footer and Android version metadata.
+
+## Editable shop starter names — v0.22.1, 12 November 2026
+
+- The fashion ideas such as T-shirts and Shirts are optional starting names, not fixed marketplace departments. Show them as editable fields with individual Add actions so owners can change names before saving. Keep the existing custom department input and make rename of saved departments obvious.
+- The admin-managed marketplace category and subcategory list remains distinct from each owner's storefront departments. Preserve the landing page and publish to the same OO preview branch.
