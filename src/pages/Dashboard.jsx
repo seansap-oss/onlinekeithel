@@ -3,7 +3,7 @@ import ShopSales from "../components/ShopSales";
 import { InventoryEditor } from "../components/ProductOptions";
 import {
   normalizeCommerce,
-  normalizeVideos,
+  listingVideosForSave,
   normalizeProductImport,
   productFields,
   fieldOptions,
@@ -134,6 +134,9 @@ export function ListingEditor({
               if (u && !socialUrl(u))
                 throw Error("Add a valid social platform URL");
             validateClassified({ ...f, status });
+            const videos = listingVideosForSave(f.videos, f.socials);
+            if (status === "published" && !f.images.length && !videos.length)
+              throw Error("Add a photo or paste a public video link in Video URL or a social post URL.");
             const payload = {
               seller_id: seller.id,
               title: f.title,
@@ -152,7 +155,7 @@ export function ListingEditor({
                   ? { mode: "enquiry", stock: null, variants: [] }
                   : f.commerce,
               ),
-              videos: normalizeVideos(f.videos),
+              videos,
               tags: f.tags,
               sku: f.sku || null,
               status,
@@ -462,8 +465,8 @@ export function ListingEditor({
               />
             ))}
             <small>
-              Add the exact post URL. Include its useful keywords in your
-              product title or tags so people can find it.
+              A public video post URL here is also attached to the listing
+              automatically. Put searchable words in the listing title or tags.
             </small>
           </div>
           </div>

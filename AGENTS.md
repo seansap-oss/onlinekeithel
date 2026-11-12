@@ -187,3 +187,8 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 
 - The fashion ideas such as T-shirts and Shirts are optional starting names, not fixed marketplace departments. Show them as editable fields with individual Add actions so owners can change names before saving. Keep the existing custom department input and make rename of saved departments obvious.
 - The admin-managed marketplace category and subcategory list remains distinct from each owner's storefront departments. Preserve the landing page and publish to the same OO preview branch.
+
+## Video-only posting correction — v0.22.2, 12 November 2026
+
+- User's Instagram reel was pasted into Video title and social URL, while Video URL remained blank, causing a server photo/video requirement error. The editor should put URL before optional title, move a supported link pasted into title to URL, and attach a supported social post URL when saving. Preserve a client-side media check with a clear message.
+- Publish to the same OO preview link; keep the real Supabase video-only guard and provider validation. Do not claim social embed playback for restricted/private posts.

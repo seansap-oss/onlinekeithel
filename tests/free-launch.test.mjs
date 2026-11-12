@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import createOrder from "../api/create-order.js";
 import { paidPackagesAreEnabled } from "../api/_lib/server.js";
+import { listingVideosForSave } from "../src/lib/commerce.js";
 
 test("paid package checkout requires the admin-controlled marketplace switch", async () => {
   assert.equal(paidPackagesAreEnabled(undefined), false);
@@ -30,6 +31,7 @@ test("free launch keeps old ads public, protects seller edits, and caps active a
     for (const file of ["database/schema.sql", "database/migrations/013_listing_packages.sql", "database/migrations/014_photo_count.sql", "database/migrations/015_free_launch.sql"])
       await db.exec(await readFile(new URL(`../${file}`, import.meta.url), "utf8"));
     await db.exec(await readFile(new URL("../database/migrations/015_free_launch.sql", import.meta.url), "utf8"));
+    await db.exec(await readFile(new URL("../supabase/migrations/20261112230000_video_only_listings_v0220.sql", import.meta.url), "utf8"));
     const plans = (await db.query("select id,active,listing_limit from plans where id in ('free','quick') order by id")).rows;
     assert.deepEqual(plans, [
       { id: "free", active: true, listing_limit: 100 },
@@ -37,6 +39,10 @@ test("free launch keeps old ads public, protects seller edits, and caps active a
     ]);
     await db.exec(`set role authenticated; select set_config('request.jwt.claim.sub','${user}',false);`);
     const seller = (await db.query("insert into sellers(user_id,name,slug,whatsapp) values($1,'Seller','seller-free','919876543210') returning id", [user])).rows[0].id;
+    const reel = "https://www.instagram.com/reel/Dfm9vwQxzoV/?utm_source=ig_web_copy";
+    const videos = listingVideosForSave([{ title: reel, url: "" }], { instagram: reel });
+    const videoOnly = (await db.query("insert into listings(seller_id,category_id,title,price,images,videos,status) values($1,'fashion','Reel shoes',100,'[]',$2,'published') returning id", [seller, JSON.stringify(videos)])).rows[0].id;
+    await db.query("update listings set status='paused' where id=$1", [videoOnly]);
     const add = (title) => db.query("insert into listings(seller_id,category_id,title,price,images,status) values($1,'fashion',$2,100,'[\"https://example.com/photo.jpg\"]','published') returning id", [seller,title]);
     const old = (await add("Older listing")).rows[0].id;
     await db.exec("reset role");

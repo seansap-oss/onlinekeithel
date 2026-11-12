@@ -5,6 +5,7 @@ import { PGlite } from "@electric-sql/pglite";
 import {
   normalizeCommerce,
   normalizeVideos,
+  listingVideosForSave,
   normalizePayments,
   validateSelection,
   selectedPrice,
@@ -69,6 +70,17 @@ test("video and payment fields accept supported data and reject executable or de
   assert.throws(() => normalizePayments({ upi_id: "bad&x=1" }));
   assert.throws(() => normalizePayments({ upi_qr: "javascript:alert(1)" }));
   assert.equal(normalizePayments({ upi_id: "shop@bank" }).upi_id, "shop@bank");
+});
+
+test("an Instagram reel pasted into the title or social field becomes a playable listing video", () => {
+  const reel = "https://www.instagram.com/reel/Dfm9vwQxzoV/?utm_source=ig_web_copy";
+  assert.deepEqual(listingVideosForSave([{ title: reel, url: "" }], { instagram: reel }), [
+    { title: "Product video", url: reel },
+  ]);
+  assert.deepEqual(listingVideosForSave([], { instagram: reel }), [
+    { title: "Product video", url: reel },
+  ]);
+  assert.deepEqual(listingVideosForSave([], { instagram: "https://www.instagram.com/example/" }), []);
 });
 test("database permits one-photo clothing posts and validates inventory, galleries, videos and UPI", async () => {
   const db = new PGlite();

@@ -3,6 +3,7 @@ import { Field, Video } from "./UI";
 import { uploadVideo } from "../lib/backend";
 import { useMarket } from "../lib/context";
 import { directVideoUrl } from "../lib/commerce";
+import { embedUrl, socialUrl } from "../lib/utils";
 export function ProductVideos({ videos = [] }) {
   return videos.length ? (
     <section className="product-videos">
@@ -38,22 +39,35 @@ export function ProductVideosEditor({ value = [], onChange, onBusyChange, allowU
     <section className="video-editor">
       <h3>Videos & embedded posts</h3>
       <p className="muted">
-        Add up to six YouTube, Instagram, Facebook, MP4 or WebM links. Public
+        Paste the public video link first. The title is optional. If you paste
+        a link into the title by mistake, we move it to the link field. Public
         posts play when the provider permits embedding.
       </p>
       {value.map((v, i) => (
         <div key={i} className="video-editor-row">
           <Field
-            label={"Video " + (i + 1) + " title"}
-            maxLength={100}
-            value={v.title}
-            onChange={(e) => edit(i, "title", e.target.value)}
-          />
-          <Field
-            label={"Video " + (i + 1) + " URL"}
+            label={"Video " + (i + 1) + " link (paste here)"}
             type="url"
             value={v.url}
             onChange={(e) => edit(i, "url", e.target.value)}
+          />
+          <Field
+            label={"Video " + (i + 1) + " title (optional)"}
+            maxLength={100}
+            value={v.title}
+            onPaste={(e) => {
+              const pasted = e.clipboardData.getData("text").trim();
+              if ((socialUrl(pasted) && embedUrl(pasted)) || directVideoUrl(pasted)) {
+                e.preventDefault();
+                onChange(value.map((x, n) => n === i ? { ...x, url: pasted, title: "" } : x));
+              }
+            }}
+            onChange={(e) => {
+              const entered = e.target.value.trim();
+              if ((socialUrl(entered) && embedUrl(entered)) || directVideoUrl(entered))
+                onChange(value.map((x, n) => n === i ? { ...x, url: entered, title: "" } : x));
+              else edit(i, "title", e.target.value);
+            }}
           />
           <button
             className="text-button"

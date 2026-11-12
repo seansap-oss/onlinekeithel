@@ -1,4 +1,4 @@
-import { safeUrl, socialUrl, normalizeImport } from "./utils.js";
+import { safeUrl, socialUrl, embedUrl, normalizeImport } from "./utils.js";
 export const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 export const vehicleFields = [
   "Make",
@@ -175,6 +175,25 @@ export function normalizeVideos(videos = []) {
         );
       return { url, title: String(v.title || "Product video").slice(0, 100) };
     });
+}
+export function listingVideosForSave(videos = [], socials = {}) {
+  const corrected = videos.map((video) => {
+    const titleUrl = video.title?.trim();
+    const pastedInTitle = !video.url?.trim() &&
+      ((embedUrl(titleUrl) && socialUrl(titleUrl)) || directVideoUrl(titleUrl));
+    return pastedInTitle
+      ? { title: "Product video", url: pastedInTitle }
+      : video;
+  });
+  const existing = new Set(corrected.map((video) => video.url?.trim()).filter(Boolean));
+  for (const key of ["instagram", "facebook", "youtube", "post"]) {
+    const url = socialUrl(socials[key]?.trim());
+    if (url && embedUrl(url) && !existing.has(url)) {
+      corrected.push({ title: "Product video", url });
+      existing.add(url);
+    }
+  }
+  return normalizeVideos(corrected);
 }
 export function normalizePayments(p = {}) {
   const upi_id = String(p.upi_id || "").trim();
