@@ -276,6 +276,11 @@ export function Video({ url, poster = "", title = "", compact = false, theater =
     }
     setMuted(next);
   };
+  const openViewer = () => {
+    setMuted(true);
+    setFrameReady(false);
+    setOpen(true);
+  };
   return (
     <div className={compact ? "video-player video-player-card" : "video-player"}>
       {!useTheater && load && (src || direct) ? (direct ? <video src={direct} controls playsInline /> :
@@ -290,7 +295,7 @@ export function Video({ url, poster = "", title = "", compact = false, theater =
         <button
           type="button"
           className="video-poster"
-          onClick={() => useTheater ? setOpen(true) : setLoad(true)}
+          onClick={() => useTheater ? openViewer() : setLoad(true)}
           disabled={!canPlay}
           aria-label={"Play " + (title || platform) + " video"}
         >
@@ -317,7 +322,7 @@ export function Video({ url, poster = "", title = "", compact = false, theater =
             <button type="button" className="video-theater-close" aria-label="Close video" onClick={closeViewer}><X size={26}/></button>
           </header>
           <div ref={stageRef} className={"video-theater-stage" + (expanded ? " video-theater-stage-expanded" : "")}>
-            {direct ? <video ref={nativeRef} src={direct} poster={mediaUrl(poster)} autoPlay muted controls playsInline /> :
+            {direct ? <video ref={nativeRef} src={direct} poster={mediaUrl(poster)} autoPlay muted controls playsInline onVolumeChange={(event) => setMuted(event.currentTarget.muted)} /> :
               <iframe ref={frameRef} src={theaterSrc} title={`${platform} video: ${title || "Seller video"}`} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" onLoad={() => setFrameReady(true)} />}
             <button type="button" className="video-theater-expand" onClick={toggleFullscreen} aria-label={expanded ? "Exit fullscreen" : "Watch fullscreen"}>{expanded ? <ArrowsIn size={22}/> : <ArrowsOut size={22}/>}</button>
           </div>
