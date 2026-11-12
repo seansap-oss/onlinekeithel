@@ -2,7 +2,7 @@
 
 Added department reordering and a deletion dialog that retains listings, with optional move to another department. The installed OO PWA now registers as a text share target and opens `/share` with an allowed public video link prefilled. The Android source registers an `ACTION_SEND` text target for a future rebuilt APK. Listing cards expose one-click embeds and original-post links; searches index seller-entered names, categories and video URLs. The live Supabase `listing_guard` now permits a validated public video instead of a required photo; read-back verified the quota and video validation trigger remain. Version 0.22.0 appears in the footer and Android metadata. The production site remains separate from the OO preview branch.
 
-46 local tests and the v0.22.0 Vite production build pass. The Android share target has not been compiled or tested on a device because this environment cannot download the Gradle wrapper. Instagram/Facebook embedding depends on the original public post and provider permissions. GitHub/Vercel deployment status to be recorded after publication.
+46 local tests and the v0.22.0 Vite production build pass. The Android share target has not been compiled or tested on a device because this environment cannot download the Gradle wrapper. Instagram/Facebook embedding depends on the original public post and provider permissions. The existing `shop-studio-v0.19.0` GitHub branch was updated and its Vercel commit status reported success. The cloud browser was redirected to Vercel login when opening the protected preview, so live page and signed-in seller acceptance remain unverified from this environment.
 
 ## Previous release
 

@@ -35,9 +35,22 @@ public class MainActivity extends BridgeActivity {
 
     private void deliverShare() {
         if (pendingShare == null || bridge == null || bridge.getWebView() == null) return;
-        final String text = pendingShare;
-        pendingShare = null;
-        bridge.getWebView().postDelayed(() -> bridge.getWebView().evaluateJavascript(
-            "window.location.assign('/share?text=' + encodeURIComponent(" + JSONObject.quote(text) + "))", null), 500);
+        bridge.getWebView().post(new Runnable() {
+            private int attempts = 0;
+
+            @Override
+            public void run() {
+                if (bridge == null || bridge.getWebView() == null || pendingShare == null) return;
+                String page = bridge.getWebView().getUrl();
+                if (page != null && (page.startsWith("http://localhost/") || page.startsWith("https://localhost/"))) {
+                    String text = pendingShare;
+                    pendingShare = null;
+                    bridge.getWebView().evaluateJavascript(
+                        "window.location.assign('/share?text=' + encodeURIComponent(" + JSONObject.quote(text) + "))", null);
+                } else if (++attempts < 40) {
+                    bridge.getWebView().postDelayed(this, 250);
+                }
+            }
+        });
     }
 }
