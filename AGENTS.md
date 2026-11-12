@@ -163,3 +163,10 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 - Preserve the OO hero, spacing, swipeable category rail, hamburger and bottom navigation. The homepage's Featured local offers grid remains the default.
 - Add only a small grid/list control alongside Featured local offers. List opens a separate full browse view with compact rows, category filters and continuous scrolling through current published listings. The list and grid views share the existing listing links and filters.
 - Keep this release on the OO preview branch until the user explicitly asks to replace the previous production deployment.
+
+## Approved category storefronts — v0.20.0, 12 November 2026
+
+- The user approved category-specific seller storefront design for every marketplace category, building on the reviewed vehicle, property and recruiter concepts. The OO landing page and existing navigation stay unchanged.
+- Every seller chooses a main category. Its headline, public category navigation, relevant listing fields and shop filters derive from the active administrator catalogue. Shops may still sell in multiple categories.
+- Sellers can edit their cover, identity, collections and listings, and track stock where applicable. Only the verified marketplace administrator may create or edit global categories and subcategories. No new paid gate during the free launch.
+- Preserve existing shop URLs and older storefront defaults; added categories should work without creating one-off routes or new database tables.

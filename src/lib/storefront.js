@@ -1,4 +1,5 @@
 import { templates } from "./templates.js";
+import { shopCategoryProfile, shopCategoryId } from "./storefront-categories.js";
 
 export const storefrontColors = {
   theme: { label: "Template default", value: "var(--accent)" },
@@ -14,12 +15,16 @@ export const storefrontFonts = {
 };
 export const storefrontSections = ["about", "gallery", "video"];
 
-export function storefrontSettings(seller = {}) {
+export function storefrontSettings(seller = {}, categories) {
   const settings = seller.storefront || {};
+  const categoryId = shopCategoryId(seller, categories);
+  const category = shopCategoryProfile(categoryId, categories);
   return {
-    layout: ["catalogue","showroom","portfolio"].includes(settings.layout) ? settings.layout : ["vehicles","motorcycles"].includes(seller.theme) ? "showroom" : "catalogue",
+    categoryId,
+    layout: ["catalogue","showroom","portfolio"].includes(settings.layout) ? settings.layout : settings.categoryId ? category?.layout || "catalogue" : ["vehicles", "motorcycles"].includes(seller.theme) ? "showroom" : "catalogue",
     headline:
       settings.headline ||
+      (settings.categoryId ? category?.headline : "") ||
       templates[seller.theme]?.headline ||
       seller.name ||
       "Welcome",

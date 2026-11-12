@@ -16,7 +16,9 @@ import {
 import { ClassifiedContact } from "../components/ClassifiedContact";
 import { PurchasePanel } from "../components/PurchasePanel";
 import { ProductVideos } from "../components/ProductMedia";
-import { outOfStock } from "../lib/commerce";
+import { outOfStock, fieldOptions } from "../lib/commerce";
+import { shopCategoryId, shopCategoryProfile } from "../lib/storefront-categories";
+import { filterShopListings } from "../lib/shop-filters";
 import {
   categoryName,
   subcategoryName,
@@ -1235,7 +1237,12 @@ export function Shops() {
 export function SellerPage({ slug }) {
   const { fixtures, notice, categories } = useMarket();
   const [shopCategory, setShopCategory] = useState(""),
-    [shopQuery, setShopQuery] = useState("");
+    [shopQuery, setShopQuery] = useState(""),
+    [subcategory, setSubcategory] = useState(""),
+    [attributeFilters, setAttributeFilters] = useState({}),
+    [conditionFilter, setConditionFilter] = useState(""),
+    [maxPrice, setMaxPrice] = useState(""),
+    [maxKilometres, setMaxKilometres] = useState("");
   const [seller, setSeller] = useState(null),
     [sellerLoading, setSellerLoading] = useState(true),
     [sellerError, setSellerError] = useState(""),
@@ -1284,43 +1291,53 @@ export function SellerPage({ slug }) {
         if (!live) return;
         setSeller(s);
         if (s) {
-          let query = configured
+          const detailed = Object.values(attributeFilters).some(Boolean) || !!conditionFilter || maxPrice !== "" || maxKilometres !== "";
+          const makeQuery = () => configured
             ? supabase
                 .from("listings")
                 .select("*,seller:sellers(*)")
                 .eq("seller_id", s.id)
                 .eq("status", "published")
             : null;
-          if (collection && query)
-            query = query.eq("collection_id", collection);
-          if (shopCategory && query)
-            query = query.eq("category_id", shopCategory);
-          if (shopQuery.trim() && query)
-            query = query.ilike(
+          const fetchRange = async (start, end) => {
+            let query = makeQuery();
+            if (collection) query = query.eq("collection_id", collection);
+            if (shopCategory) query = query.eq("category_id", shopCategory);
+            if (subcategory) query = query.eq("subcategory_id", subcategory);
+            if (shopQuery.trim()) query = query.ilike(
               "title",
               "%" + shopQuery.trim().replace(/[%_]/g, "") + "%",
             );
+            return result(query.order("created_at", { ascending: false }).range(start, end));
+          };
           let rows = fixtures
             ? fixtures.listings.filter(
                 (i) =>
                   i.seller_id === s.id &&
                   (!collection || i.collection_id === collection) &&
                   (!shopCategory || i.category_id === shopCategory) &&
+                  (!subcategory || i.subcategory_id === subcategory) &&
                   (!shopQuery.trim() ||
                     i.title
                       .toLowerCase()
                       .includes(shopQuery.toLowerCase().trim())),
               )
-            : query
-              ? await result(
-                  query
-                    .order("created_at", { ascending: false })
-                    .range(page * 24, page * 24 + 24),
-                )
+            : configured
+              ? detailed ? [] : await fetchRange(page * 24, page * 24 + 24)
               : [];
+          if (configured && detailed) {
+            // Free launch permits 100 ads per owner. Scan in batches so filters
+            // still work correctly as an owner grows beyond the first page.
+            for (let start = 0; ; start += 500) {
+              const batch = await fetchRange(start, start + 499);
+              rows.push(...batch);
+              if (!live || batch.length < 500) break;
+            }
+          }
+          if (detailed) rows = filterShopListings(rows, { attributes: attributeFilters, condition: conditionFilter, maxPrice, maxKilometres });
           if (live) {
-            setMore(rows.length > 24);
-            setItems(rows.slice(0, 24));
+            setMore(detailed || fixtures ? rows.length > (page + 1) * 24 : rows.length > 24);
+            setItems(detailed || fixtures ? rows.slice(page * 24, page * 24 + 24) : rows.slice(0, 24));
           }
           if (fixtures) {
             setCollections(
@@ -1358,7 +1375,7 @@ export function SellerPage({ slug }) {
     return () => {
       live = false;
     };
-  }, [fixtures, slug, collection, page, shopCategory, shopQuery, sellerAttempt]);
+  }, [fixtures, slug, collection, page, shopCategory, subcategory, shopQuery, attributeFilters, conditionFilter, maxPrice, maxKilometres, sellerAttempt]);
   useEffect(() => {
     if (seller) document.title = `${seller.name} | OnlineKeithel`;
   }, [seller]);
@@ -1388,7 +1405,10 @@ export function SellerPage({ slug }) {
         </Empty>
       </div>
     );
-  const display = storefrontSettings(seller);
+  const display = storefrontSettings(seller, categories);
+  const mainCategoryId = shopCategoryId(seller, categories);
+  const mainCategory = shopCategoryProfile(mainCategoryId, categories);
+  const selectedCategory = shopCategoryProfile(shopCategory || mainCategoryId, categories);
   const shopStory = display.sections.map((section) => (
         <React.Fragment key={section}>
           {section === "about" && display.showAbout && display.introduction && (
@@ -1459,13 +1479,13 @@ export function SellerPage({ slug }) {
         "--shop-font": storefrontFonts[display.font].value,
       }}
     >
-      <div className="shop-cover shop-hero">
+      <div className={"shop-cover shop-hero shop-kind-" + (mainCategoryId || "general")}>
         <Photo src={seller.cover} alt={seller.name} />
         <div className="shop-hero-content">
-          <span>{display.tagline}</span>
+          <span>{mainCategory?.name || display.tagline}</span>
           <h1>{display.headline}</h1>
           <a href="#shop-products" className="button primary">
-            Explore products <ArrowRight size={17} />
+            Explore {mainCategory?.id === "jobs" ? "opportunities" : mainCategory?.id === "property" ? "properties" : mainCategory?.id === "vehicles" ? "vehicles" : "listings"} <ArrowRight size={17} />
           </a>
         </div>
       </div>
@@ -1506,7 +1526,7 @@ export function SellerPage({ slug }) {
           </a>
         )}
       </div>
-      <nav className="studio-nav" aria-label="Shop sections">{display.showAbout && display.introduction && <a href="#studio-about">About</a>}<a href="#shop-products" onClick={()=>setTab("products")}>Catalogue</a>{display.showGallery && display.gallery.length>0 && <a href="#studio-gallery">Gallery</a>}</nav>
+      <nav className="studio-nav" aria-label="Shop sections">{display.showAbout && display.introduction && <a href="#studio-about">About</a>}<a href="#shop-products" onClick={()=>setTab("products")}>{mainCategory?.id === "jobs" ? "Open roles" : mainCategory?.id === "property" ? "Properties" : mainCategory?.id === "vehicles" ? "Inventory" : "Catalogue"}</a>{display.showGallery && display.gallery.length>0 && <a href="#studio-gallery">Gallery</a>}</nav>
       {display.layout === "portfolio" && shopStory}
       <div className="tabs" id="shop-products">
         {[
@@ -1525,6 +1545,19 @@ export function SellerPage({ slug }) {
       </div>
       {tab === "products" ? (
         <>
+          {mainCategory && (
+            <section className="shop-category-intro">
+              <span className="eyebrow">{mainCategory.group_name || "LOCAL MARKETPLACE"}</span>
+              <h2>{mainCategory.name} at {seller.name}</h2>
+              <p>Explore this seller's listings, then filter by the details that matter to you.</p>
+              <div className="chips studio-chips shop-subcategory-chips">
+                <button className={!subcategory && !shopCategory ? "active" : ""} onClick={() => { setShopCategory(""); setSubcategory(""); setAttributeFilters({}); setPage(0); }}>All listings</button>
+                {mainCategory.subcategories?.map((entry) => (
+                  <button key={entry.id} className={subcategory === entry.id ? "active" : ""} onClick={() => { setShopCategory(mainCategoryId); setSubcategory(entry.id); setCollection(""); setAttributeFilters({}); setPage(0); }}>{entry.name}</button>
+                ))}
+              </div>
+            </section>
+          )}
           <div className="form-grid shop-product-filters">
             <Field
               label="Search this shop"
@@ -1540,6 +1573,9 @@ export function SellerPage({ slug }) {
                 value={shopCategory}
                 onChange={(e) => {
                   setShopCategory(e.target.value);
+                  setSubcategory("");
+                  setAttributeFilters({});
+                  setMaxKilometres("");
                   setPage(0);
                 }}
               >
@@ -1548,6 +1584,27 @@ export function SellerPage({ slug }) {
               </select>
             </Field>
           </div>
+          {selectedCategory && (
+            <div className="shop-refinements" aria-label="Refine this shop's listings">
+              {selectedCategory.filters.map((field) => field === "Kilometres" ? (
+                <Field key={field} label="Maximum kilometres"><input type="number" min="0" placeholder="Any mileage" value={maxKilometres} onChange={(e) => { setMaxKilometres(e.target.value); if (!shopCategory) setShopCategory(selectedCategory.id); setPage(0); }} /></Field>
+              ) : (
+                <Field key={field} label={field}>
+                  {fieldOptions[field] ? (
+                    <select value={attributeFilters[field] || ""} onChange={(e) => { setAttributeFilters((current) => ({ ...current, [field]: e.target.value })); if (!shopCategory) setShopCategory(selectedCategory.id); setPage(0); }}>
+                      <option value="">Any {field.toLowerCase()}</option>
+                      {fieldOptions[field].map((option) => <option key={option} value={option}>{option}</option>)}
+                    </select>
+                  ) : (
+                    <input value={attributeFilters[field] || ""} placeholder={`Any ${field.toLowerCase()}`} onChange={(e) => { setAttributeFilters((current) => ({ ...current, [field]: e.target.value })); if (!shopCategory) setShopCategory(selectedCategory.id); setPage(0); }} />
+                  )}
+                </Field>
+              ))}
+              <Field label="Condition"><select value={conditionFilter} onChange={(e) => { setConditionFilter(e.target.value); setPage(0); }}><option value="">Any condition</option><option>New</option><option>Used</option><option>Refurbished</option></select></Field>
+              <Field label="Maximum price ₹"><input type="number" min="0" value={maxPrice} placeholder="Any price" onChange={(e) => { setMaxPrice(e.target.value); setPage(0); }} /></Field>
+              {(Object.values(attributeFilters).some(Boolean) || conditionFilter || maxPrice || maxKilometres) && <button className="button outline" onClick={() => { setAttributeFilters({}); setConditionFilter(""); setMaxPrice(""); setMaxKilometres(""); setPage(0); }}>Clear filters</button>}
+            </div>
+          )}
           <h3>Collections</h3>
           <div className="chips studio-chips">
             <button
@@ -1565,6 +1622,9 @@ export function SellerPage({ slug }) {
                 className={collection === c.id ? "active" : ""}
                 onClick={() => {
                   setCollection(c.id);
+                  setShopCategory("");
+                  setSubcategory("");
+                  setAttributeFilters({});
                   setPage(0);
                 }}
               >
@@ -1574,7 +1634,7 @@ export function SellerPage({ slug }) {
           </div>
           <div className="product-grid">
             {items.map((i) => (
-              <div key={i.id}><ProductCard item={i}/>{display.layout === "showroom" && <small className="studio-spec">{Object.entries(i.attributes || {}).filter(([,v])=>typeof v==="string"||typeof v==="number").slice(0,3).map(([k,v])=>k+": "+v).join(" · ")}</small>}</div>
+              <div key={i.id}><ProductCard item={i}/><small className="studio-spec">{[subcategoryName(categories,i.category_id,i.subcategory_id), ...((shopCategoryProfile(i.category_id,categories)?.filters || []).map((key) => i.attributes?.[key] ? `${key}: ${i.attributes[key]}` : ""))].filter(Boolean).slice(0,4).join(" · ")}</small></div>
             ))}
           </div>
           {!items.length && (

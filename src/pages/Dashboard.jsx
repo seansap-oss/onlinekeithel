@@ -36,8 +36,10 @@ import { money, socialUrl, normalizeImport, safeUrl } from "../lib/utils";
 import { Modal, Field, Photo, Upload, Empty } from "../components/UI";
 import { SellerForm } from "./Account";
 import { shopPath } from "../lib/storefront";
+import { shopCategoryId, shopCategoryProfile, shopListingLabel } from "../lib/storefront-categories";
 export function ListingEditor({
   seller,
+  preferredCategory,
   initial,
   duplicateFrom,
   existingListings = [],
@@ -57,7 +59,9 @@ export function ListingEditor({
         price: "",
         category_id: categories.some((c) => c.id === requestedCategory)
           ? requestedCategory
-          : categories[0]?.id || "fashion",
+          : categories.some((c) => c.id === preferredCategory)
+            ? preferredCategory
+            : categories[0]?.id || "fashion",
         collection_id: "",
         description: "",
         condition: "New",
@@ -791,6 +795,8 @@ export function Dashboard({ startSell = false, visual = false }) {
     refreshUser,
   } = useMarket();
   const seller = visual ? fixtures?.sellers[0] : realSeller;
+  const mainCategoryId = shopCategoryId(seller, categories);
+  const mainCategory = shopCategoryProfile(mainCategoryId, categories);
   const [starterCategory, setStarterCategory] = useState("");
   const [tab, setTab] = useState(
       ["products", "profile", "collections", "sales", "import"].includes(new URLSearchParams(path.split("?")[1]).get("tab"))
@@ -968,11 +974,11 @@ export function Dashboard({ startSell = false, visual = false }) {
             <>
               <div className="section-heading">
                 <div>
-                  <h2>Inventory</h2>
-                  <p>Keep your good things looking their best.</p>
+                  <h2>{mainCategory ? `${mainCategory.name} listings` : "Inventory"}</h2>
+                  <p>Add and edit listings as your stock or services grow. Your shop can also sell in other categories.</p>
                 </div>
                 <button className="button primary" onClick={() => setAdd(true)}>
-                  <Plus /> Add product
+                  <Plus /> Add {shopListingLabel(mainCategoryId)}
                 </button>
               </div>
               {rows.length ? (
@@ -1033,8 +1039,8 @@ export function Dashboard({ startSell = false, visual = false }) {
           {tab === "collections" && (
             <>
               <h2>Your shop collections</h2>
-              <label>Collection ideas by category <select value={starterCategory} onChange={e=>setStarterCategory(e.target.value)}><option value="">Choose a category</option>{categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-              {starterCategory && <div className="chips studio-chips">{subcategoriesFor(categories,starterCategory).map(c=><button type="button" key={c.id} onClick={()=>{setCollectionEdit(null);setCollectionName(c.name)}}>{c.name}</button>)}</div>}
+              <label>Collection ideas by category <select value={starterCategory || mainCategoryId} onChange={e=>setStarterCategory(e.target.value)}><option value="">Choose a category</option>{categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+              {(starterCategory || mainCategoryId) && <div className="chips studio-chips">{subcategoriesFor(categories,starterCategory || mainCategoryId).map(c=><button type="button" key={c.id} onClick={()=>{setCollectionEdit(null);setCollectionName(c.name)}}>{c.name}</button>)}</div>}
               <p>
                 Collections organise products inside your shop. Marketplace
                 categories stay the same.
@@ -1122,6 +1128,7 @@ export function Dashboard({ startSell = false, visual = false }) {
         <ListingEditor
           visual={visual}
           seller={seller}
+          preferredCategory={mainCategoryId}
           initial={editing}
           duplicateFrom={duplicating}
           existingListings={rows}

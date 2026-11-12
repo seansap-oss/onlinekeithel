@@ -1,6 +1,7 @@
 import { normalizePayments } from "../lib/commerce";
 import { accountEmailUrl } from "../lib/auth-url";
 import { templateForCategory, templates } from "../lib/templates";
+import { shopCategoryProfile, shopCategoryId } from "../lib/storefront-categories";
 import React, { useState, useEffect } from "react";
 import {
   Storefront,
@@ -375,7 +376,7 @@ export function SellerForm({ existing, onSaved }) {
           for (const u of Object.values(form.socials))
             if (u && !socialUrl(u))
               throw Error("Use a valid Instagram, Facebook or YouTube URL");
-          const display = storefrontSettings(form);
+          const display = storefrontSettings(form, categories);
           if (display.videoUrl && !socialUrl(display.videoUrl))
             throw Error("Use a valid YouTube, Instagram or Facebook video URL");
           if (display.gallery.some((url) => !mediaUrl(url)))
@@ -384,6 +385,7 @@ export function SellerForm({ existing, onSaved }) {
             ...form,
             payment_options: normalizePayments(form.payment_options),
             storefront: {
+              categoryId: display.categoryId,
               layout: display.layout,
               headline: display.headline.trim().slice(0, 100),
               tagline: display.tagline.trim().slice(0, 100),
@@ -432,21 +434,24 @@ export function SellerForm({ existing, onSaved }) {
             <option value="shop">A shop / business</option>
           </select>
         </Field>
-        <Field label="What does your shop sell?">
+        <Field label="Main shop category">
           <select
-            aria-label="What does your shop sell?"
-            defaultValue=""
-            onChange={(e) =>
-              change("theme", templateForCategory(e.target.value))
-            }
+            aria-label="Main shop category"
+            value={form.storefront?.categoryId || shopCategoryId(form, categories)}
+            required={!existing}
+            onChange={(e) => setForm((current) => ({
+              ...current,
+              theme: templateForCategory(e.target.value),
+              storefront: { ...current.storefront, categoryId: e.target.value, layout: shopCategoryProfile(e.target.value, categories)?.layout || "catalogue" },
+            }))}
           >
             <option value="" disabled>
-              Choose a category to apply its template
+              Choose your main category
             </option>
             <CategoryOptions categories={categories} />
           </select>
         </Field>
-        <Field label="Shop presentation">
+        <Field label="Visual style">
           <select
             value={form.theme}
             onChange={(e) => change("theme", e.target.value)}
@@ -460,8 +465,8 @@ export function SellerForm({ existing, onSaved }) {
         </Field>
       </div>
       <div className={"template-choice theme-" + form.theme}>
-        <strong>{templates[form.theme]?.name} storefront</strong>
-        <p>{templates[form.theme]?.description}</p>
+        <strong>{shopCategoryProfile(form.storefront?.categoryId, categories)?.name || templates[form.theme]?.name} storefront</strong>
+        <p>{shopCategoryProfile(form.storefront?.categoryId, categories)?.headline || templates[form.theme]?.description}</p>
         <Link to="/templates">View template examples</Link>
       </div>
       <Field
@@ -534,7 +539,7 @@ export function SellerForm({ existing, onSaved }) {
         onChange={(v) => change("cover", v)}
       />
       <h3>Your storefront landing page</h3>
-      <Field label="Page layout"><select value={storefrontSettings(form).layout} onChange={e=>change("storefront",{...form.storefront,layout:e.target.value})}><option value="catalogue">Catalogue · collections first</option><option value="showroom">Showroom · models and specifications</option><option value="portfolio">Portfolio · experience and project photos first</option></select></Field>
+      <Field label="Page layout"><select value={storefrontSettings(form, categories).layout} onChange={e=>change("storefront",{...form.storefront,layout:e.target.value})}><option value="catalogue">Catalogue · collections first</option><option value="showroom">Showroom · models and specifications</option><option value="portfolio">Portfolio · experience and project photos first</option></select></Field>
       <p className="muted">
         Make this page feel like yours. Your cover photo appears above the
         headline; shoppers can still find your items in marketplace search.
@@ -544,7 +549,7 @@ export function SellerForm({ existing, onSaved }) {
           label="Hero headline"
           maxLength={100}
           value={form.storefront?.headline ?? ""}
-          placeholder={templates[form.theme]?.headline}
+          placeholder={shopCategoryProfile(form.storefront?.categoryId, categories)?.headline || templates[form.theme]?.headline}
           onChange={(e) =>
             change("storefront", {
               ...form.storefront,
@@ -633,16 +638,16 @@ export function SellerForm({ existing, onSaved }) {
         className={"storefront-preview theme-" + form.theme}
         style={{
           "--shop-accent":
-            storefrontColors[storefrontSettings(form).color].value,
-          "--shop-font": storefrontFonts[storefrontSettings(form).font].value,
+            storefrontColors[storefrontSettings(form, categories).color].value,
+          "--shop-font": storefrontFonts[storefrontSettings(form, categories).font].value,
         }}
       >
         <Photo src={form.cover} alt="Your cover photo preview" />
         <div>
           <span>YOUR STOREFRONT PREVIEW</span>
-          <strong>{storefrontSettings(form).headline}</strong>
-          <p>{storefrontSettings(form).tagline}</p>
-          <small>{storefrontSettings(form).introduction}</small>
+          <strong>{storefrontSettings(form, categories).headline}</strong>
+          <p>{storefrontSettings(form, categories).tagline}</p>
+          <small>{storefrontSettings(form, categories).introduction}</small>
         </div>
       </div>
       <label className="check-field">
@@ -690,7 +695,7 @@ export function SellerForm({ existing, onSaved }) {
         sections will not appear.
       </p>
       <div className="storefront-section-order">
-        {storefrontSettings(form).sections.map((section, index, ordered) => (
+        {storefrontSettings(form, categories).sections.map((section, index, ordered) => (
           <div key={section}>
             <span>
               {index + 1}.{" "}

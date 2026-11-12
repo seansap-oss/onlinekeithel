@@ -1,3 +1,11 @@
+# Build status — v0.20.0 (12 November 2026)
+
+The shop studio now supports all 36 active marketplace categories. A seller chooses the shop's main category in Account, edits the existing cover, headline and page sections, and manages listings, collections and stock in Dashboard. Public shops show the matching subcategories and relevant listing filters (such as vehicle mileage). New admin-created categories receive a generic expandable storefront. The landing page and global category management remain as before.
+
+Local tests and the production build pass. The linked Supabase project was checked read-only: all 36 categories have subcategories. No schema migration is needed for this release. A local visual browser preview was unavailable in this workspace, and signed-in seller editing has not been checked end to end against the live site. Deployment status must be confirmed separately.
+
+## Historical notes
+
 # Build status — v0.15.8
 
 Buyer and seller messaging (24 October 2026): signed-in buyers can post public listing questions and start private real-time conversations; sellers can reply publicly or in the inbox. Buyers and sellers can report inappropriate content, and admins can delete reported questions/messages. Added RLS-backed tables, report RPC hardening, indexes and realtime publication migrations. Carried forward v0.15.7 features. Tests/build will be recorded after verification.
