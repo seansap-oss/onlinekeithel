@@ -13,7 +13,6 @@ Result: blocked for rendered visual acceptance. The approved shopper and admin m
 # Design QA — v0.12.0, approved Option 1
 
 final result: blocked
-
 Reference: `/workspace/scratch/a97ebb7391f0/generated_images/exec-ce334df2-149e-4a4a-a4b0-a46ef8cc4723.png` (approved Option 1 Marketplace Focus board).
 
 The page changes compile and automated tests pass, but a rendered local screenshot could not be captured for same-viewport comparison. Vite runs on `127.0.0.1:4173`; the Work Mode browser returned `ERR_CONNECTION_REFUSED` for `http://terminal.local:4173/`. Binding to `0.0.0.0` failed with `uv_interface_addresses returned Unknown system error 1`. As a result, responsive layout, image crop, campaign cards and auth interactions are not visually accepted in this environment. Do not treat this as a passed design review.
@@ -71,3 +70,11 @@ The managed local browser rendered the seller workspace and opened Add product. 
 The user screenshot showed a one-photo fashion listing with a red “Add front, back, left and right clothing photos” error. The live database function contained that rule. After the migrations, the function no longer contains it, the gallery constraint checks only that photos form an array, and the draft count remained one. The local browser `/plans` page rendered the five new tiers with 14/30-day labels, 2/5/10/20/50 active ads and ₹0/₹100/₹200/₹400/₹600 prices. Connected seller posting and payment were not exercised in this workspace.
 
 ---
+# v0.23.0 video viewer review — 13 November 2026
+
+- Source: approved guitar video overlay mockup, mobile 9:16.
+- Implementation: marketplace card cover opens a vertical viewing dialog with OO identity, video, seller details, contact and original link. The existing homepage structure and footer were not edited.
+- Visual comparison: blocked. The cloud browser refused the review-mode localhost URL and terminal.local returned an upstream connection error. Production build is not a substitute for a rendered comparison.
+- Provider playback and sound: blocked from signed-in live acceptance. YouTube/hosted mute code and cross-origin embed behavior require device testing.
+
+final result: blocked

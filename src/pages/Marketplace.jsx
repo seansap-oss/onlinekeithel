@@ -89,7 +89,7 @@ export function ProductCard({ item, compact = false }) {
   return (
     <article className={compact ? "product-card product-card-list" : "product-card"}>
       <div className="product-photo">
-        {(item.videos || []).some(v=>embedUrl(v.url)) ? <div className="product-card-video"><Video url={item.videos.find(v=>embedUrl(v.url)).url} poster={item.images?.[0]} title={item.title} compact/></div> : <Link
+        {(item.videos || []).some(v=>embedUrl(v.url)) ? <div className="product-card-video"><Video url={item.videos.find(v=>embedUrl(v.url)).url} poster={item.images?.[0]} title={item.title} sellerName={item.seller?.name} priceLabel={listingPrice(item, money)} listingHref={"/listing/" + item.id} compact/></div> : <Link
           to={"/listing/" + item.id}
           data-hovered={flipped}
           onPointerEnter={(e) =>
@@ -1790,6 +1790,7 @@ export function ProductPage({ id }) {
             ))}
           </div>
           <ProductVideos
+            listing={item}
             videos={[
               ...(item.videos || []),
               ...Object.entries(item.socials || {})

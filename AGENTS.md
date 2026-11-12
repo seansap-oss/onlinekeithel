@@ -1,5 +1,10 @@
 # Prototype Instructions
 
+## Video viewer decision — v0.23.0, 13 November 2026
+
+- The approved guitar mock uses a vertical 9:16 in-app viewer over the existing marketplace. Tapping a listing's video cover opens it without replacing the homepage; Close returns to the same listing position. Include the listing title, price, seller contact and a separate original-post link.
+- Give YouTube and hosted videos an explicit mute button and native player controls where supported. Instagram and Facebook embeds keep provider-owned playback controls; the app cannot guarantee an external volume slider for their cross-origin frames. A fullscreen button expands the OO viewing area with a viewport fallback where the browser refuses the Fullscreen API. Preserve the current header, categories and footer.
+
 ## Video poster decision — v0.22.3, 12 November 2026
 
 Video-only listings must have a useful preview after each refresh. Show a seller-uploaded photo as the poster when present; otherwise render a branded title, platform label and prominent play button. Load third-party embeds on demand and keep an original-post link. Do not imply that a live Instagram thumbnail is fetched when no cover photo was supplied.

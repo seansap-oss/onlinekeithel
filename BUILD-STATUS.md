@@ -1,3 +1,7 @@
+# Build status — v0.23.0 (13 November 2026)
+
+Added a vertical 9:16 in-app video viewing dialog for listing cards and detail-page videos. The cover opens the viewer; Close returns to the same page position. The dialog offers a fullscreen control, seller contact and the original-post link. YouTube and hosted videos start muted and expose a mute action; Instagram and Facebook retain their provider controls and phone-volume behavior. The app does not control cross-origin Instagram/Facebook audio directly. All 47 tests and the production build pass. The local browser preview bridge denied access to review mode, so visual and real provider playback acceptance are unverified. Vercel deployment is checked after publication.
+
 # Build status — v0.22.3 (12 November 2026)
 
 Video listings now have a persistent poster before playback. If the seller adds a product photo, that photo covers the preview; otherwise a green and gold title card identifies the video platform and gives a prominent play button. The Instagram embed still loads only after a click, and the original-post link remains available. This makes the preview meaningful after a refresh without relying on an Instagram thumbnail API. All 47 tests and the production build pass. Local browser visual QA was attempted but the isolated Chromium could not reach the local server. Live signed-in playback is not claimed as verified.

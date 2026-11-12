@@ -4,26 +4,14 @@ import { uploadVideo } from "../lib/backend";
 import { useMarket } from "../lib/context";
 import { directVideoUrl } from "../lib/commerce";
 import { embedUrl, socialUrl } from "../lib/utils";
-export function ProductVideos({ videos = [] }) {
+export function ProductVideos({ videos = [], listing }) {
   return videos.length ? (
     <section className="product-videos">
       <h3>See it in motion</h3>
       {videos.map((v, i) => (
         <div key={v.url + i}>
           <h4>{v.title || "Product video"}</h4>
-          {directVideoUrl(v.url) ? (
-            <video
-              controls
-              playsInline
-              preload="none"
-              src={directVideoUrl(v.url)}
-            >
-              Your browser cannot play this video.{" "}
-              <a href={directVideoUrl(v.url)}>Open video</a>
-            </video>
-          ) : (
-            <Video url={v.url} title={v.title} />
-          )}
+          <Video url={v.url} title={listing?.title || v.title} poster={listing?.images?.[0]} sellerName={listing?.seller?.name} listingHref={listing && `/listing/${listing.id}`} theater />
         </div>
       ))}
     </section>

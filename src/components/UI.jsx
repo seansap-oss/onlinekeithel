@@ -8,6 +8,10 @@ import {
   YoutubeLogo,
   ArrowSquareOut,
   Play,
+  SpeakerHigh,
+  SpeakerSlash,
+  ArrowsOut,
+  ArrowsIn,
 } from "@phosphor-icons/react";
 import { mediaUrl, socialUrl, embedUrl, safeUrl } from "../lib/utils";
 import { uploadImage } from "../lib/backend";
@@ -221,14 +225,60 @@ export function SocialLinks({ values = {} }) {
     </div>
   );
 }
-export function Video({ url, poster = "", title = "", compact = false }) {
+export function Video({ url, poster = "", title = "", compact = false, theater = false, sellerName = "", priceLabel = "", listingHref = "" }) {
   const [load, setLoad] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const [frameReady, setFrameReady] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const dialogRef = useRef(null);
+  const stageRef = useRef(null);
+  const frameRef = useRef(null);
+  const nativeRef = useRef(null);
   const src = embedUrl(url);
+  const direct = safeUrl(url) && /\.(mp4|webm)$/i.test(new URL(safeUrl(url)).pathname) ? safeUrl(url) : "";
   const host = socialUrl(url) ? new URL(socialUrl(url)).hostname : "";
   const platform = host.includes("instagram") ? "Instagram" : host.includes("youtube") || host === "youtu.be" ? "YouTube" : host.includes("facebook") || host === "fb.watch" ? "Facebook" : "Video";
+  const useTheater = theater || compact;
+  const canPlay = Boolean(src || direct);
+  const youtube = platform === "YouTube";
+  const original = socialUrl(url) || direct;
+  const theaterSrc = youtube ? `${src}&autoplay=1&mute=1&enablejsapi=1&origin=${encodeURIComponent(typeof window === "undefined" ? "" : window.location.origin)}` : src;
+  useEffect(() => {
+    if (!open) return;
+    const dialog = dialogRef.current;
+    dialog?.showModal();
+    return () => { if (dialog?.open) dialog.close(); };
+  }, [open]);
+  useEffect(() => {
+    const sync = () => setExpanded(document.fullscreenElement === stageRef.current);
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+  const closeViewer = () => {
+    if (document.fullscreenElement === stageRef.current) document.exitFullscreen();
+    setExpanded(false);
+    setOpen(false);
+  };
+  const toggleFullscreen = async () => {
+    if (document.fullscreenElement === stageRef.current) return document.exitFullscreen();
+    if (expanded) return setExpanded(false);
+    try {
+      if (stageRef.current?.requestFullscreen) return await stageRef.current.requestFullscreen();
+    } catch { /* The in-app full-viewport stage remains available on restricted browsers. */ }
+    setExpanded(true);
+  };
+  const toggleMute = () => {
+    const next = !muted;
+    if (direct && nativeRef.current) nativeRef.current.muted = next;
+    if (youtube && frameRef.current?.contentWindow) {
+      frameRef.current.contentWindow.postMessage(JSON.stringify({ event: "command", func: next ? "mute" : "unMute", args: [] }), "https://www.youtube-nocookie.com");
+    }
+    setMuted(next);
+  };
   return (
     <div className={compact ? "video-player video-player-card" : "video-player"}>
-      {load && src ? (
+      {!useTheater && load && (src || direct) ? (direct ? <video src={direct} controls playsInline /> :
         <iframe
           src={src.includes("youtube-nocookie.com") ? src + "&autoplay=1" : src}
           title="Seller video"
@@ -240,8 +290,8 @@ export function Video({ url, poster = "", title = "", compact = false }) {
         <button
           type="button"
           className="video-poster"
-          onClick={() => setLoad(true)}
-          disabled={!src}
+          onClick={() => useTheater ? setOpen(true) : setLoad(true)}
+          disabled={!canPlay}
           aria-label={"Play " + (title || platform) + " video"}
         >
           {poster && mediaUrl(poster) && <img className="video-poster-image" src={mediaUrl(poster)} alt="" loading="lazy" onError={(e) => { e.currentTarget.hidden = true; }} />}
@@ -252,10 +302,38 @@ export function Video({ url, poster = "", title = "", compact = false }) {
           </span>
         </button>
       )}
-      <a href={socialUrl(url)} target="_blank" rel="noopener noreferrer">
+      {useTheater && open && <dialog
+        ref={dialogRef}
+        className="video-theater"
+        aria-label={`${title || platform} video viewer`}
+        onCancel={(event) => { event.preventDefault(); closeViewer(); }}
+        onClose={() => setOpen(false)}
+        onClick={(event) => { if (event.target === event.currentTarget) closeViewer(); }}
+      >
+        <div className="video-theater-shell">
+          <header className="video-theater-header">
+            <span className="video-theater-brand" aria-label="OO Online Offer">OO <small>ONLINE OFFER</small></span>
+            <span className="video-theater-heading"><strong>{title || "Seller video"}</strong>{sellerName && <small>{sellerName}</small>}</span>
+            <button type="button" className="video-theater-close" aria-label="Close video" onClick={closeViewer}><X size={26}/></button>
+          </header>
+          <div ref={stageRef} className={"video-theater-stage" + (expanded ? " video-theater-stage-expanded" : "")}>
+            {direct ? <video ref={nativeRef} src={direct} poster={mediaUrl(poster)} autoPlay muted controls playsInline /> :
+              <iframe ref={frameRef} src={theaterSrc} title={`${platform} video: ${title || "Seller video"}`} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" onLoad={() => setFrameReady(true)} />}
+            <button type="button" className="video-theater-expand" onClick={toggleFullscreen} aria-label={expanded ? "Exit fullscreen" : "Watch fullscreen"}>{expanded ? <ArrowsIn size={22}/> : <ArrowsOut size={22}/>}</button>
+          </div>
+          <div className="video-theater-details">
+            <div className="video-theater-listing"><strong>{title || "Seller video"}{priceLabel && ` · ${priceLabel}`}</strong>{sellerName && <small>{sellerName}</small>}</div>
+            {(direct || youtube) && <button type="button" className="video-theater-sound" onClick={toggleMute} disabled={youtube && !frameReady} aria-label={muted ? "Unmute video" : "Mute video"}>{muted ? <SpeakerSlash size={22}/> : <SpeakerHigh size={22}/>}<span>{muted ? "Unmute" : "Mute"}</span></button>}
+            {!direct && !youtube && <small className="video-theater-hint">Use the video player's sound control or your phone's volume buttons.</small>}
+            {listingHref && <a className="video-theater-message" href={`${listingHref}?enquire=1`}>Message seller</a>}
+            {original && <a className="video-theater-original" href={original} target="_blank" rel="noopener noreferrer">Open original on {platform} <ArrowSquareOut size={18}/></a>}
+          </div>
+        </div>
+      </dialog>}
+      {!useTheater && <a href={original} target="_blank" rel="noopener noreferrer">
         Open original post <ArrowSquareOut />
-      </a>
-      <small>Playback depends on the original post's availability.</small>
+      </a>}
+      {!useTheater && <small>Playback depends on the original post's availability.</small>}
     </div>
   );
 }
