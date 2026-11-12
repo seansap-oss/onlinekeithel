@@ -22,7 +22,7 @@ export function ProductVideos({ videos = [] }) {
               <a href={directVideoUrl(v.url)}>Open video</a>
             </video>
           ) : (
-            <Video url={v.url} />
+            <Video url={v.url} title={v.title} />
           )}
         </div>
       ))}

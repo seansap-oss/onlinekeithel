@@ -196,6 +196,7 @@ export function ListingEditor({
           </Field>
         )}
         <h3>Photos</h3>
+        <p className="muted">Posting a video? Add a photo here if you want its card to show a real cover image. Otherwise OO will show a title-and-play poster.</p>
         <Upload
           multiple
           value={f.images}

@@ -7,6 +7,7 @@ import {
   FacebookLogo,
   YoutubeLogo,
   ArrowSquareOut,
+  Play,
 } from "@phosphor-icons/react";
 import { mediaUrl, socialUrl, embedUrl, safeUrl } from "../lib/utils";
 import { uploadImage } from "../lib/backend";
@@ -220,11 +221,13 @@ export function SocialLinks({ values = {} }) {
     </div>
   );
 }
-export function Video({ url }) {
+export function Video({ url, poster = "", title = "", compact = false }) {
   const [load, setLoad] = useState(false);
   const src = embedUrl(url);
+  const host = socialUrl(url) ? new URL(socialUrl(url)).hostname : "";
+  const platform = host.includes("instagram") ? "Instagram" : host.includes("youtube") || host === "youtu.be" ? "YouTube" : host.includes("facebook") || host === "fb.watch" ? "Facebook" : "Video";
   return (
-    <div className="video-player">
+    <div className={compact ? "video-player video-player-card" : "video-player"}>
       {load && src ? (
         <iframe
           src={src.includes("youtube-nocookie.com") ? src + "&autoplay=1" : src}
@@ -236,11 +239,17 @@ export function Video({ url }) {
       ) : (
         <button
           type="button"
-          className="button outline"
+          className="video-poster"
           onClick={() => setLoad(true)}
           disabled={!src}
+          aria-label={"Play " + (title || platform) + " video"}
         >
-          Play embedded video
+          {poster && mediaUrl(poster) && <img className="video-poster-image" src={mediaUrl(poster)} alt="" loading="lazy" onError={(e) => { e.currentTarget.hidden = true; }} />}
+          <span className="video-poster-content">
+            <span className="video-poster-platform">{platform} video</span>
+            <span className="video-poster-play"><Play size={compact ? 27 : 35} weight="fill" /></span>
+            <span className="video-poster-title">{title || "Watch this seller's video"}</span>
+          </span>
         </button>
       )}
       <a href={socialUrl(url)} target="_blank" rel="noopener noreferrer">

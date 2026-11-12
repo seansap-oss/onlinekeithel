@@ -1,3 +1,7 @@
+# Build status — v0.22.3 (12 November 2026)
+
+Video listings now have a persistent poster before playback. If the seller adds a product photo, that photo covers the preview; otherwise a green and gold title card identifies the video platform and gives a prominent play button. The Instagram embed still loads only after a click, and the original-post link remains available. This makes the preview meaningful after a refresh without relying on an Instagram thumbnail API. All 47 tests and the production build pass. Local browser visual QA was attempted but the isolated Chromium could not reach the local server. Live signed-in playback is not claimed as verified.
+
 # Build status — v0.22.2 (12 November 2026)
 
 Corrected the video-only posting form for an Instagram link pasted into Video title or the Instagram post field while Video URL is blank. The form now prioritizes the link field, moves a supported pasted link from the optional title, attaches supported social posts on save, and reports a clear media error before submitting. A local PGlite test runs the exact video-only guard migration and publishes a listing using the screenshot's reel shape without a photo. All 47 tests and the v0.22.2 production build pass. Live signed-in acceptance and third-party embed playback remain unverified. Deployment status is checked after publication.

@@ -1,5 +1,9 @@
 # Prototype Instructions
 
+## Video poster decision — v0.22.3, 12 November 2026
+
+Video-only listings must have a useful preview after each refresh. Show a seller-uploaded photo as the poster when present; otherwise render a branded title, platform label and prominent play button. Load third-party embeds on demand and keep an original-post link. Do not imply that a live Instagram thumbnail is fetched when no cover photo was supplied.
+
 Run the local server yourself and open the preview in the browser available to this environment. Do not give the user server-start instructions when you can run it.
 
 Before making substantial visual changes, use the Product Design plugin's `get-context` skill when the visual source is unclear or no longer matches the current goal. When the user gives durable prototype-specific design feedback, preferences, or decisions, record them in `AGENTS.md`.
