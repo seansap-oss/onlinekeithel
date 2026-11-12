@@ -37,6 +37,7 @@ import { Modal, Field, Photo, Upload, Empty } from "../components/UI";
 import { SellerForm } from "./Account";
 import { shopPath } from "../lib/storefront";
 import { shopCategoryId, shopCategoryProfile, shopListingLabel } from "../lib/storefront-categories";
+import { shopStarterCollections } from "../lib/shop-departments";
 export function ListingEditor({
   seller,
   preferredCategory,
@@ -1038,13 +1039,25 @@ export function Dashboard({ startSell = false, visual = false }) {
           )}{" "}
           {tab === "collections" && (
             <>
-              <h2>Your shop collections</h2>
+              <h2>Manage your store departments</h2>
               <label>Collection ideas by category <select value={starterCategory || mainCategoryId} onChange={e=>setStarterCategory(e.target.value)}><option value="">Choose a category</option>{categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-              {(starterCategory || mainCategoryId) && <div className="chips studio-chips">{subcategoriesFor(categories,starterCategory || mainCategoryId).map(c=><button type="button" key={c.id} onClick={()=>{setCollectionEdit(null);setCollectionName(c.name)}}>{c.name}</button>)}</div>}
+              {(starterCategory || mainCategoryId) && <div className="chips studio-chips">{shopStarterCollections(categories.find(c=>c.id === (starterCategory || mainCategoryId))).map(name=><button type="button" key={name} onClick={()=>{setCollectionEdit(null);setCollectionName(name)}}>{name}</button>)}</div>}
               <p>
-                Collections organise products inside your shop. Marketplace
-                categories stay the same.
+                Add, rename or remove your own departments. Assign each item to a
+                department when editing its listing. Your departments appear in
+                your shop menu; OO marketplace categories stay admin-managed.
               </p>
+              {(starterCategory || mainCategoryId) && <button type="button" className="button outline" onClick={async()=>{
+                try {
+                  if (visual) throw Error("Connect your account to save departments.");
+                  const ideas = shopStarterCollections(categories.find(c=>c.id === (starterCategory || mainCategoryId)));
+                  const existing = new Set(collections.map(c=>c.name.toLocaleLowerCase()));
+                  const fresh = ideas.filter(name=>!existing.has(name.toLocaleLowerCase()));
+                  if (!fresh.length) return notice("These departments are already in your shop.");
+                  await result(supabase.from("collections").insert(fresh.map((name,index)=>({seller_id:seller.id,name,position:collections.length+index}))));
+                  load();
+                } catch(e) { notice(e.message); }
+              }}>Add suggested departments</button>}
               <form
                 className="inline-form"
                 onSubmit={async (e) => {
@@ -1073,7 +1086,7 @@ export function Dashboard({ startSell = false, visual = false }) {
                 }}
               >
                 <Field
-                  label="Collection name"
+                  label="Department or collection name"
                   required
                   maxLength={60}
                   value={collectionName}

@@ -170,3 +170,9 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 - Every seller chooses a main category. Its headline, public category navigation, relevant listing fields and shop filters derive from the active administrator catalogue. Shops may still sell in multiple categories.
 - Sellers can edit their cover, identity, collections and listings, and track stock where applicable. Only the verified marketplace administrator may create or edit global categories and subcategories. No new paid gate during the free launch.
 - Preserve existing shop URLs and older storefront defaults; added categories should work without creating one-off routes or new database tables.
+
+## Store departments correction — v0.21.0, 12 November 2026
+
+- The user approved one common website-like store structure for every category: cover, shop identity, visible department navigation, mobile burger menu, subcategory browsing, relevant filters and product grid.
+- Marketplace taxonomy comes from the admin catalogue. Owners create and edit their own collections as shop departments and assign listings to them, including clothing types such as shirts, pants and socks. They can grow stock without changing global categories.
+- Show the version on every build and distinguish a preview branch from the production URL. Do not present a design mockup as a deployed page.

@@ -4,6 +4,19 @@ import { categoryCatalog } from "../src/lib/categories.js";
 import { shopCategoryProfile, shopCategoryId } from "../src/lib/storefront-categories.js";
 import { storefrontSettings } from "../src/lib/storefront.js";
 import { filterShopListings } from "../src/lib/shop-filters.js";
+import { shopDepartments, shopStarterCollections } from "../src/lib/shop-departments.js";
+
+test("every admin category has a complete shop menu and owner collection ideas", () => {
+  for (const category of categoryCatalog) {
+    const menu = shopDepartments(category);
+    assert.ok(menu.length, category.id);
+    assert.deepEqual(menu.flatMap(group => group.entries.map(entry => entry.id)), category.subcategories.map(entry => entry.id));
+    assert.ok(shopStarterCollections(category).length, category.id);
+  }
+  assert.ok(shopStarterCollections(categoryCatalog.find(c=>c.id === "fashion")).includes("Socks"));
+  const added = { id: "custom", name: "Crafts", subcategories: [{ id: "pottery", name: "Pottery" }] };
+  assert.equal(shopDepartments(added)[0].entries[0].id, "pottery");
+});
 
 test("all marketplace categories produce seller pages and editable collection starters", () => {
   assert.ok(categoryCatalog.length >= 36);

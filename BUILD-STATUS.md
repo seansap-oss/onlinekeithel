@@ -1,3 +1,11 @@
+# Build status — v0.21.0 (12 November 2026)
+
+The public seller page now places a store-specific department bar immediately after shop identity, with horizontal quick links and an expandable menu. It reads every active subcategory from the shared administrator catalogue, including categories added later. A separate section lists the owner's collections as shop departments. Selecting any item filters published listings; this does not fabricate stock. Dashboard lets owners create suggested shop departments in one action, add or rename their own, and assign listings using the existing collection field. Fashion suggestions include T-shirts, shirts, pants, dresses, shoes, socks and accessories. Vehicle, property, job and other category filters from v0.20 remain. The OO landing page is unchanged. Version 0.21.0 appears in the footer and Android version metadata.
+
+Tests and build results are recorded after verification. No live seller editing or public deployment is claimed yet.
+
+## Previous release
+
 # Build status — v0.20.0 (12 November 2026)
 
 The shop studio now supports all 36 active marketplace categories. A seller chooses the shop's main category in Account, edits the existing cover, headline and page sections, and manages listings, collections and stock in Dashboard. Public shops show the matching subcategories and relevant listing filters (such as vehicle mileage). New admin-created categories receive a generic expandable storefront. The landing page and global category management remain as before.

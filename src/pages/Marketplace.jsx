@@ -18,6 +18,7 @@ import { PurchasePanel } from "../components/PurchasePanel";
 import { ProductVideos } from "../components/ProductMedia";
 import { outOfStock, fieldOptions } from "../lib/commerce";
 import { shopCategoryId, shopCategoryProfile } from "../lib/storefront-categories";
+import { shopDepartments } from "../lib/shop-departments";
 import { filterShopListings } from "../lib/shop-filters";
 import {
   categoryName,
@@ -47,6 +48,7 @@ import {
   PaperPlaneRight,
   SquaresFour,
   ListBullets,
+  List,
 } from "@phosphor-icons/react";
 import { useMarket, Link } from "../lib/context";
 import { CategoryOptions } from "../components/CategoryOptions";
@@ -1236,6 +1238,7 @@ export function Shops() {
 }
 export function SellerPage({ slug }) {
   const { fixtures, notice, categories } = useMarket();
+  const [departmentMenuOpen, setDepartmentMenuOpen] = useState(false);
   const [shopCategory, setShopCategory] = useState(""),
     [shopQuery, setShopQuery] = useState(""),
     [subcategory, setSubcategory] = useState(""),
@@ -1526,6 +1529,19 @@ export function SellerPage({ slug }) {
           </a>
         )}
       </div>
+      <section className="shop-department-bar" aria-label="Store departments">
+        <button type="button" className="shop-menu-toggle" aria-expanded={departmentMenuOpen} aria-controls="shop-department-menu" onClick={()=>setDepartmentMenuOpen(open=>!open)}><List size={21}/> Departments</button>
+        <div className="shop-department-quicklinks">
+          <button type="button" className={!subcategory && !collection ? "active" : ""} onClick={()=>{setSubcategory("");setCollection("");setShopCategory("");setPage(0)}}>All {mainCategory?.id === "jobs" ? "roles" : mainCategory?.id === "property" ? "properties" : "items"}</button>
+          {mainCategory?.subcategories?.filter(entry=>entry.active!==false).slice(0,7).map(entry=><button type="button" key={entry.id} className={subcategory===entry.id?"active":""} onClick={()=>{setShopCategory(mainCategoryId);setSubcategory(entry.id);setCollection("");setPage(0)}}>{entry.name}</button>)}
+          {collections.slice(0,4).map(entry=><button type="button" key={entry.id} className={collection===entry.id?"active":""} onClick={()=>{setCollection(entry.id);setSubcategory("");setShopCategory("");setPage(0)}}>{entry.name}</button>)}
+        </div>
+      </section>
+      {departmentMenuOpen && <div id="shop-department-menu" className="shop-department-menu">
+        <div className="shop-department-title"><strong>Browse {seller.name}</strong><button type="button" aria-label="Close departments" onClick={()=>setDepartmentMenuOpen(false)}>✕</button></div>
+        {shopDepartments(mainCategory).map(group=><details key={group.name} open><summary>{group.name}</summary><div className="shop-department-links">{group.entries.map(entry=><button type="button" key={entry.id} className={subcategory===entry.id?"active":""} onClick={()=>{setTab("products");setShopCategory(mainCategoryId);setSubcategory(entry.id);setCollection("");setPage(0);setDepartmentMenuOpen(false);document.getElementById("shop-products")?.scrollIntoView({behavior:"smooth"})}}>{entry.name}</button>)}</div></details>)}
+        {collections.length>0 && <details open><summary>Shop collections</summary><div className="shop-department-links">{collections.map(entry=><button type="button" key={entry.id} className={collection===entry.id?"active":""} onClick={()=>{setTab("products");setCollection(entry.id);setSubcategory("");setShopCategory("");setPage(0);setDepartmentMenuOpen(false);document.getElementById("shop-products")?.scrollIntoView({behavior:"smooth"})}}>{entry.name}</button>)}</div></details>}
+      </div>}
       <nav className="studio-nav" aria-label="Shop sections">{display.showAbout && display.introduction && <a href="#studio-about">About</a>}<a href="#shop-products" onClick={()=>setTab("products")}>{mainCategory?.id === "jobs" ? "Open roles" : mainCategory?.id === "property" ? "Properties" : mainCategory?.id === "vehicles" ? "Inventory" : "Catalogue"}</a>{display.showGallery && display.gallery.length>0 && <a href="#studio-gallery">Gallery</a>}</nav>
       {display.layout === "portfolio" && shopStory}
       <div className="tabs" id="shop-products">
