@@ -227,14 +227,15 @@ export function Video({ url }) {
     <div className="video-player">
       {load && src ? (
         <iframe
-          src={src}
+          src={src.includes("youtube-nocookie.com") ? src + "&autoplay=1" : src}
           title="Seller video"
-          allow="encrypted-media; fullscreen; picture-in-picture"
+          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
           allowFullScreen
           referrerPolicy="strict-origin-when-cross-origin"
         />
       ) : (
         <button
+          type="button"
           className="button outline"
           onClick={() => setLoad(true)}
           disabled={!src}

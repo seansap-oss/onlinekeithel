@@ -33,7 +33,8 @@ import {
 import { useMarket, Link } from "../lib/context";
 import { result, supabase, preview } from "../lib/backend";
 import { money, socialUrl, normalizeImport, safeUrl } from "../lib/utils";
-import { Modal, Field, Photo, Upload, Empty } from "../components/UI";
+import { Modal, Field, Photo, Upload, Empty, Video } from "../components/UI";
+import { sharedVideoFromSearch } from "../lib/shared-video.js";
 import { SellerForm } from "./Account";
 import { shopPath } from "../lib/storefront";
 import { shopCategoryId, shopCategoryProfile, shopListingLabel } from "../lib/storefront-categories";
@@ -49,6 +50,7 @@ export function ListingEditor({
   collections = [],
   visual = false,
   moderationAction,
+  sharedVideo = "",
 }) {
   const { categories, notice, path } = useMarket();
   const requestedCategory = new URLSearchParams(path.split("?")[1]).get(
@@ -68,7 +70,8 @@ export function ListingEditor({
         condition: "New",
         location: seller.location,
         images: [],
-        socials: {},
+        socials: sharedVideo ? { post: sharedVideo } : {},
+        videos: sharedVideo ? [{ url: sharedVideo, title: "Item video" }] : [],
         attributes: {},
         commerce: {
           mode: "retail",
@@ -148,6 +151,12 @@ export function ListingEditor({
           }
         }}
       >
+        {sharedVideo && !initial && <div className="share-post-intro">
+          <strong>Shared video ready</strong>
+          <p>Complete the item details below. The title, category and subcategory make this video searchable on OO.</p>
+          <Video url={sharedVideo}/>
+        </div>}
+        {!sharedVideo && path.split("?")[0] === "/share" && <p role="alert">This link is not a supported public YouTube, Instagram or Facebook video. Add a valid video link in Media &amp; links below, or post with a photo.</p>}
         {!initial && existingListings.length > 0 && (
           <Field label="Duplicate from an existing listing">
             <select
@@ -798,6 +807,8 @@ export function Dashboard({ startSell = false, visual = false }) {
   const seller = visual ? fixtures?.sellers[0] : realSeller;
   const mainCategoryId = shopCategoryId(seller, categories);
   const mainCategory = shopCategoryProfile(mainCategoryId, categories);
+  const sharedVideo = path.split("?")[0] === "/share" ? sharedVideoFromSearch(path.split("?")[1] || "") : "";
+  const sharedAttempt = path.split("?")[0] === "/share";
   const [starterCategory, setStarterCategory] = useState("");
   const [tab, setTab] = useState(
       ["products", "profile", "collections", "sales", "import"].includes(new URLSearchParams(path.split("?")[1]).get("tab"))
@@ -811,6 +822,8 @@ export function Dashboard({ startSell = false, visual = false }) {
     [add, setAdd] = useState(false),
     [collectionName, setCollectionName] = useState(""),
     [collectionEdit, setCollectionEdit] = useState(null),
+    [deleteCollection, setDeleteCollection] = useState(null),
+    [moveCollectionTo, setMoveCollectionTo] = useState(""),
     [page, setPage] = useState(0),
     [more, setMore] = useState(false),
     [count, setCount] = useState(0);
@@ -861,7 +874,7 @@ export function Dashboard({ startSell = false, visual = false }) {
   if (!seller)
     return (
       <div className="page narrow">
-        <SellerForm onSaved={() => navigate("/dashboard")} />
+        <SellerForm onSaved={() => navigate(sharedAttempt ? path : "/dashboard")} />
       </div>
     );
   const limit = plans.find((p) => p.id === "free")?.listing_limit || 100;
@@ -1100,6 +1113,16 @@ export function Dashboard({ startSell = false, visual = false }) {
               {collections.map((c) => (
                 <div className="table-row" key={c.id}>
                   <strong>{c.name}</strong>
+                  <button type="button" disabled={collections[0]?.id===c.id} aria-label={"Move " + c.name + " up"} onClick={async()=>{
+                    const index=collections.findIndex(entry=>entry.id===c.id);const other=collections[index-1];
+                    if (!other) return;
+                    try { await result(supabase.from("collections").update({position:index-1}).eq("id",c.id).eq("seller_id",seller.id));await result(supabase.from("collections").update({position:index}).eq("id",other.id).eq("seller_id",seller.id));load(); } catch(e){notice(e.message)}
+                  }}>↑</button>
+                  <button type="button" disabled={collections.at(-1)?.id===c.id} aria-label={"Move " + c.name + " down"} onClick={async()=>{
+                    const index=collections.findIndex(entry=>entry.id===c.id);const other=collections[index+1];
+                    if (!other) return;
+                    try { await result(supabase.from("collections").update({position:index+1}).eq("id",c.id).eq("seller_id",seller.id));await result(supabase.from("collections").update({position:index}).eq("id",other.id).eq("seller_id",seller.id));load(); } catch(e){notice(e.message)}
+                  }}>↓</button>
                   <button
                     aria-label={"Edit " + c.name}
                     onClick={() => {
@@ -1111,27 +1134,21 @@ export function Dashboard({ startSell = false, visual = false }) {
                   </button>
                   <button
                     aria-label={"Delete " + c.name}
-                    onClick={async () => {
-                      try {
-                        await result(
-                          supabase
-                            .from("listings")
-                            .update({ collection_id: null })
-                            .eq("collection_id", c.id),
-                        );
-                        await result(
-                          supabase.from("collections").delete().eq("id", c.id),
-                        );
-                        load();
-                      } catch (e) {
-                        notice(e.message);
-                      }
-                    }}
+                    onClick={() => {setDeleteCollection(c);setMoveCollectionTo("")}}
                   >
                     <Trash />
                   </button>
                 </div>
               ))}
+              {deleteCollection && <Modal title={"Delete " + deleteCollection.name + "?"} onClose={()=>setDeleteCollection(null)}>
+                <p>The department will be removed. Its listings will stay in your shop.</p>
+                <Field label="Move its listings to">
+                  <select value={moveCollectionTo} onChange={e=>setMoveCollectionTo(e.target.value)}><option value="">Unsorted (no department)</option>{collections.filter(c=>c.id!==deleteCollection.id).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select>
+                </Field>
+                <div className="button-row"><button type="button" className="button outline" onClick={()=>setDeleteCollection(null)}>Cancel</button><button type="button" className="button primary" onClick={async()=>{
+                  try {await result(supabase.from("listings").update({collection_id:moveCollectionTo||null}).eq("seller_id",seller.id).eq("collection_id",deleteCollection.id));await result(supabase.from("collections").delete().eq("id",deleteCollection.id).eq("seller_id",seller.id));setDeleteCollection(null);load();notice("Department removed; listings kept.")}catch(e){notice(e.message)}
+                }}>Delete department</button></div>
+              </Modal>}
             </>
           )}
           {tab === "import" && <Importer seller={seller} visual={visual} />}{" "}
@@ -1141,6 +1158,7 @@ export function Dashboard({ startSell = false, visual = false }) {
         <ListingEditor
           visual={visual}
           seller={seller}
+          sharedVideo={add && sharedAttempt ? sharedVideo : ""}
           preferredCategory={mainCategoryId}
           initial={editing}
           duplicateFrom={duplicating}
@@ -1151,7 +1169,7 @@ export function Dashboard({ startSell = false, visual = false }) {
             setEditing(null);
             setDuplicating(null);
           }}
-          onSaved={load}
+          onSaved={() => {load(); if (sharedAttempt) navigate("/dashboard")}}
         />
       )}
     </div>

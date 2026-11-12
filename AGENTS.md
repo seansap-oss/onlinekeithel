@@ -176,3 +176,9 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 - The user approved one common website-like store structure for every category: cover, shop identity, visible department navigation, mobile burger menu, subcategory browsing, relevant filters and product grid.
 - Marketplace taxonomy comes from the admin catalogue. Owners create and edit their own collections as shop departments and assign listings to them, including clothing types such as shirts, pants and socks. They can grow stock without changing global categories.
 - Show the version on every build and distinguish a preview branch from the production URL. Do not present a design mockup as a deployed page.
+
+## Approved share and department controls — v0.22.0, 12 November 2026
+
+- Owners may add, rename, reorder and delete shop departments. Deleting a department keeps its listings, optionally moving them into another department. Global categories and subcategories remain administrator controlled.
+- A shared public YouTube, Instagram or Facebook video link opens the OO listing editor on installed Android PWA or rebuilt Capacitor app. Seller enters the searchable title, category, subcategory and price. Published video listings can omit photos; validation of supported video URLs remains on the database. Social platforms may restrict playback for individual posts, so keep an original-post link.
+- Publish this release to the existing `shop-studio-v0.19.0` Vercel preview branch that the user checks; retain production separately. Every release changes package, footer and Android version metadata.

@@ -1,3 +1,11 @@
+# Build status — v0.22.0 (12 November 2026)
+
+Added department reordering and a deletion dialog that retains listings, with optional move to another department. The installed OO PWA now registers as a text share target and opens `/share` with an allowed public video link prefilled. The Android source registers an `ACTION_SEND` text target for a future rebuilt APK. Listing cards expose one-click embeds and original-post links; searches index seller-entered names, categories and video URLs. The live Supabase `listing_guard` now permits a validated public video instead of a required photo; read-back verified the quota and video validation trigger remain. Version 0.22.0 appears in the footer and Android metadata. The production site remains separate from the OO preview branch.
+
+46 local tests and the v0.22.0 Vite production build pass. The Android share target has not been compiled or tested on a device because this environment cannot download the Gradle wrapper. Instagram/Facebook embedding depends on the original public post and provider permissions. GitHub/Vercel deployment status to be recorded after publication.
+
+## Previous release
+
 # Build status — v0.21.0 (12 November 2026)
 
 The public seller page now places a store-specific department bar immediately after shop identity, with horizontal quick links and an expandable menu. It reads every active subcategory from the shared administrator catalogue, including categories added later. A separate section lists the owner's collections as shop departments. Selecting any item filters published listings; this does not fabricate stock. Dashboard lets owners create suggested shop departments in one action, add or rename their own, and assign listings using the existing collection field. Fashion suggestions include T-shirts, shirts, pants, dresses, shoes, socks and accessories. Vehicle, property, job and other category filters from v0.20 remain. The OO landing page is unchanged. Version 0.21.0 appears in the footer and Android version metadata.

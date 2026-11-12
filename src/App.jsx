@@ -67,10 +67,10 @@ function Router() {
         <MemberAccount />
       </Guard>
     );
-  else if (p === "/dashboard" || p === "/sell")
+  else if (p === "/dashboard" || p === "/sell" || p === "/share")
     page = (
       <Guard>
-        <Dashboard startSell={p === "/sell"} />
+        <Dashboard startSell={p === "/sell" || p === "/share"} />
       </Guard>
     );
   else if (p === "/messages")

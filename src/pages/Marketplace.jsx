@@ -59,6 +59,7 @@ import {
   searchable,
   mediaUrl,
   safeUrl,
+  embedUrl,
 } from "../lib/utils";
 import {
   Photo,
@@ -88,7 +89,7 @@ export function ProductCard({ item, compact = false }) {
   return (
     <article className={compact ? "product-card product-card-list" : "product-card"}>
       <div className="product-photo">
-        <Link
+        {(item.videos || []).some(v=>embedUrl(v.url)) ? <div className="product-card-video"><Video url={item.videos.find(v=>embedUrl(v.url)).url}/></div> : <Link
           to={"/listing/" + item.id}
           data-hovered={flipped}
           onPointerEnter={(e) =>
@@ -116,7 +117,7 @@ export function ProductCard({ item, compact = false }) {
               loading="lazy"
             />
           )}
-        </Link>
+        </Link>}
         <span
           className={"condition " + (item.condition === "Used" ? "used" : "")}
         >
