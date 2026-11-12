@@ -17,6 +17,7 @@ export const storefrontSections = ["about", "gallery", "video"];
 export function storefrontSettings(seller = {}) {
   const settings = seller.storefront || {};
   return {
+    layout: ["catalogue","showroom","portfolio"].includes(settings.layout) ? settings.layout : ["vehicles","motorcycles"].includes(seller.theme) ? "showroom" : "catalogue",
     headline:
       settings.headline ||
       templates[seller.theme]?.headline ||

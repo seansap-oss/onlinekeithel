@@ -207,7 +207,7 @@ export function MemberAccount() {
       <section className="member-account-sections" aria-label="Account sections">
         <div className="member-accordion">
           <Link to="/dashboard" className="member-accordion-trigger">
-            <User size={23} /> <span>My seller profile</span><ArrowRight size={19} />
+            <User size={23} /> <span>My shop studio</span><ArrowRight size={19} />
           </Link>
         </div>
 

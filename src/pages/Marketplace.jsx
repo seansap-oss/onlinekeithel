@@ -1389,9 +1389,71 @@ export function SellerPage({ slug }) {
       </div>
     );
   const display = storefrontSettings(seller);
+  const shopStory = display.sections.map((section) => (
+        <React.Fragment key={section}>
+          {section === "about" && display.showAbout && display.introduction && (
+            <section id="studio-about" className="store-template-intro">
+              <span className="eyebrow">
+                {templates[seller.theme]?.name || "Neighbourhood"} ·{" "}
+                {templates[seller.theme]?.category}
+              </span>
+              <h2>Welcome to {seller.name}</h2>
+              <p>{display.introduction}</p>
+              {seller.theme === "electronics" && (
+                <div className="template-features">
+                  <span>Device specifications</span>
+                  <span>Phones & accessories</span>
+                  <span>Compare your options</span>
+                </div>
+              )}
+              {["vehicles", "motorcycles"].includes(seller.theme) && (
+                <div className="template-features">
+                  <span>Year & mileage</span>
+                  <span>
+                    {seller.theme === "motorcycles"
+                      ? "Engine capacity"
+                      : "Fuel & model"}
+                  </span>
+                  <span>Enquire before viewing</span>
+                </div>
+              )}
+            </section>
+          )}
+          {section === "gallery" &&
+            display.showGallery &&
+            display.gallery.length > 0 && (
+              <section id="studio-gallery" className="shop-gallery">
+                <div>
+                  <span className="eyebrow">INSIDE OUR SHOP</span>
+                  <h2>Photo gallery</h2>
+                </div>
+                <div className="shop-gallery-grid">
+                  {display.gallery.map((photo, index) => (
+                    <Photo
+                      key={photo + index}
+                      src={photo}
+                      alt={`${seller.name} gallery photo ${index + 1}`}
+                      loading="lazy"
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          {section === "video" && display.showVideo && display.videoUrl && (
+            <section className="shop-featured-video">
+              <div>
+                <span className="eyebrow">A CLOSER LOOK</span>
+                <h2>From {seller.name}</h2>
+                <p>Get to know the people and products behind this shop.</p>
+              </div>
+              <Video url={display.videoUrl} />
+            </section>
+          )}
+        </React.Fragment>
+      ));
   return (
     <div
-      className={"page storefront theme-" + seller.theme}
+      className={"page storefront layout-" + display.layout + " theme-" + seller.theme}
       style={{
         "--shop-accent": storefrontColors[display.color].value,
         "--shop-font": storefrontFonts[display.font].value,
@@ -1444,68 +1506,8 @@ export function SellerPage({ slug }) {
           </a>
         )}
       </div>
-      {display.sections.map((section) => (
-        <React.Fragment key={section}>
-          {section === "about" && display.showAbout && display.introduction && (
-            <section className="store-template-intro">
-              <span className="eyebrow">
-                {templates[seller.theme]?.name || "Neighbourhood"} ·{" "}
-                {templates[seller.theme]?.category}
-              </span>
-              <h2>Welcome to {seller.name}</h2>
-              <p>{display.introduction}</p>
-              {seller.theme === "electronics" && (
-                <div className="template-features">
-                  <span>Device specifications</span>
-                  <span>Phones & accessories</span>
-                  <span>Compare your options</span>
-                </div>
-              )}
-              {["vehicles", "motorcycles"].includes(seller.theme) && (
-                <div className="template-features">
-                  <span>Year & mileage</span>
-                  <span>
-                    {seller.theme === "motorcycles"
-                      ? "Engine capacity"
-                      : "Fuel & model"}
-                  </span>
-                  <span>Enquire before viewing</span>
-                </div>
-              )}
-            </section>
-          )}
-          {section === "gallery" &&
-            display.showGallery &&
-            display.gallery.length > 0 && (
-              <section className="shop-gallery">
-                <div>
-                  <span className="eyebrow">INSIDE OUR SHOP</span>
-                  <h2>Photo gallery</h2>
-                </div>
-                <div className="shop-gallery-grid">
-                  {display.gallery.map((photo, index) => (
-                    <Photo
-                      key={photo + index}
-                      src={photo}
-                      alt={`${seller.name} gallery photo ${index + 1}`}
-                      loading="lazy"
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-          {section === "video" && display.showVideo && display.videoUrl && (
-            <section className="shop-featured-video">
-              <div>
-                <span className="eyebrow">A CLOSER LOOK</span>
-                <h2>From {seller.name}</h2>
-                <p>Get to know the people and products behind this shop.</p>
-              </div>
-              <Video url={display.videoUrl} />
-            </section>
-          )}
-        </React.Fragment>
-      ))}
+      <nav className="studio-nav" aria-label="Shop sections">{display.showAbout && display.introduction && <a href="#studio-about">About</a>}<a href="#shop-products" onClick={()=>setTab("products")}>Catalogue</a>{display.showGallery && display.gallery.length>0 && <a href="#studio-gallery">Gallery</a>}</nav>
+      {display.layout === "portfolio" && shopStory}
       <div className="tabs" id="shop-products">
         {[
           "products",
@@ -1546,7 +1548,8 @@ export function SellerPage({ slug }) {
               </select>
             </Field>
           </div>
-          <div className="chips">
+          <h3>Collections</h3>
+          <div className="chips studio-chips">
             <button
               className={!collection ? "active" : ""}
               onClick={() => {
@@ -1571,7 +1574,7 @@ export function SellerPage({ slug }) {
           </div>
           <div className="product-grid">
             {items.map((i) => (
-              <ProductCard key={i.id} item={i} />
+              <div key={i.id}><ProductCard item={i}/>{display.layout === "showroom" && <small className="studio-spec">{Object.entries(i.attributes || {}).filter(([,v])=>typeof v==="string"||typeof v==="number").slice(0,3).map(([k,v])=>k+": "+v).join(" · ")}</small>}</div>
             ))}
           </div>
           {!items.length && (
@@ -1613,6 +1616,7 @@ export function SellerPage({ slug }) {
           <SocialLinks values={seller.socials} />
         </div>
       )}
+      {display.layout !== "portfolio" && shopStory}
     </div>
   );
 }

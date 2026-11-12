@@ -1,4 +1,5 @@
 import { isClassified, validateClassified } from "../lib/departments";
+import ShopSales from "../components/ShopSales";
 import { InventoryEditor } from "../components/ProductOptions";
 import {
   normalizeCommerce,
@@ -779,6 +780,7 @@ function Importer({ seller, visual }) {
 export function Dashboard({ startSell = false, visual = false }) {
   const {
     seller: realSeller,
+    categories,
     fixtures,
     session,
     navigate,
@@ -789,8 +791,9 @@ export function Dashboard({ startSell = false, visual = false }) {
     refreshUser,
   } = useMarket();
   const seller = visual ? fixtures?.sellers[0] : realSeller;
+  const [starterCategory, setStarterCategory] = useState("");
   const [tab, setTab] = useState(
-      ["products", "profile", "collections", "import"].includes(new URLSearchParams(path.split("?")[1]).get("tab"))
+      ["products", "profile", "collections", "sales", "import"].includes(new URLSearchParams(path.split("?")[1]).get("tab"))
         ? new URLSearchParams(path.split("?")[1]).get("tab")
         : "products",
     ),
@@ -856,16 +859,18 @@ export function Dashboard({ startSell = false, visual = false }) {
     );
   const limit = plans.find((p) => p.id === "free")?.listing_limit || 100;
   const tabs = [
-    ["products", Package, "My products"],
+    ["products", Package, "Stock & listings"],
+    ["sales", Stack, "Sales"],
     ["profile", Storefront, "Shop identity"],
     ["collections", Stack, "Collections"],
     ["import", UploadSimple, "Import catalogue"],
   ];
   return (
     <div className="page dashboard">
+      <div className="studio-cover"><Photo src={seller.cover} alt={seller.name}/><button className="button outline" onClick={()=>setTab("profile")}>Edit cover &amp; identity</button></div>
       <div className="dashboard-heading">
         <div>
-          <span className="eyebrow">YOUR LITTLE CORNER OF THE MARKET</span>
+          <span className="eyebrow">MY SHOP STUDIO</span>
           <h1>{seller.name}</h1>
           <p>
             {seller.location} ·{" "}
@@ -958,11 +963,12 @@ export function Dashboard({ startSell = false, visual = false }) {
           )}
         </aside>
         <section className="dashboard-content">
+          {tab === "sales" && <ShopSales key={seller.id} seller={seller} visual={visual}/>}
           {tab === "products" && (
             <>
               <div className="section-heading">
                 <div>
-                  <h2>Your products</h2>
+                  <h2>Inventory</h2>
                   <p>Keep your good things looking their best.</p>
                 </div>
                 <button className="button primary" onClick={() => setAdd(true)}>
@@ -977,7 +983,7 @@ export function Dashboard({ startSell = false, visual = false }) {
                       <div>
                         <strong>{i.title}</strong>
                         <small>
-                          {money(i.price)} · {i.category_id}
+                          {money(i.price)} / {i.commerce?.unit || "item"} · {i.commerce?.variants?.length ? "Stock by variant" : i.commerce?.stock == null ? "Stock not tracked" : i.commerce.stock + " available"}
                         </small>
                       </div>
                       <span className={"status " + i.status}>
@@ -1026,7 +1032,9 @@ export function Dashboard({ startSell = false, visual = false }) {
           )}{" "}
           {tab === "collections" && (
             <>
-              <h2>Make room for everything</h2>
+              <h2>Your shop collections</h2>
+              <label>Collection ideas by category <select value={starterCategory} onChange={e=>setStarterCategory(e.target.value)}><option value="">Choose a category</option>{categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+              {starterCategory && <div className="chips studio-chips">{subcategoriesFor(categories,starterCategory).map(c=><button type="button" key={c.id} onClick={()=>{setCollectionEdit(null);setCollectionName(c.name)}}>{c.name}</button>)}</div>}
               <p>
                 Collections organise products inside your shop. Marketplace
                 categories stay the same.

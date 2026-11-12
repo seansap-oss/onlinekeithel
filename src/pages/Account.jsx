@@ -384,6 +384,7 @@ export function SellerForm({ existing, onSaved }) {
             ...form,
             payment_options: normalizePayments(form.payment_options),
             storefront: {
+              layout: display.layout,
               headline: display.headline.trim().slice(0, 100),
               tagline: display.tagline.trim().slice(0, 100),
               introduction: display.introduction.trim().slice(0, 1200),
@@ -533,6 +534,7 @@ export function SellerForm({ existing, onSaved }) {
         onChange={(v) => change("cover", v)}
       />
       <h3>Your storefront landing page</h3>
+      <Field label="Page layout"><select value={storefrontSettings(form).layout} onChange={e=>change("storefront",{...form.storefront,layout:e.target.value})}><option value="catalogue">Catalogue · collections first</option><option value="showroom">Showroom · models and specifications</option><option value="portfolio">Portfolio · experience and project photos first</option></select></Field>
       <p className="muted">
         Make this page feel like yours. Your cover photo appears above the
         headline; shoppers can still find your items in marketplace search.
