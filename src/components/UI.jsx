@@ -90,21 +90,98 @@ export function Upload({
   labels = [],
   onBusyChange,
   maxItems = Infinity,
+  pasteable = false,
+  videos = [],
+  inputRef,
+  pasteButtonRef,
+  prependNext = false,
 }) {
   const { session } = useMarket();
+  const localInputRef = useRef(null);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [url, setUrl] = useState("");
   const items = multiple ? value || [] : value ? [value] : [];
+  const processFiles = async (files) => {
+    const selected = Array.from(files || []).filter((file) => file.type?.startsWith("image/"));
+    if (!selected.length) return;
+    setError("");
+    setBusy(true);
+    onBusyChange?.(true);
+    try {
+      if (!session) throw Error("Sign in to upload photos");
+      if (Number.isFinite(maxItems) && selected.length + items.length > maxItems && multiple)
+        throw Error(`Up to ${maxItems} photos`);
+      const uploaded = [];
+      for (const file of selected) uploaded.push(await uploadImage(file, session.user.id));
+      onChange(multiple ? (prependNext ? [...uploaded, ...items] : [...items, ...uploaded]) : uploaded[0]);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+      onBusyChange?.(false);
+      if (targetInputRef.current) targetInputRef.current.value = "";
+    }
+  };
+  const pasteFromClipboard = async () => {
+    setError("");
+    if (navigator.clipboard?.read) {
+      try {
+        const clipboardItems = await navigator.clipboard.read();
+        for (const item of clipboardItems) {
+          const type = item.types.find((value) => value.startsWith("image/"));
+          if (!type) continue;
+          const blob = await item.getType(type);
+          return processFiles([new File([blob], "pasted-screenshot.png", { type })]);
+        }
+        setError("No screenshot is on the clipboard. Take a screenshot, then try Paste again.");
+        return;
+      } catch { /* Browsers may require a direct paste gesture instead. */ }
+    }
+    setError("Use your device’s Share button to send the screenshot to OnlineKeithel, or choose it from Photos.");
+  };
+  const targetInputRef = inputRef || localInputRef;
   return (
-    <div className="upload-widget">
-      <div className="photo-strip">
+    <div className={"upload-widget" + (pasteable ? " upload-widget-pasteable" : "")}>
+      {pasteable && <div
+        className="media-paste-zone"
+        role="group"
+        tabIndex={0}
+        aria-label="Paste or drop a screenshot here"
+        onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.focus(); }}
+        onPaste={(event) => {
+          const files = Array.from(event.clipboardData?.items || [])
+            .filter((item) => item.type.startsWith("image/"))
+            .map((item) => item.getAsFile())
+            .filter(Boolean);
+          if (files.length) { event.preventDefault(); processFiles(files); }
+        }}
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => { event.preventDefault(); processFiles(event.dataTransfer?.files); }}
+      >
+        <div className="media-upload-actions">
+          <label className="button primary media-choose-button">
+            <UploadSimple size={19} /> {busy ? "Uploading…" : "Choose photos"}
+            <input ref={targetInputRef} type="file" accept="image/*,.heic,.heif" multiple={multiple} disabled={busy} onChange={(event) => processFiles(event.target.files)} />
+          </label>
+          <button ref={pasteButtonRef} className="button outline" type="button" disabled={busy} onClick={pasteFromClipboard}>Paste screenshot</button>
+        </div>
+        <small>On a computer, click here and press Ctrl+V. On Samsung, use the screenshot toolbar’s Share button or Clipboard.</small>
+      </div>}
+      <div className={pasteable ? "media-preview-strip" : "photo-strip"}>
+        {videos.filter((video) => video.url).map((video, index) => (
+          <div className="media-preview-tile media-preview-video" key={video.url + index}>
+            <Video url={video.url} title={video.title || "Shared video"} poster={items[0]} posterFit="contain" compact theater />
+            <span className="media-preview-badge">Video</span>
+          </div>
+        ))}
         {items.map((p, i) => (
-          <div key={p + i}>
+          <div className={pasteable ? "media-preview-tile" : ""} key={p + i}>
             <Photo src={p} alt={labels[i] || `Uploaded photo ${i + 1}`} />
-            <span className="photo-position">
+            {!pasteable && <span className="photo-position">
               {labels[i] || `Photo ${i + 1}`}
-            </span>
+            </span>}
+            {pasteable && i === 0 && videos.some((video) => video.url) && <span className="media-preview-badge">Video thumbnail</span>}
             {multiple && i > 0 && (
               <button
                 className="photo-move"
@@ -133,38 +210,20 @@ export function Upload({
           </div>
         ))}
       </div>
-      <label className="upload-button">
+      {pasteable && (videos.some((video) => video.url) || items.length > 1) && <p className="media-gallery-count">{videos.filter((video) => video.url).length} video{videos.filter((video) => video.url).length === 1 ? "" : "s"} · {items.length} photo{items.length === 1 ? "" : "s"} <span>Swipe to see all media →</span></p>}
+      {!pasteable && <label className="upload-button">
         <UploadSimple size={20} />
         {busy ? "Uploading…" : "Upload photos"}
         <input
+          ref={targetInputRef}
           type="file"
           accept="image/*,.heic,.heif"
           multiple={multiple}
           disabled={busy}
-          onChange={async (e) => {
-            setError("");
-            setBusy(true);
-            onBusyChange?.(true);
-            try {
-              if (!session) throw Error("Sign in to upload photos");
-              const files = Array.from(e.target.files);
-              if (Number.isFinite(maxItems) && files.length + items.length > maxItems && multiple)
-                throw Error(`Up to ${maxItems} photos`);
-              const uploaded = [];
-              for (const file of files)
-                uploaded.push(await uploadImage(file, session.user.id));
-              onChange(multiple ? [...items, ...uploaded] : uploaded[0]);
-            } catch (e) {
-              setError(e.message);
-            } finally {
-              setBusy(false);
-              onBusyChange?.(false);
-              e.target.value = "";
-            }
-          }}
+          onChange={(e) => processFiles(e.target.files)}
         />
-      </label>
-      <small>One photo is enough to post. Clear photos from more angles can help buyers choose.</small>
+      </label>}
+      {!pasteable && <small>One photo is enough to post. Clear photos from more angles can help buyers choose.</small>}
       <div className="media-url-row">
         <input
           aria-label="Photo URL"
@@ -225,7 +284,7 @@ export function SocialLinks({ values = {} }) {
     </div>
   );
 }
-export function Video({ url, poster = "", title = "", compact = false, theater = false, sellerName = "", priceLabel = "", listingHref = "" }) {
+export function Video({ url, poster = "", posterFit = "cover", title = "", compact = false, theater = false, sellerName = "", priceLabel = "", listingHref = "" }) {
   const [load, setLoad] = useState(false);
   const [open, setOpen] = useState(false);
   const [muted, setMuted] = useState(true);
@@ -299,7 +358,7 @@ export function Video({ url, poster = "", title = "", compact = false, theater =
           disabled={!canPlay}
           aria-label={"Play " + (title || platform) + " video"}
         >
-          {poster && mediaUrl(poster) && <img className="video-poster-image" src={mediaUrl(poster)} alt="" loading="lazy" onError={(e) => { e.currentTarget.hidden = true; }} />}
+          {poster && mediaUrl(poster) && <img className={"video-poster-image" + (posterFit === "contain" ? " video-poster-image-contain" : "")} src={mediaUrl(poster)} alt="" loading="lazy" onError={(e) => { e.currentTarget.hidden = true; }} />}
           <span className="video-poster-content">
             <span className="video-poster-platform">{platform} video</span>
             <span className="video-poster-play"><Play size={compact ? 27 : 35} weight="fill" /></span>

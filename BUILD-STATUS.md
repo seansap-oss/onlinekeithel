@@ -1,6 +1,12 @@
+# Build status - v0.24.2 (13 November 2026)
+
+Updated the mobile-first listing media step for shared social video posts. Sellers can attach a screenshot from the photo picker, paste from the clipboard on desktop, or share an image into the installed app; the screenshot is stored with the listing photos and the first photo serves as the video cover. Before publishing a video-only listing, the form asks whether to add a screenshot or continue with the standard poster. Listing media presents video followed by photos in a swipeable gallery with a count and scroll hint. PWA share target accepts text and image files, and Android source accepts a shared image and opens the listing form with its share metadata.
+
+`npm run build` and `npm run android:sync` succeeded. `git diff --check` is clean. APK compilation did not start: Gradle could not access its wrapper cache lock under `C:\Users\sonys\.gradle`; the rebuilt APK and real-device Android share flow are therefore not verified. No live visual or seller-session acceptance is claimed. Publish this commit only to the existing `shop-studio-v0.19.0` preview branch; production remains untouched.
+
 # Build status - v0.24.0 (13 November 2026)
 
-The basic public listing flow now requires only a title and category. Description is visible in the main form; photos, video, price, location, subcategory and category-specific details are optional. "All subcategories / not specified" leaves the listing at its selected category. Blank price saves as ?0 and blank location uses the seller's saved location (or Imphal). Category suggestions still adapt to the active catalogue and only validate values the seller provides. Version metadata is 0.24.0 for web and Android. `npm run build` succeeds; `npm test` passes all 47 tests, including the database-level no-media publish case after migration 20261113120000. Vite reports the existing large main-bundle advisory. Visual review in the browser and deployment are pending.
+The basic public listing flow now requires only a title and category. Description is visible in the main form; photos, video, price, location, subcategory and category-specific details are optional. “All subcategories / not specified” leaves the listing at its selected category. Blank price saves as ₹0 and blank location uses the seller's saved location (or Imphal). Category suggestions still adapt to the active catalogue and only validate values the seller provides. Version metadata is 0.24.0 for web and Android. `npm run build` succeeds; `npm test` passes all 47 tests, including the database-level no-media publish case after migration 20261113120000. Vite reports the existing large main-bundle advisory. Visual review in the browser and deployment are pending.
 
 Added a vertical 9:16 in-app video viewing dialog for listing cards and detail-page videos. The cover opens the viewer; Close returns to the same page position. The dialog offers a fullscreen control, seller contact and the original-post link. YouTube and hosted videos start muted and expose a mute action; Instagram and Facebook retain their provider controls and phone-volume behavior. The app does not control cross-origin Instagram/Facebook audio directly.
 
@@ -10,23 +16,23 @@ The earlier v0.23.0 form update moved subcategory, condition, keywords, descript
 
 Added an optional Gemini description suggestion for signed-in sellers. The server-side endpoint uses the preview-only `GEMINI_API_KEY`, requires seller authentication, limits requests and input size, redacts email/phone patterns before sending, and caps the generated text. Suggestions replace the editor text for seller review and do not post automatically. AI input should remain non-sensitive; the Gemini free tier may use prompts to improve Google products. `npm run build` succeeds and all 49 tests pass. Live Gemini use requires the Vercel preview deployment to include the secret and has not yet been exercised in a signed-in browser session.
 
-# Build status - v0.22.3 (12 November 2026)
+# Build status — v0.22.3 (12 November 2026)
 
 Video listings now have a persistent poster before playback. If the seller adds a product photo, that photo covers the preview; otherwise a green and gold title card identifies the video platform and gives a prominent play button. The Instagram embed still loads only after a click, and the original-post link remains available. This makes the preview meaningful after a refresh without relying on an Instagram thumbnail API. All 47 tests and the production build pass. Local browser visual QA was attempted but the isolated Chromium could not reach the local server. Live signed-in playback is not claimed as verified.
 
-# Build status - v0.22.2 (12 November 2026)
+# Build status — v0.22.2 (12 November 2026)
 
 Corrected the video-only posting form for an Instagram link pasted into Video title or the Instagram post field while Video URL is blank. The form now prioritizes the link field, moves a supported pasted link from the optional title, attaches supported social posts on save, and reports a clear media error before submitting. A local PGlite test runs the exact video-only guard migration and publishes a listing using the screenshot's reel shape without a photo. All 47 tests and the v0.22.2 production build pass. Live signed-in acceptance and third-party embed playback remain unverified. Deployment status is checked after publication.
 
 ## Previous release
 
-# Build status - v0.22.1 (12 November 2026)
+# Build status — v0.22.1 (12 November 2026)
 
 Seller shop starter names are editable before they are individually added. The existing department list now labels Rename and Delete, and renaming has a Cancel action. This avoids adding the entire fixed fashion set when a shop only needs custom names. Global marketplace categories remain managed by admins. No database migration is needed. All 46 local tests and the production build pass. The live signed-in editor is not acceptance-tested from this environment because the preview redirects its cloud browser to Vercel login.
 
 ## Previous release
 
-# Build status - v0.22.0 (12 November 2026)
+# Build status — v0.22.0 (12 November 2026)
 
 Added department reordering and a deletion dialog that retains listings, with optional move to another department. The installed OO PWA now registers as a text share target and opens `/share` with an allowed public video link prefilled. The Android source registers an `ACTION_SEND` text target for a future rebuilt APK. Listing cards expose one-click embeds and original-post links; searches index seller-entered names, categories and video URLs. The live Supabase `listing_guard` now permits a validated public video instead of a required photo; read-back verified the quota and video validation trigger remain. Version 0.22.0 appears in the footer and Android metadata. The production site remains separate from the OO preview branch.
 
@@ -34,7 +40,7 @@ Added department reordering and a deletion dialog that retains listings, with op
 
 ## Previous release
 
-# Build status - v0.21.0 (12 November 2026)
+# Build status — v0.21.0 (12 November 2026)
 
 The public seller page now places a store-specific department bar immediately after shop identity, with horizontal quick links and an expandable menu. It reads every active subcategory from the shared administrator catalogue, including categories added later. A separate section lists the owner's collections as shop departments. Selecting any item filters published listings; this does not fabricate stock. Dashboard lets owners create suggested shop departments in one action, add or rename their own, and assign listings using the existing collection field. Fashion suggestions include T-shirts, shirts, pants, dresses, shoes, socks and accessories. Vehicle, property, job and other category filters from v0.20 remain. The OO landing page is unchanged. Version 0.21.0 appears in the footer and Android version metadata.
 
@@ -42,7 +48,7 @@ Tests and build results are recorded after verification. No live seller editing 
 
 ## Previous release
 
-# Build status - v0.20.0 (12 November 2026)
+# Build status — v0.20.0 (12 November 2026)
 
 The shop studio now supports all 36 active marketplace categories. A seller chooses the shop's main category in Account, edits the existing cover, headline and page sections, and manages listings, collections and stock in Dashboard. Public shops show the matching subcategories and relevant listing filters (such as vehicle mileage). New admin-created categories receive a generic expandable storefront. The landing page and global category management remain as before.
 
@@ -50,7 +56,7 @@ Local tests and the production build pass. The linked Supabase project was check
 
 ## Historical notes
 
-# Build status - v0.15.8
+# Build status — v0.15.8
 
 Buyer and seller messaging (24 October 2026): signed-in buyers can post public listing questions and start private real-time conversations; sellers can reply publicly or in the inbox. Buyers and sellers can report inappropriate content, and admins can delete reported questions/messages. Added RLS-backed tables, report RPC hardening, indexes and realtime publication migrations. Carried forward v0.15.7 features. Tests/build will be recorded after verification.
 
@@ -62,7 +68,7 @@ Email OTP sign-in (22 October 2026): the sign-in and sign-up page now sends and 
 
 WhatsApp and package controls (22 October 2026): added a WhatsApp-only phone OTP tab backed by Supabase `signInWithOtp({ options: { channel: "whatsapp" } })`; the live project still requires a Twilio WhatsApp sender and phone auth configuration. Email/password remains available. Admin login at `/admin` is labelled and continues to require the existing account plus verified admin membership; no shared admin password is created. Admin > Packages now has a site-wide paid-packages switch, while each package retains its own active switch. Checkout checks both switches server-side and requires Razorpay credentials. Enabled package cards now appear on `/plans`. The existing seller profile editor already supplies individual/shop storefront branding and shareable links. No remote project changes, GitHub push or Vercel deployment were performed. Verification: 38 tests pass; production build succeeds with Vite's existing large-chunk advisory. WhatsApp delivery is not end-to-end verified until Twilio is configured.
 
-Dashboard crash fix (22 October 2026): removed a stale listing-expiry label expression that referenced an undeclared `entitlement` variable. That uncaught `ReferenceError` crashed `/dashboard` after sign-in and caused the white screen shown in the live browser. Listing rows now display their existing status directly, consistent with the dashboard's "stay visible until you pause them" message and the free listing mode. Automated tests (38) pass and the production build succeeds. This fix is local only; it has not been pushed or deployed, so the live Vercel site will keep crashing until this version is deployed.
+Dashboard crash fix (22 October 2026): removed a stale listing-expiry label expression that referenced an undeclared `entitlement` variable. That uncaught `ReferenceError` crashed `/dashboard` after sign-in and caused the white screen shown in the live browser. Listing rows now display their existing status directly, consistent with the dashboard's “stay visible until you pause them” message and the free listing mode. Automated tests (38) pass and the production build succeeds. This fix is local only; it has not been pushed or deployed, so the live Vercel site will keep crashing until this version is deployed.
 
 Previous version: v0.15.3.
 
@@ -70,13 +76,13 @@ Footer identification update (21 October 2026): the left side of the footer show
 
 Account email routing update (21 October 2026): confirmation links now target the public dashboard and recovery links the public `/reset-password` route using `VITE_PUBLIC_SITE_URL`; local requests no longer accidentally address localhost when that variable is set. The URL helper rejects off-site or insecure production destinations. Setup and live acceptance are in `docs/EMAIL-SETUP.md`. No SMTP credentials or Supabase Auth settings were changed remotely; the built-in email rate limit remains until a custom provider is connected. Code tests and production build pass, but live delivery and account recovery are not yet verified. Existing uncommitted footer edits were retained. No GitHub push or Vercel deploy is claimed.
 
-Footer update (21 October 2026): removed the public website-version label entirely. The copyright and "Created by Avit Solutions" credit remain. This update changes no auth, database, or hosting settings. Verification: all 35 app tests pass and the production build succeeds; Vite reports its existing large-chunk advisory. The source is local only: GitHub credentials are unavailable in this workspace, so no push or Vercel deployment is claimed. Apply the updated source to the user's existing project folder and push it to the existing `onlinekeithel` GitHub/Vercel project.
+Footer update (21 October 2026): removed the public website-version label entirely. The copyright and “Created by Avit Solutions” credit remain. This update changes no auth, database, or hosting settings. Verification: all 35 app tests pass and the production build succeeds; Vite reports its existing large-chunk advisory. The source is local only: GitHub credentials are unavailable in this workspace, so no push or Vercel deployment is claimed. Apply the updated source to the user's existing project folder and push it to the existing `onlinekeithel` GitHub/Vercel project.
 
 Existing marketplace configuration: Supabase project `plllhsjsruhasdvbzhpw`; SQL policy and seller/media setup are already separate from hosting. Current email delivery limits are controlled by Supabase Auth, not by the web host. Authentication, image upload and WhatsApp enquiry still need live end-to-end acceptance. No WhatsApp OTP is configured.
 
 ## Earlier v0.14.4 note
 
-The user's screenshot exposed a live database function that rejected one-photo fashion listings. Applied `listing_packages_v0144` and `unlimited_listing_gallery_v0144` to the dedicated OnlineKeithel Supabase project `plllhsjsruhasdvbzhpw`. Read-only checks confirmed the four-angle rule is gone, photo count is unrestricted, the existing draft is still present, and active package prices/limits/durations match the new tiers. No real signed-in listing save or payment was made here. The photo helper now recommends optional additional angles without mentioning compression. The free package permits two active ads for 14 days; Quick Seller 5/?100/14 days; Individual 10/?200/30 days; Premium Business 20/?400/30 days; Business Plus 50/?600/30 days. Connected payment acceptance remains pending Razorpay configuration. Verification: 33 app tests, 4 hosting tests and the production build pass. The source migrations are included for repeatable installs, and the Windows source ZIP must still be installed locally to display the updated UI.
+The user's screenshot exposed a live database function that rejected one-photo fashion listings. Applied `listing_packages_v0144` and `unlimited_listing_gallery_v0144` to the dedicated OnlineKeithel Supabase project `plllhsjsruhasdvbzhpw`. Read-only checks confirmed the four-angle rule is gone, photo count is unrestricted, the existing draft is still present, and active package prices/limits/durations match the new tiers. No real signed-in listing save or payment was made here. The photo helper now recommends optional additional angles without mentioning compression. The free package permits two active ads for 14 days; Quick Seller 5/₹100/14 days; Individual 10/₹200/30 days; Premium Business 20/₹400/30 days; Business Plus 50/₹600/30 days. Connected payment acceptance remains pending Razorpay configuration. Verification: 33 app tests, 4 hosting tests and the production build pass. The source migrations are included for repeatable installs, and the Windows source ZIP must still be installed locally to display the updated UI.
 
 ## Earlier v0.14.3 note
 
@@ -86,15 +92,15 @@ The light canvas is white again. Dark mode uses charcoal/gray content surfaces w
 
 ## Earlier v0.14.2 note
 
-The seller screenshot showed "kurta" in Draft with 0/3 active listings. The homepage query selects only `published` records and orders them by `created_at` descending. No live product or database status was changed remotely. The prior gray wash in light mode was reverted in v0.14.3. Initial mode is light even on devices that prefer dark or had a previous local theme setting. Connected Supabase acceptance for the user's account has not been exercised from this workspace.
+The seller screenshot showed “kurta” in Draft with 0/3 active listings. The homepage query selects only `published` records and orders them by `created_at` descending. No live product or database status was changed remotely. The prior gray wash in light mode was reverted in v0.14.3. Initial mode is light even on devices that prefer dark or had a previous local theme setting. Connected Supabase acceptance for the user's account has not been exercised from this workspace.
 
-# Build status - v0.14.1
+# Build status — v0.14.1
 
 Fixed a homepage crash reported from the Windows local preview. The browser console identified `ReferenceError: shuffle is not defined` in `Home`. Removed the stale calls so review fixtures display and live listings retain their newest-first query order. No database change beyond the already included v0.14 migration.
 
-# Build status - v0.12.0
+# Build status — v0.12.0
 
-## v0.12.0 - Option 1 marketplace home, auth UI and category gaps (20 October 2026)
+## v0.12.0 — Option 1 marketplace home, auth UI and category gaps (20 October 2026)
 
 Implemented the approved Marketplace Focus landing page: split handloom hero, paired Explore/Post ad actions, dark forest-green ticker with white text, swipeable pastel category row in the Option 1 order, optional paid-campaign cards before a shuffled fresh-listing feed, and improved empty-state wording. Legacy default ticker values are upgraded to the new contrast treatment without overwriting custom ticker content. The home carousel still rotates every five seconds and pauses for interaction/reduced motion.
 
@@ -110,7 +116,7 @@ Added /homes, /jobs, /motors, /whats-on, /recruiters and /recruiter/:slug. Expan
 
 Production build and 26 tests pass. Server rendering checks pass for all five new entry routes. Cloud browser cannot connect to localhost (ERR_CONNECTION_REFUSED); interactive visual verification remains pending. No configured marketplace Supabase project, no new GitHub push or Vercel deployment. Existing backend must apply database/migrations/009_departments.sql (same as timestamped Supabase migration). Fresh installations use current database/schema.sql and database/storage.sql.
 
-Hero illustration panels are used on Homes, Jobs and What's On; Motors uses the bundled vehicle photo. Existing account/profile images remain configurable; per-department hero editing is not yet part of the homepage admin editor. Native apps, bookings, ticketing, applicant tracking and product payment settlement are not implemented.
+Hero illustration panels are used on Homes, Jobs and What’s On; Motors uses the bundled vehicle photo. Existing account/profile images remain configurable; per-department hero editing is not yet part of the homepage admin editor. Native apps, bookings, ticketing, applicant tracking and product payment settlement are not implemented.
 
 ## v0.10.0 approved interface and rich ticker (10 October 2026)
 
@@ -120,7 +126,7 @@ Implemented compact search panel, header saved heart, removed announcement, tick
 
 ## v0.9.0 brand and owner controls (9 October 2026)
 
-Corrected OnlineKeithel throughout public content; bundled the Caveat wordmark font; preserved the roof logo and header layout; changed the posting CTA; added five-second footer admin sign-in and Ebit Solutions credit. Added server-protected user listing/invitations, category icon/colour/subcategory editing, deletion controls, editable starter catalogue import, and database-backed homepage draft/publish/revision recovery with optimistic concurrency checks. Migration `supabase/migrations/20261009051356_admin_publishing.sql` is required on an existing database. Fresh schema includes it. Existing 004-007 history is retained.
+Corrected OnlineKeithel throughout public content; bundled the Caveat wordmark font; preserved the roof logo and header layout; changed the posting CTA; added five-second footer admin sign-in and Ebit Solutions credit. Added server-protected user listing/invitations, category icon/colour/subcategory editing, deletion controls, editable starter catalogue import, and database-backed homepage draft/publish/revision recovery with optimistic concurrency checks. Migration `supabase/migrations/20261009051356_admin_publishing.sql` is required on an existing database. Fresh schema includes it. Existing 004–007 history is retained.
 
 21 automated tests passed. Production and Sites packaging builds pass. Browser preview failed with connection refusal in this environment; new visual interactions have not been visually verified. No dedicated backend is configured, so real account writes, invitations, uploads and publishing remain provider-dependent and unverified. GitHub denied create-tree writes with 403. No Vercel deployment is claimed. Read `UPDATE-v0.9.0.md` for installation and limitations. Bundled disconnected catalogue records are read-only; the importer creates editable database drafts once genuine seller accounts exist.
 
@@ -189,21 +195,20 @@ Marketplace UI, product/shop discovery, product detail and WhatsApp composer; se
 - Vercel project listing still contains only the unrelated IAS projects. No marketplace deployment exists in the connected team.
 - A downloadable source archive is provided pending GitHub write access. No secrets or node_modules are included.
 
-## v0.4.0 - supersedes earlier development-only catalogue statements
+## v0.4.0 — supersedes earlier development-only catalogue statements
 
 Public placeholders now ship in production by explicit user request. Five sample stores, ten collections and seventeen products are included. /templates offers category previews. Seller category selection applies a template, including the new motorcycle theme. Samples stop when VITE_SHOW_SAMPLES=false or a real Supabase backend is configured. Protected preview routes remain development-only.
 
 The user's v0.3.0 repository commit has three successful Vercel deployments (emarket, emarket-adx4, emarket-dou6). Connector project listing is incomplete/stale; GitHub commit status confirms deployment. The v0.4.0 update cannot be pushed by this connection: GitHub still returns 403 for write operations. See SHOWCASE-UPDATE.md for applying the archive to the existing Windows folder and pushing to trigger redeployment.
 
-## v0.5.0 - comprehensive categories
+## v0.5.0 — comprehensive categories
 
 Implemented 31 parent categories and 331 subcategories with icons, searchable /categories directory, dependent seller/search selectors, CSV import mapping/reference, admin editing and database migration 005. Existing IDs and legacy listings without children are retained. Research and full catalogue: docs/CATEGORY-GUIDE.md. All six test files passed; production build passed (existing large-chunk advisory remains). Browser review verified directory rendering and Pallet racks navigation. Remote push remains blocked by GitHub integration HTTP 403, so this release is packaged as a cumulative update from v0.3.0. This version has not been deployed live.
 
-## v0.6.0 - seller product tools
+## v0.6.0 — seller product tools
 
-Implemented 12-photo galleries with URL input, removal and reordering; four-photo clothing publication requirement; mouse/pen hover rear view; mobile thumbnails; six videos/embedded posts, including short MP4/WebM uploads up to 6 MB; expanded vehicle specification fields; retail/enquiry modes; XS-XXL and custom variants with per-option stock/prices; quantity/subtotal/availability checks; seller UPI ID/QR and cash preferences; WhatsApp purchase-request summaries; mixed-shop title/category filters; extended CSV import options. Mixed-store batteries and sold-out toys plus four-angle garment illustrations are clearly labelled samples.
+Implemented 12-photo galleries with URL input, removal and reordering; four-photo clothing publication requirement; mouse/pen hover rear view; mobile thumbnails; six videos/embedded posts, including short MP4/WebM uploads up to 6 MB; expanded vehicle specification fields; retail/enquiry modes; XS–XXL and custom variants with per-option stock/prices; quantity/subtotal/availability checks; seller UPI ID/QR and cash preferences; WhatsApp purchase-request summaries; mixed-shop title/category filters; extended CSV import options. Mixed-store batteries and sold-out toys plus four-angle garment illustrations are clearly labelled samples.
 
 Seven test files pass, including real local SQL validation and existing RLS/quota/payment tests. Browser checks verify hover, mobile gallery/width, variant/quantity/subtotal, sample contact protection, mixed-shop filtering and out-of-stock controls. Actual uploads, live account persistence, direct UPI payments and seller-package checkout still require configured services and device testing. There is no confirmed product-order/cart system, automatic stock deduction/reservation or Razorpay product checkout in this version.
 
 Local code is packaged for GitHub/Vercel. No remote database or production deployment was changed; connector write permission remains blocked. Apply the product-options migration before deploying against an existing backend.
-

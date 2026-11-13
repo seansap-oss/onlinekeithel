@@ -15,7 +15,7 @@ import {
 } from "../lib/departments";
 import { ClassifiedContact } from "../components/ClassifiedContact";
 import { PurchasePanel } from "../components/PurchasePanel";
-import { ProductVideos } from "../components/ProductMedia";
+import { ListingMediaGallery } from "../components/ListingMediaGallery";
 import { outOfStock, fieldOptions } from "../lib/commerce";
 import { shopCategoryId, shopCategoryProfile } from "../lib/storefront-categories";
 import { shopDepartments } from "../lib/shop-departments";
@@ -89,7 +89,7 @@ export function ProductCard({ item, compact = false }) {
   return (
     <article className={compact ? "product-card product-card-list" : "product-card"}>
       <div className="product-photo">
-        {(item.videos || []).some(v=>embedUrl(v.url)) ? <div className="product-card-video"><Video url={item.videos.find(v=>embedUrl(v.url)).url} poster={item.images?.[0]} title={item.title} sellerName={item.seller?.name} priceLabel={listingPrice(item, money)} listingHref={"/listing/" + item.id} compact/></div> : <Link
+        {(item.videos || []).some(v=>embedUrl(v.url)) ? <div className="product-card-video"><Video url={item.videos.find(v=>embedUrl(v.url)).url} poster={item.images?.[0]} posterFit="contain" title={item.title} sellerName={item.seller?.name} priceLabel={listingPrice(item, money)} listingHref={"/listing/" + item.id} compact/></div> : <Link
           to={"/listing/" + item.id}
           data-hovered={flipped}
           onPointerEnter={(e) =>
@@ -1731,6 +1731,12 @@ export function ProductPage({ id }) {
         </Empty>
       </div>
     );
+  const listingVideos = [
+    ...(item.videos || []),
+    ...Object.entries(item.socials || {})
+      .filter(([, url]) => url && !(item.videos || []).some((video) => video.url === url))
+      .map(([title, url]) => ({ title, url })),
+  ];
   return (
     <div className="page">
       <div className="breadcrumb">
@@ -1744,6 +1750,7 @@ export function ProductPage({ id }) {
       </div>
       <div className="product-detail">
         <section>
+          {listingVideos.length > 0 ? <ListingMediaGallery listing={item} videos={listingVideos} /> : <>
           <div
             className={
               "detail-photo " +
@@ -1789,18 +1796,7 @@ export function ProductPage({ id }) {
               </button>
             ))}
           </div>
-          <ProductVideos
-            listing={item}
-            videos={[
-              ...(item.videos || []),
-              ...Object.entries(item.socials || {})
-                .filter(
-                  ([, url]) =>
-                    url && !(item.videos || []).some((v) => v.url === url),
-                )
-                .map(([title, url]) => ({ title, url })),
-            ]}
-          />
+          </>}
         </section>
         <section className="detail-info">
           <span className="eyebrow">

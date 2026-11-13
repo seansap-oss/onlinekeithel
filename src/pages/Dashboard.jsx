@@ -31,10 +31,10 @@ import {
   LinkSimple,
 } from "@phosphor-icons/react";
 import { useMarket, Link } from "../lib/context";
-import { result, supabase, preview } from "../lib/backend";
-import { money, socialUrl, normalizeImport, safeUrl } from "../lib/utils";
+import { result, supabase, preview, uploadImage } from "../lib/backend";
+import { money, socialUrl, normalizeImport, safeUrl, embedUrl } from "../lib/utils";
 import { Modal, Field, Photo, Upload, Empty, Video } from "../components/UI";
-import { sharedVideoFromSearch } from "../lib/shared-video.js";
+import { sharedVideoFromSearch, sharedTitleFromSearch, sharedDescriptionFromSearch, consumeSharedMedia } from "../lib/shared-video.js";
 import { SellerForm } from "./Account";
 import { shopPath } from "../lib/storefront";
 import { shopCategoryId, shopCategoryProfile, shopListingLabel } from "../lib/storefront-categories";
@@ -72,14 +72,18 @@ export function ListingEditor({
   visual = false,
   moderationAction,
   sharedVideo = "",
+  sharedMedia = null,
+  sharedTitle = "",
+  sharedDescription = "",
 }) {
-  const { categories, notice, path } = useMarket();
+  const { categories, notice, path, session } = useMarket();
   const requestedCategory = new URLSearchParams(path.split("?")[1]).get(
     "category",
   );
+  const sharedMediaExpected = new URLSearchParams(path.split("?")[1] || "").get("hasMedia") === "1";
   const [f, setF] = useState(
       initial || (duplicateFrom ? { ...duplicateFrom, id: undefined, images: [], sku: "", status: "published" } : null) || {
-        title: "",
+        title: sharedTitle,
         price: "",
         category_id: categories.some((c) => c.id === requestedCategory)
           ? requestedCategory
@@ -87,7 +91,7 @@ export function ListingEditor({
             ? preferredCategory
             : categories[0]?.id || "fashion",
         collection_id: "",
-        description: "",
+        description: sharedDescription,
         condition: "New",
         location: seller.location,
         images: [],
@@ -111,8 +115,46 @@ export function ListingEditor({
     [busy, setBusy] = useState(false),
     [aiBusy, setAiBusy] = useState(false),
     [aiError, setAiError] = useState(""),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [prioritizeNextImage, setPrioritizeNextImage] = useState(false),
+    [showThumbnailPrompt, setShowThumbnailPrompt] = useState(false);
+  const mediaUploadRef = useRef(null);
+  const pasteButtonRef = useRef(null);
+  const mediaSectionRef = useRef(null);
+  const formRef = useRef(null);
+  const publishButtonRef = useRef(null);
+  const allowVideoWithoutCoverRef = useRef(false);
+  const importedShareRef = useRef(new WeakSet());
   const update = (k, v) => setF((p) => ({ ...p, [k]: v }));
+  const linkedVideos = (f.videos || []).filter((video) => video.url && embedUrl(video.url));
+  const socialVideos = Object.values(f.socials || {}).filter((url) => url && embedUrl(url));
+  const hasLinkedVideo = linkedVideos.length > 0 || socialVideos.length > 0;
+  const mediaPreviewVideos = [
+    ...(f.videos || []),
+    ...Object.values(f.socials || {}).filter((url) => url && !(f.videos || []).some((video) => video.url === url)).map((url) => ({ url, title: "Shared video" })),
+  ];
+  useEffect(() => {
+    if (!sharedMedia || !session?.user?.id || visual || importedShareRef.current.has(sharedMedia)) return;
+    importedShareRef.current.add(sharedMedia);
+    (async () => {
+      try {
+        let file = sharedMedia.mediaFile;
+        if (!file && sharedMedia.mediaData) {
+          const blob = await (await fetch(sharedMedia.mediaData)).blob();
+          file = new File([blob], "shared-screenshot.png", { type: blob.type || "image/png" });
+        }
+        if (!file) return;
+        setPhotoBusy(true);
+        const uploaded = await uploadImage(file, session.user.id);
+        setF((current) => ({ ...current, images: [uploaded, ...(current.images || []).filter((image) => image !== uploaded)] }));
+        notice("Shared screenshot added to your listing photos.");
+      } catch (e) {
+        setError("The shared screenshot could not be attached. Choose it from Photos instead.");
+      } finally {
+        setPhotoBusy(false);
+      }
+    })();
+  }, [sharedMedia, session?.user?.id, visual]);
   const improveDescription = async () => {
     setAiBusy(true);
     setAiError("");
@@ -145,12 +187,16 @@ export function ListingEditor({
       side
       onClose={onClose}
     >
-      <form className="posting-form"
+      <form ref={formRef} className="posting-form"
         onSubmit={async (e) => {
           e.preventDefault();
           if (photoBusy || videoBusy) return;
           const action = e.nativeEvent.submitter?.value;
           const status = action === "draft" ? "draft" : action === "keep" ? f.status : "published";
+          if (status === "published" && hasLinkedVideo && !f.images?.length && !allowVideoWithoutCoverRef.current) {
+            setShowThumbnailPrompt(true);
+            return;
+          }
           setBusy(true);
           setError("");
           try {
@@ -198,15 +244,15 @@ export function ListingEditor({
             setError(e.message);
           } finally {
             setBusy(false);
+            allowVideoWithoutCoverRef.current = false;
           }
         }}
       >
-        {sharedVideo && !initial && <div className="share-post-intro">
-          <strong>Shared video ready</strong>
-          <p>Complete the item details below. The title, category and subcategory make this video searchable on OO.</p>
-          <Video url={sharedVideo}/>
+        {path.split("?")[0] === "/share" && (sharedVideo || sharedMedia || sharedMediaExpected) && <div className="share-post-intro">
+          <strong>{sharedVideo ? `Shared from ${new URL(sharedVideo).hostname.includes("instagram") ? "Instagram" : new URL(sharedVideo).hostname.includes("facebook") || new URL(sharedVideo).hostname === "fb.watch" ? "Facebook" : "YouTube"}` : "Shared to OnlineKeithel"}</strong>
+          <p>{sharedVideo ? "Link added. Add a screenshot or item photos, then check the title and details before posting." : "Screenshot received. Check the listing details before posting."}</p>
         </div>}
-        {!sharedVideo && path.split("?")[0] === "/share" && <p role="alert">This link is not a supported public YouTube, Instagram or Facebook video. Add a valid video link in Media &amp; links below, or post with a photo.</p>}
+        {!sharedVideo && !sharedMedia && !sharedMediaExpected && path.split("?")[0] === "/share" && <p role="alert">We couldn't read a supported video link or screenshot from that share. You can still add media below.</p>}
         {!initial && existingListings.length > 0 && (
           <Field label="Duplicate from an existing listing">
             <select
@@ -221,13 +267,44 @@ export function ListingEditor({
             </select>
           </Field>
         )}
-        <details className="posting-accordion">
-          <summary>Photos <small>Optional � listings with photos can attract more attention</small></summary>
+        <section className="posting-media-section" ref={mediaSectionRef}>
+          <div className="posting-media-heading"><h3>Photos &amp; video</h3><span>Optional</span></div>
+          <p className="muted">Add item photos and a screenshot thumbnail for your shared video. You can post without either.</p>
+          <Upload
+            multiple
+            pasteable
+            inputRef={mediaUploadRef}
+            pasteButtonRef={pasteButtonRef}
+            prependNext={prioritizeNextImage}
+            videos={mediaPreviewVideos}
+            value={f.images}
+            labels={[]}
+            onBusyChange={setPhotoBusy}
+            onChange={(value) => { update("images", value); setPrioritizeNextImage(false); }}
+          />
+        </section>
+        <details className="posting-accordion posting-video-accordion" open={Boolean(sharedVideo)}>
+          <summary>Video &amp; social posts <small>Optional — share a public video link</small></summary>
           <div className="posting-accordion-body">
-            <p className="muted">Posting a video? Add a photo here if you want its card to show a real cover image. Otherwise OO will show a title-and-play poster.</p>
-            <Upload multiple value={f.images} labels={[]} onBusyChange={setPhotoBusy} onChange={(v) => update("images", v)} />
+            <ProductVideosEditor value={f.videos || []} onChange={(value) => update("videos", value)} onBusyChange={setVideoBusy} allowUpload={false} />
+            <div className="social-editor">
+              {["instagram", "facebook", "youtube"].map((key) => (
+                <Field key={key} label={key + " post / video URL"} type="url" value={f.socials[key] || ""} onChange={(event) => update("socials", { ...f.socials, [key]: event.target.value })} />
+              ))}
+              <small>A public video link is attached to the listing. Add searchable words in the title or tags.</small>
+            </div>
           </div>
         </details>
+        {hasLinkedVideo && <div className="video-thumbnail-reminder">
+          <div>
+            <strong>{f.images?.length ? "Your first photo is the video thumbnail" : "Add a screenshot of the social video?"}</strong>
+            <p>{f.images?.length ? "Add a screenshot if you want it to replace the current cover." : "It helps buyers recognize the post. Optional — you can continue without one."}</p>
+          </div>
+          <button className="button outline" type="button" onClick={() => {
+            setPrioritizeNextImage(true);
+            mediaSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }}>Add screenshot</button>
+        </div>}
         <Field
           label={
             f.category_id === "jobs"
@@ -284,7 +361,7 @@ export function ListingEditor({
         <div className="description-helper-row">
           <span>AI can turn your notes into a clearer draft. Review it before posting.</span>
           <button className="button outline" type="button" onClick={improveDescription} disabled={aiBusy || !f.description.trim()}>
-            {aiBusy ? "Improving." : "Improve with AI"}
+            {aiBusy ? "Improving…" : "Improve with AI"}
           </button>
         </div>
         {aiError && <p className="form-error" role="alert">{aiError}</p>}
@@ -299,15 +376,15 @@ export function ListingEditor({
         </Field>
         <p className="muted ai-privacy-note">Avoid adding private details such as phone numbers or email addresses. AI suggestions may be inaccurate; check the text before using it.</p>
         <details className="posting-accordion">
-          <summary>Price &amp; location <small>Optional � you can add these now or later</small></summary>
+          <summary>Price &amp; location <small>Optional · you can add these now or later</small></summary>
           <div className="posting-accordion-body">
           <Field
             label={
               f.category_id === "jobs"
-                ? "Starting salary / pay (?; 0 if undisclosed)"
+                ? "Starting salary / pay (₹; 0 if undisclosed)"
                 : f.category_id === "happenings"
-                  ? "Entry price (?; 0 for free)"
-                  : "Price (?)"
+                  ? "Entry price (₹; 0 for free)"
+                  : "Price (₹)"
             }
             type="number"
             min="0"
@@ -323,7 +400,7 @@ export function ListingEditor({
           </div>
         </details>
         <details className="posting-accordion">
-          <summary>More listing details <small>Optional � helps buyers find and compare</small></summary>
+          <summary>More listing details <small>Optional · helps buyers find and compare</small></summary>
           <div className="posting-accordion-body">
             {subcategoriesFor(categories, f.category_id).length > 0 && <Field label="Subcategory (optional)">
               <select value={f.subcategory_id || ""} onChange={(e) => update("subcategory_id", e.target.value)}>
@@ -367,7 +444,7 @@ export function ListingEditor({
           </div>
         </details>
         <details className="posting-accordion" key={f.category_id}>
-          <summary>{isClassified(f.category_id) ? "Suggested details for this listing" : "Category-specific details"} <small>Optional � add any that apply</small></summary>
+          <summary>{isClassified(f.category_id) ? "Suggested details for this listing" : "Category-specific details"} <small>Optional · add any that apply</small></summary>
           <div className="posting-accordion-body">
         <p className="muted category-field-hint">Suggested for {categories.find((c) => c.id === f.category_id)?.name || "this category"}. You can post without filling these in.</p>
         <div className="form-grid">
@@ -464,47 +541,38 @@ export function ListingEditor({
         )}
           </div>
         </details>
-        <details className="posting-accordion">
-          <summary>Video &amp; social posts <small>Optional</small></summary>
-          <div className="posting-accordion-body">
-        <ProductVideosEditor
-          value={f.videos || []}
-          onChange={(v) => update("videos", v)}
-          onBusyChange={setVideoBusy}
-          allowUpload={false}
-        />
-          <div className="social-editor">
-            {["instagram", "facebook", "youtube"].map((k) => (
-              <Field
-                key={k}
-                label={k + " post / video URL"}
-                type="url"
-                value={f.socials[k] || ""}
-                onChange={(e) =>
-                  update("socials", { ...f.socials, [k]: e.target.value })
-                }
-              />
-            ))}
-            <small>
-              A public video post URL here is also attached to the listing
-              automatically. Put searchable words in the listing title or tags.
-            </small>
-          </div>
-          </div>
-        </details>
+
         {error && (
           <p className="form-error" role="alert">
             {error}
           </p>
         )}
         <div className="posting-actions">
-          <button className="button primary full" type="submit" value="published" disabled={busy || photoBusy || videoBusy}>
-            {busy ? "Saving." : initial?.status === "published" ? "Save public changes" : "Post publicly"}
+          <button ref={publishButtonRef} className="button primary full" type="submit" value="published" disabled={busy || photoBusy || videoBusy}>
+            {busy ? "Saving…" : initial?.status === "published" ? "Save public changes" : "Post publicly"}
           </button>
           <button className="text-button" type="submit" value="draft" disabled={busy || photoBusy || videoBusy}>
             Save draft
           </button>
         </div>
+        {showThumbnailPrompt && <div className="thumbnail-confirm-backdrop" role="presentation">
+          <section className="thumbnail-confirm" role="alertdialog" aria-modal="true" aria-labelledby="thumbnail-confirm-title">
+            <h3 id="thumbnail-confirm-title">Post this video without a screenshot?</h3>
+            <p>Buyers will see the standard video poster. You can add a screenshot as the thumbnail, or continue without one.</p>
+            <div className="thumbnail-confirm-actions">
+              <button className="button outline" type="button" onClick={() => {
+                setShowThumbnailPrompt(false);
+                setPrioritizeNextImage(true);
+                mediaSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}>Add screenshot</button>
+              <button className="button primary" type="button" onClick={() => {
+                setShowThumbnailPrompt(false);
+                allowVideoWithoutCoverRef.current = true;
+                formRef.current?.requestSubmit(publishButtonRef.current);
+              }}>Continue without screenshot</button>
+            </div>
+          </section>
+        </div>}
       </form>
       {moderationAction}
     </Modal>
@@ -748,7 +816,7 @@ function Importer({ seller, visual }) {
       {rows.length > 0 && (
         <>
           <div className="notice-box">
-            {fileName} � {rows.filter((r) => !r.error).length} valid rows �{" "}
+            {fileName} · {rows.filter((r) => !r.error).length} valid rows ·{" "}
             {rows.filter((r) => r.error).length} errors
           </div>
           <div className="table-scroll">
@@ -764,7 +832,7 @@ function Importer({ seller, visual }) {
                 {rows.slice(0, 15).map((r) => (
                   <tr key={r.row}>
                     <td>{r.row}</td>
-                    <td>{r.data?.title || "-"}</td>
+                    <td>{r.data?.title || "—"}</td>
                     <td>{r.error || "Ready as draft"}</td>
                   </tr>
                 ))}
@@ -805,7 +873,7 @@ function Importer({ seller, visual }) {
             }}
           >
             {busy
-              ? `Importing. ${log.length}/${rows.length}`
+              ? `Importing… ${log.length}/${rows.length}`
               : "Import valid rows as drafts"}
           </button>
           {busy && (
@@ -852,8 +920,16 @@ export function Dashboard({ startSell = false, visual = false }) {
   const seller = visual ? fixtures?.sellers[0] : realSeller;
   const mainCategoryId = shopCategoryId(seller, categories);
   const mainCategory = shopCategoryProfile(mainCategoryId, categories);
-  const sharedVideo = path.split("?")[0] === "/share" ? sharedVideoFromSearch(path.split("?")[1] || "") : "";
+  const shareSearch = path.split("?")[1] || "";
+  const sharedVideo = path.split("?")[0] === "/share" ? sharedVideoFromSearch(shareSearch) : "";
+  const sharedTitle = path.split("?")[0] === "/share" ? sharedTitleFromSearch(shareSearch) : "";
+  const sharedDescription = path.split("?")[0] === "/share" ? sharedDescriptionFromSearch(shareSearch) : "";
   const sharedAttempt = path.split("?")[0] === "/share";
+  const [sharedMedia, setSharedMedia] = useState(null);
+  useEffect(() => {
+    if (!sharedAttempt) return;
+    consumeSharedMedia().then((payload) => { if (payload) setSharedMedia(payload); });
+  }, [sharedAttempt, path]);
   const [starterCategory, setStarterCategory] = useState("");
   const [tab, setTab] = useState(
       ["products", "profile", "collections", "sales", "import"].includes(new URLSearchParams(path.split("?")[1]).get("tab"))
@@ -938,7 +1014,7 @@ export function Dashboard({ startSell = false, visual = false }) {
           <span className="eyebrow">MY SHOP STUDIO</span>
           <h1>{seller.name}</h1>
           <p>
-            {seller.location} �{" "}
+            {seller.location} ·{" "}
             {seller.type === "shop" ? "Shop account" : "Individual seller"}
           </p>
         </div>
@@ -1048,7 +1124,7 @@ export function Dashboard({ startSell = false, visual = false }) {
                       <div>
                         <strong>{i.title}</strong>
                         <small>
-                          {money(i.price)} / {i.commerce?.unit || "item"} � {i.commerce?.variants?.length ? "Stock by variant" : i.commerce?.stock == null ? "Stock not tracked" : i.commerce.stock + " available"}
+                          {money(i.price)} / {i.commerce?.unit || "item"} · {i.commerce?.variants?.length ? "Stock by variant" : i.commerce?.stock == null ? "Stock not tracked" : i.commerce.stock + " available"}
                         </small>
                       </div>
                       <span className={"status " + i.status}>
@@ -1074,7 +1150,7 @@ export function Dashboard({ startSell = false, visual = false }) {
                 </div>
               ) : (
                 <Empty title="Your first product starts here">
-                  Add photos, a price and a little detail. We'll give it a home.
+                  Add photos, a price and a little detail. We’ll give it a home.
                 </Empty>
               )}
               <div className="pagination">
@@ -1162,12 +1238,12 @@ export function Dashboard({ startSell = false, visual = false }) {
                     const index=collections.findIndex(entry=>entry.id===c.id);const other=collections[index-1];
                     if (!other) return;
                     try { await result(supabase.from("collections").update({position:index-1}).eq("id",c.id).eq("seller_id",seller.id));await result(supabase.from("collections").update({position:index}).eq("id",other.id).eq("seller_id",seller.id));load(); } catch(e){notice(e.message)}
-                  }}></button>
+                  }}>↑</button>
                   <button type="button" disabled={collections.at(-1)?.id===c.id} aria-label={"Move " + c.name + " down"} onClick={async()=>{
                     const index=collections.findIndex(entry=>entry.id===c.id);const other=collections[index+1];
                     if (!other) return;
                     try { await result(supabase.from("collections").update({position:index+1}).eq("id",c.id).eq("seller_id",seller.id));await result(supabase.from("collections").update({position:index}).eq("id",other.id).eq("seller_id",seller.id));load(); } catch(e){notice(e.message)}
-                  }}></button>
+                  }}>↓</button>
                   <button
                     aria-label={"Rename " + c.name}
                     onClick={() => {
@@ -1204,6 +1280,9 @@ export function Dashboard({ startSell = false, visual = false }) {
           visual={visual}
           seller={seller}
           sharedVideo={add && sharedAttempt ? sharedVideo : ""}
+          sharedMedia={add && sharedAttempt ? sharedMedia : null}
+          sharedTitle={add && sharedAttempt ? sharedTitle : ""}
+          sharedDescription={add && sharedAttempt ? sharedDescription : ""}
           preferredCategory={mainCategoryId}
           initial={editing}
           duplicateFrom={duplicating}
@@ -1220,4 +1299,3 @@ export function Dashboard({ startSell = false, visual = false }) {
     </div>
   );
 }
-

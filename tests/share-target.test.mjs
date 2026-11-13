@@ -14,5 +14,8 @@ test("Android shares passed as text or URL prefill only supported public video l
 test("installed OO PWA receives links at the share posting route", () => {
   const manifest = JSON.parse(readFileSync(new URL("../public/manifest.webmanifest", import.meta.url)));
   assert.equal(manifest.share_target.action, "/share");
+  assert.equal(manifest.share_target.method, "POST");
+  assert.equal(manifest.share_target.enctype, "multipart/form-data");
   assert.equal(manifest.share_target.params.text, "text");
+  assert.equal(manifest.share_target.params.files[0].name, "media");
 });
