@@ -214,3 +214,9 @@ Every shop and individual has a shareable `/shop/:slug` page; old `/seller/:slug
 - When a category has subcategories, offer an all/not-specified option. Catalogue-driven suggestions remain category-specific and optional.
 - Keep this release on the existing `shop-studio-v0.19.0` preview branch; production stays separate.
 
+## Gemini description helper - v0.24.1, 13 November 2026
+
+- Offer a seller-triggered Gemini description suggestion from their short notes. Use the server-side `GEMINI_API_KEY`; never expose it in browser or Android code.
+- Require seller authentication, bound request/output size, throttle requests, redact phone/email patterns, and let the seller review/edit the suggestion before saving. Do not auto-publish.
+- Keep the key on the preview branch while testing; do not copy it into Production until explicitly requested.
+

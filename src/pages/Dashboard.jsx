@@ -109,8 +109,36 @@ export function ListingEditor({
     [photoBusy, setPhotoBusy] = useState(false),
     [videoBusy, setVideoBusy] = useState(false),
     [busy, setBusy] = useState(false),
+    [aiBusy, setAiBusy] = useState(false),
+    [aiError, setAiError] = useState(""),
     [error, setError] = useState("");
   const update = (k, v) => setF((p) => ({ ...p, [k]: v }));
+  const improveDescription = async () => {
+    setAiBusy(true);
+    setAiError("");
+    try {
+      if (visual) throw Error("Sign in to use the description helper.");
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw Error("Sign in to use the description helper.");
+      const response = await fetch("/api/improve-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          title: f.title,
+          category: categories.find((c) => c.id === f.category_id)?.name || f.category_id,
+          description: f.description,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw Error(result.error || "The helper is unavailable. Please try again.");
+      update("description", result.description);
+    } catch (e) {
+      setAiError(e.message || "The helper is unavailable. Please try again.");
+    } finally {
+      setAiBusy(false);
+    }
+  };
   return (
     <Modal
       title={initial ? "Edit your listing" : "Post an ad"}
@@ -253,6 +281,13 @@ export function ListingEditor({
               <CategoryOptions categories={categories} />
             </select>
         </Field>
+        <div className="description-helper-row">
+          <span>AI can turn your notes into a clearer draft. Review it before posting.</span>
+          <button className="button outline" type="button" onClick={improveDescription} disabled={aiBusy || !f.description.trim()}>
+            {aiBusy ? "Improving." : "Improve with AI"}
+          </button>
+        </div>
+        {aiError && <p className="form-error" role="alert">{aiError}</p>}
         <Field label="Description (optional)">
           <textarea
             value={f.description}
@@ -262,6 +297,7 @@ export function ListingEditor({
             onChange={(e) => update("description", e.target.value)}
           />
         </Field>
+        <p className="muted ai-privacy-note">Avoid adding private details such as phone numbers or email addresses. AI suggestions may be inaccurate; check the text before using it.</p>
         <details className="posting-accordion">
           <summary>Price &amp; location <small>Optional � you can add these now or later</small></summary>
           <div className="posting-accordion-body">

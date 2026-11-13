@@ -6,6 +6,10 @@ Added a vertical 9:16 in-app video viewing dialog for listing cards and detail-p
 
 The earlier v0.23.0 form update moved subcategory, condition, keywords, descriptive fields, inventory, social links and catalogue-driven suggestions into optional accordions. v0.24.0 further makes the visible description part of the basic flow and removes photo/video, price, and location as publish blockers.
 
+# Build status - v0.24.1 (13 November 2026)
+
+Added an optional Gemini description suggestion for signed-in sellers. The server-side endpoint uses the preview-only `GEMINI_API_KEY`, requires seller authentication, limits requests and input size, redacts email/phone patterns before sending, and caps the generated text. Suggestions replace the editor text for seller review and do not post automatically. AI input should remain non-sensitive; the Gemini free tier may use prompts to improve Google products. `npm run build` succeeds and all 49 tests pass. Live Gemini use requires the Vercel preview deployment to include the secret and has not yet been exercised in a signed-in browser session.
+
 # Build status - v0.22.3 (12 November 2026)
 
 Video listings now have a persistent poster before playback. If the seller adds a product photo, that photo covers the preview; otherwise a green and gold title card identifies the video platform and gives a prominent play button. The Instagram embed still loads only after a click, and the original-post link remains available. This makes the preview meaningful after a refresh without relying on an Instagram thumbnail API. All 47 tests and the production build pass. Local browser visual QA was attempted but the isolated Chromium could not reach the local server. Live signed-in playback is not claimed as verified.
