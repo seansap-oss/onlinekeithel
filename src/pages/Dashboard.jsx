@@ -34,6 +34,7 @@ import { useMarket, Link } from "../lib/context";
 import { result, supabase, preview, uploadImage } from "../lib/backend";
 import { money, socialUrl, normalizeImport, safeUrl, embedUrl } from "../lib/utils";
 import { Modal, Field, Photo, Upload, Empty, Video } from "../components/UI";
+import { PostingCategoryPicker } from "../components/PostingCategoryPicker";
 import { sharedVideoFromSearch, sharedTitleFromSearch, sharedDescriptionFromSearch, consumeSharedMedia } from "../lib/shared-video.js";
 import { SellerForm } from "./Account";
 import { shopPath } from "../lib/storefront";
@@ -326,14 +327,16 @@ export function ListingEditor({
           value={f.title}
           onChange={(e) => update("title", e.target.value)}
         />
-        <Field label="Marketplace category">
-            <select
-              value={f.category_id}
-              onChange={(e) => {
-                update("category_id", e.target.value);
-                update("subcategory_id", "");
-                update("attributes", {});
-                update("commerce", {
+        <PostingCategoryPicker
+          categories={categories}
+          categoryId={f.category_id}
+          subcategoryId={f.subcategory_id}
+          onSelect={(categoryId, subcategoryId) => {
+            setF((current) => ({ ...current,
+              category_id: categoryId,
+              subcategory_id: subcategoryId,
+              attributes: current.category_id === categoryId ? current.attributes : {},
+              commerce: current.category_id === categoryId ? current.commerce : {
                   mode: [
                     "vehicles",
                     "motorcycles",
@@ -345,19 +348,17 @@ export function ListingEditor({
                     "education",
                     "events",
                     "business",
-                  ].includes(e.target.value)
+                  ].includes(categoryId)
                     ? "enquiry"
                     : "retail",
                   stock: null,
                   variants: [],
                   unit: "item",
                   delivery: "Arrange with seller",
-                });
-              }}
-            >
-              <CategoryOptions categories={categories} />
-            </select>
-        </Field>
+                },
+            }));
+          }}
+        />
         <div className="description-helper-row">
           <span>AI can turn your notes into a clearer draft. Review it before posting.</span>
           <button className="button outline" type="button" onClick={improveDescription} disabled={aiBusy || !f.description.trim()}>
@@ -402,12 +403,6 @@ export function ListingEditor({
         <details className="posting-accordion">
           <summary>More listing details <small>Optional · helps buyers find and compare</small></summary>
           <div className="posting-accordion-body">
-            {subcategoriesFor(categories, f.category_id).length > 0 && <Field label="Subcategory (optional)">
-              <select value={f.subcategory_id || ""} onChange={(e) => update("subcategory_id", e.target.value)}>
-                <option value="">All subcategories / not specified</option>
-                {subcategoriesFor(categories, f.category_id).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </Field>}
             {!isClassified(f.category_id) && <Field label="Condition (optional)">
               <select value={f.condition} onChange={(e) => update("condition", e.target.value)}>
                 {["New", "Used", "Refurbished"].map((c) => <option key={c}>{c}</option>)}
