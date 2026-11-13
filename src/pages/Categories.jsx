@@ -53,7 +53,7 @@ export default function Categories() {
         Browse all in this category →
       </Link>
       <div className="category-examples">
-        {exampleEntries(categories, settings).filter(x => x.category === c.id).slice(0,2).map(x => <ExampleCard key={x.id} entry={x} />)}
+        {exampleEntries(categories, settings).filter(x => x.category === c.id).map(x => <ExampleCard key={x.id} entry={x} />)}
       </div>
     </section>
   );

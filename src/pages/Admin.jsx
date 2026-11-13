@@ -70,7 +70,8 @@ export function Admin({ visual = false }) {
     [homepage, setHomepage] = useState(settings),
     [page, setPage] = useState(0),
     [more, setMore] = useState(false),
-    [query, setQuery] = useState("");
+    [query, setQuery] = useState(""),
+    [starterOnly, setStarterOnly] = useState(false);
   const load = async () => {
     if (["settings", "ticker", "users", "starter"].includes(tab)) return;
     try {
@@ -97,6 +98,8 @@ export function Admin({ visual = false }) {
         if (query && ["listings", "campaigns"].includes(tab))
           q = q.ilike("title", "%" + query.replace(/[%_]/g, "") + "%");
       }
+      if (tab === "listings" && starterOnly)
+        q = q.contains("attributes", { "Starter example": "true" });
       const d = await result(q);
       setRows(d.slice(0, 30));
       setMore(d.length > 30);
@@ -106,7 +109,7 @@ export function Admin({ visual = false }) {
   };
   useEffect(() => {
     load();
-  }, [tab, page, query, fixtures]);
+  }, [tab, page, query, starterOnly, fixtures]);
   useEffect(() => setHomepage(settings), [settings]);
   const save = async (table, data, id) => {
     if (visual)
@@ -278,6 +281,9 @@ export function Admin({ visual = false }) {
                   }}
                 />
               )}
+              {tab === "listings" && <button type="button" className={starterOnly ? "button primary" : "button outline"} onClick={() => { setStarterOnly(!starterOnly); setPage(0); }}>
+                {starterOnly ? "Showing starter listings" : "Show starter listings"}
+              </button>}
               <div className="admin-list">
                 {rows.map((r) => (
                   <div className="admin-row" key={r.id || r.user_id}>
@@ -288,6 +294,7 @@ export function Admin({ visual = false }) {
                           : r.name || r.title || r.reason || r.action}
                       </strong>
                       <small>
+                        {tab === "listings" && r.attributes?.["Starter example"] === "true" && "Starter example · "}
                         {tab === "message_reports"
                           ? r.reason + " · " + (r.question ? "Public listing question" : "Private message") + " · " + new Date(r.created_at).toLocaleString()
                           : tab === "plans"

@@ -1,3 +1,9 @@
+# Build status - v0.24.3 (13 November 2026)
+
+The connected OnlineKeithel database now has 412 published starter listings, one per active subcategory across 36 categories, with category-matched local image assets and editable listing records under the administrator-owned storefront. They carry `OK_STARTER_EXAMPLE_20261113` in tags and `Starter example=true` in attributes; Admin > Listings can filter them and delete individual entries. The listing guard now respects an active seller entitlement before falling back to the free plan. Only the administrator storefront received a 2,000-listing free allowance for the starter catalogue. Marketplace cards and detail pages identify starter listings and disable purchase, application, questions and direct enquiries. This code must deploy before the live UI prevents those interactions. The prior category directory examples are retained.
+
+The database read-back confirmed 412 published entries, 36 categories, 412 distinct category/subcategory pairs and an image on every entry. The Vite build succeeds; signed-in Admin and mobile visual acceptance still require a browser session. The source update targets the existing preview branch first; the separate production branch remains unchanged.
+
 # Build status - v0.24.2 (13 November 2026)
 
 Updated the mobile-first listing media step for shared social video posts. Sellers can attach a screenshot from the photo picker, paste from the clipboard on desktop, or share an image into the installed app; the screenshot is stored with the listing photos and the first photo serves as the video cover. Before publishing a video-only listing, the form asks whether to add a screenshot or continue with the standard poster. Listing media presents video followed by photos in a swipeable gallery with a count and scroll hint. PWA share target accepts text and image files, and Android source accepts a shared image and opens the listing form with its share metadata.

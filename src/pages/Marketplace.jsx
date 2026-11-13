@@ -82,6 +82,7 @@ import {
   isSellerId,
 } from "../lib/storefront";
 import { icons } from "../components/Layout";
+const isExampleListing = (item) => item.sample || item.attributes?.["Starter example"] === "true";
 export function ProductCard({ item, compact = false }) {
   const { session, navigate, notice } = useMarket();
   const [saved, setSaved] = useState(false),
@@ -141,7 +142,7 @@ export function ProductCard({ item, compact = false }) {
           aria-label={`Save ${item.title}`}
           aria-pressed={saved}
           onClick={async () => {
-            if (item.sample)
+            if (isExampleListing(item))
               return notice(
                 "Saving is available after account services are connected.",
               );
@@ -174,6 +175,7 @@ export function ProductCard({ item, compact = false }) {
         </button>
       </div>
       <div className="product-content">
+        {isExampleListing(item) && <small className="example-listing-label">Example listing · enquiries unavailable</small>}
         <Link to={"/listing/" + item.id} className="product-title">
           {item.title}
         </Link>
@@ -194,7 +196,7 @@ export function ProductCard({ item, compact = false }) {
           to={"/listing/" + item.id + "?enquire=1"}
         >
           <WhatsappLogo size={17} />{" "}
-          {item.sample ? "View details" : "Contact seller"}
+          {isExampleListing(item) ? "View details" : "Contact seller"}
         </Link>
       </div>
     </article>
@@ -1810,6 +1812,7 @@ export function ProductPage({ id }) {
                 )}
           </span>
           <h1>{item.title}</h1>
+          {isExampleListing(item) && <p className="notice-box">This is a starter listing to show how an ad can look. It is not available to purchase or apply for.</p>}
           <strong className="detail-price">{listingPrice(item, money)}</strong>
           <p className="muted">
             <MapPin size={17} /> {item.location}
@@ -1840,7 +1843,7 @@ export function ProductPage({ id }) {
             </div>
             <ArrowRight />
           </div>
-          {isClassified(item.category_id) ? (
+          {isExampleListing(item) ? null : isClassified(item.category_id) ? (
             <ClassifiedContact item={item} />
           ) : (
             <PurchasePanel item={item} />
@@ -1942,7 +1945,7 @@ function ListingQuestions({ item }) {
   const seller = item.seller?.user_id === session?.user?.id;
 
   const load = async () => {
-    if (!configured || item.sample) return;
+    if (!configured || isExampleListing(item)) return;
     try {
       setQuestions(
         await result(
@@ -1959,7 +1962,7 @@ function ListingQuestions({ item }) {
   };
   useEffect(() => {
     load();
-    if (!configured || item.sample) return;
+    if (!configured || isExampleListing(item)) return;
     const channel = supabase
       .channel("listing-questions-" + item.id)
       .on(
@@ -1974,7 +1977,7 @@ function ListingQuestions({ item }) {
       )
       .subscribe();
     return () => supabase.removeChannel(channel);
-  }, [item.id, item.sample, session?.user?.id]);
+  }, [item.id, isExampleListing(item), session?.user?.id]);
 
   async function ask(e) {
     e.preventDefault();
@@ -2080,7 +2083,7 @@ function ListingQuestions({ item }) {
         <div className="button-row">
           <button
             className="button primary"
-            disabled={item.sample || !configured}
+            disabled={isExampleListing(item) || !configured}
             onClick={() => {
               if (!session) {
                 navigate("/login?returnTo=" + encodeURIComponent("/listing/" + item.id));
@@ -2093,14 +2096,14 @@ function ListingQuestions({ item }) {
           </button>
           <button
             className="button outline"
-            disabled={busy || item.sample || !configured}
+            disabled={busy || isExampleListing(item) || !configured}
             onClick={startPrivateMessage}
           >
             <ChatCircleDots size={19} /> Message privately
           </button>
         </div>
       </div>
-      {item.sample ? (
+      {isExampleListing(item) ? (
         <p className="notice-box">Public questions and private messaging are available on live listings.</p>
       ) : !configured ? (
         <p className="notice-box">Connect the marketplace Supabase project to post or read live questions.</p>
