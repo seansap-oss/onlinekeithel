@@ -71,8 +71,8 @@ export const departmentConfig = {
   },
   "whats-on": {
     category: "happenings",
-    title: "What’s On",
-    headline: "What’s on in Manipur.",
+    title: "What's On",
+    headline: "What's on in Manipur.",
     description:
       "Local events, food markets, festivals and community activities.",
     icon: "CalendarDots",
@@ -126,15 +126,6 @@ export const indiaTime = (value) =>
 export function validateClassified(item) {
   if (item.status !== "published" || !isClassified(item.category_id)) return;
   const a = item.attributes || {};
-  const required =
-    item.category_id === "jobs"
-      ? ["Employment type", "Employer sector", "Salary basis"]
-      : item.category_id === "property"
-        ? ["Listing purpose", "Property type", "Price basis"]
-        : ["Event starts", "Event ends", "Venue", "Entry type"];
-  for (const key of required)
-    if (!String(a[key] || "").trim())
-      throw Error("Complete " + key + " before publishing.");
   for (const key of ["Application URL", "Official notice URL", "Booking URL"])
     if (a[key]) {
       let u;
@@ -147,18 +138,15 @@ export function validateClassified(item) {
     }
   if (item.category_id === "happenings") {
     if (
-      !Number.isFinite(indiaTime(a["Event starts"])) ||
-      !Number.isFinite(indiaTime(a["Event ends"])) ||
+      (a["Event starts"] && !Number.isFinite(indiaTime(a["Event starts"]))) ||
+      (a["Event ends"] && !Number.isFinite(indiaTime(a["Event ends"]))) ||
+      (a["Event starts"] && a["Event ends"] &&
       indiaTime(a["Event ends"]) <= indiaTime(a["Event starts"])
+      )
     )
       throw Error("Event end must be after its start.");
     if (a["Entry type"] === "Free" && Number(item.price) !== 0)
-      throw Error("Free events must have an entry price of ₹0.");
+      throw Error("Free events must have an entry price of ?0.");
   }
-  if (
-    item.category_id === "jobs" &&
-    a["Employer sector"] === "Government" &&
-    !a["Official notice URL"]
-  )
-    throw Error("Government vacancies need an official notice URL.");
 }
+

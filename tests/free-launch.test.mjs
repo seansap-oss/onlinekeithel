@@ -32,6 +32,7 @@ test("free launch keeps old ads public, protects seller edits, and caps active a
       await db.exec(await readFile(new URL(`../${file}`, import.meta.url), "utf8"));
     await db.exec(await readFile(new URL("../database/migrations/015_free_launch.sql", import.meta.url), "utf8"));
     await db.exec(await readFile(new URL("../supabase/migrations/20261112230000_video_only_listings_v0220.sql", import.meta.url), "utf8"));
+    await db.exec(await readFile(new URL("../supabase/migrations/20261113120000_minimal_public_posting_v0240.sql", import.meta.url), "utf8"));
     const plans = (await db.query("select id,active,listing_limit from plans where id in ('free','quick') order by id")).rows;
     assert.deepEqual(plans, [
       { id: "free", active: true, listing_limit: 100 },
@@ -39,6 +40,8 @@ test("free launch keeps old ads public, protects seller edits, and caps active a
     ]);
     await db.exec(`set role authenticated; select set_config('request.jwt.claim.sub','${user}',false);`);
     const seller = (await db.query("insert into sellers(user_id,name,slug,whatsapp) values($1,'Seller','seller-free','919876543210') returning id", [user])).rows[0].id;
+    const basic = (await db.query("insert into listings(seller_id,category_id,title,price,images,status) values($1,'fashion','Basic listing',0,'[]','published') returning id", [seller])).rows[0].id;
+    await db.query("update listings set status='paused' where id=$1", [basic]);
     const reel = "https://www.instagram.com/reel/Dfm9vwQxzoV/?utm_source=ig_web_copy";
     const videos = listingVideosForSave([{ title: reel, url: "" }], { instagram: reel });
     const videoOnly = (await db.query("insert into listings(seller_id,category_id,title,price,images,videos,status) values($1,'fashion','Reel shoes',100,'[]',$2,'published') returning id", [seller, JSON.stringify(videos)])).rows[0].id;
@@ -56,3 +59,4 @@ test("free launch keeps old ads public, protects seller edits, and caps active a
     await add("Replacement");
   } finally { await db.close(); }
 });
+

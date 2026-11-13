@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 import {validateClassified, listingPrice, indiaTime, categoryRoute, motorCategories} from '../src/lib/departments.js';
-test('classified publishing rejects missing details, unsafe links and invalid event pricing',()=>{
+test('classified suggestions stay optional while supplied URLs and event values are validated',()=>{
  const event={category_id:'happenings',status:'published',price:0,attributes:{'Event starts':'2026-10-20T10:00','Event ends':'2026-10-20T12:00',Venue:'Imphal','Entry type':'Free'}};
  assert.doesNotThrow(()=>validateClassified(event));
  assert.throws(()=>validateClassified({...event,price:100}),/Free events/);
  assert.throws(()=>validateClassified({...event,attributes:{...event.attributes,'Event ends':'2026-10-20T09:00'}}),/Event end/);
  const job={category_id:'jobs',status:'published',attributes:{'Employment type':'Full-time','Employer sector':'Government','Salary basis':'Month'}};
- assert.throws(()=>validateClassified(job),/official notice/);
+ assert.doesNotThrow(()=>validateClassified({...job,attributes:{}}));
+ assert.doesNotThrow(()=>validateClassified({...job,attributes:{'Employment type':'Part-time'}}));
  assert.throws(()=>validateClassified({...job,attributes:{...job.attributes,'Official notice URL':'javascript:alert(1)'}}),/HTTPS/);
  assert.equal(indiaTime('2026-10-20T10:00'),Date.parse('2026-10-20T04:30:00Z'));
  assert.equal(listingPrice({category_id:'jobs',price:0},String),'Salary not disclosed');
@@ -27,3 +28,4 @@ test('department migration is repeatable and preserves operator categories and e
  assert.equal((await db.query("select category_id from listings where id='existing'")).rows[0].category_id,'property');
  await db.close();
 });
+

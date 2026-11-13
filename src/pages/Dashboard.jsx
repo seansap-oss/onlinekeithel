@@ -135,8 +135,6 @@ export function ListingEditor({
                 throw Error("Add a valid social platform URL");
             validateClassified({ ...f, status });
             const videos = listingVideosForSave(f.videos, f.socials);
-            if (status === "published" && !f.images.length && !videos.length)
-              throw Error("Add a photo or paste a public video link in Video URL or a social post URL.");
             const payload = {
               seller_id: seller.id,
               title: f.title,
@@ -146,7 +144,7 @@ export function ListingEditor({
               collection_id: f.collection_id || null,
               description: f.description,
               condition: f.condition,
-              location: f.location,
+              location: f.location?.trim() || seller.location || "Imphal",
               images: f.images,
               socials: f.socials,
               attributes: f.attributes,
@@ -195,15 +193,13 @@ export function ListingEditor({
             </select>
           </Field>
         )}
-        <h3>Photos</h3>
-        <p className="muted">Posting a video? Add a photo here if you want its card to show a real cover image. Otherwise OO will show a title-and-play poster.</p>
-        <Upload
-          multiple
-          value={f.images}
-          labels={[]}
-          onBusyChange={setPhotoBusy}
-          onChange={(v) => update("images", v)}
-        />
+        <details className="posting-accordion">
+          <summary>Photos <small>Optional � listings with photos can attract more attention</small></summary>
+          <div className="posting-accordion-body">
+            <p className="muted">Posting a video? Add a photo here if you want its card to show a real cover image. Otherwise OO will show a title-and-play poster.</p>
+            <Upload multiple value={f.images} labels={[]} onBusyChange={setPhotoBusy} onChange={(v) => update("images", v)} />
+          </div>
+        </details>
         <Field
           label={
             f.category_id === "jobs"
@@ -225,8 +221,7 @@ export function ListingEditor({
           value={f.title}
           onChange={(e) => update("title", e.target.value)}
         />
-        <div className="listing-basics">
-          <Field label="Marketplace category">
+        <Field label="Marketplace category">
             <select
               value={f.category_id}
               onChange={(e) => {
@@ -257,72 +252,60 @@ export function ListingEditor({
             >
               <CategoryOptions categories={categories} />
             </select>
-          </Field>
-          <Field label="Subcategory">
-            <select
-              value={f.subcategory_id || ""}
-              required={subcategoriesFor(categories, f.category_id).length > 0}
-              onChange={(e) => update("subcategory_id", e.target.value)}
-            >
-              <option value="">Choose a subcategory</option>
-              {subcategoriesFor(categories, f.category_id).map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </Field>
+        </Field>
+        <Field label="Description (optional)">
+          <textarea
+            value={f.description}
+            rows={4}
+            maxLength={5000}
+            placeholder="Tell people what you offer, what you can do, or what makes this listing useful."
+            onChange={(e) => update("description", e.target.value)}
+          />
+        </Field>
+        <details className="posting-accordion">
+          <summary>Price &amp; location <small>Optional � you can add these now or later</small></summary>
+          <div className="posting-accordion-body">
           <Field
             label={
               f.category_id === "jobs"
-                ? "Starting salary / pay (₹; 0 if undisclosed)"
+                ? "Starting salary / pay (?; 0 if undisclosed)"
                 : f.category_id === "happenings"
-                  ? "Entry price (₹; 0 for free)"
-                  : "Price (₹)"
+                  ? "Entry price (?; 0 for free)"
+                  : "Price (?)"
             }
-            required
             type="number"
             min="0"
             step="0.01"
             value={f.price}
             onChange={(e) => update("price", e.target.value)}
           />
-          {!isClassified(f.category_id) && (
-            <Field label="Condition">
-              <select
-                value={f.condition}
-                onChange={(e) => update("condition", e.target.value)}
-              >
-                {["New", "Used", "Refurbished"].map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-            </Field>
-          )}
           <Field
-            label="Location"
-            required
+            label="Location (optional)"
             value={f.location}
             onChange={(e) => update("location", e.target.value)}
           />
-          <Field
-            label="Search keywords"
-            placeholder="handwoven, cotton, kurta"
-            value={f.tags}
-            onChange={(e) => update("tags", e.target.value)}
-          />
-        </div>
+          </div>
+        </details>
+        <details className="posting-accordion">
+          <summary>More listing details <small>Optional � helps buyers find and compare</small></summary>
+          <div className="posting-accordion-body">
+            {subcategoriesFor(categories, f.category_id).length > 0 && <Field label="Subcategory (optional)">
+              <select value={f.subcategory_id || ""} onChange={(e) => update("subcategory_id", e.target.value)}>
+                <option value="">All subcategories / not specified</option>
+                {subcategoriesFor(categories, f.category_id).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </Field>}
+            {!isClassified(f.category_id) && <Field label="Condition (optional)">
+              <select value={f.condition} onChange={(e) => update("condition", e.target.value)}>
+                {["New", "Used", "Refurbished"].map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </Field>}
+            <Field label="Search keywords (optional)" placeholder="handwoven, cotton, kurta" value={f.tags} onChange={(e) => update("tags", e.target.value)} />
+          </div>
+        </details>
         <details className="posting-accordion">
           <summary>Description, colour &amp; size <small>Optional</small></summary>
           <div className="posting-accordion-body">
-        <Field label="Description (optional)">
-          <textarea
-            value={f.description}
-            rows={4}
-            maxLength={5000}
-            onChange={(e) => update("description", e.target.value)}
-          />
-        </Field>
         <Field label="Colour (optional)" value={f.attributes?.Colour || ""} onChange={(e) => update("attributes", { ...f.attributes, Colour: e.target.value })} />
         {f.category_id === "fashion" && (
           <fieldset className="posting-sizes">
@@ -347,9 +330,10 @@ export function ListingEditor({
         )}
           </div>
         </details>
-        <details className="posting-accordion" open={isClassified(f.category_id) || undefined} key={f.category_id}>
-          <summary>{isClassified(f.category_id) ? "Category details" : "More category details"} <small>{isClassified(f.category_id) ? "Add the details buyers need" : "Optional"}</small></summary>
+        <details className="posting-accordion" key={f.category_id}>
+          <summary>{isClassified(f.category_id) ? "Suggested details for this listing" : "Category-specific details"} <small>Optional � add any that apply</small></summary>
           <div className="posting-accordion-body">
+        <p className="muted category-field-hint">Suggested for {categories.find((c) => c.id === f.category_id)?.name || "this category"}. You can post without filling these in.</p>
         <div className="form-grid">
           {productFields(categories.find((c) => c.id === f.category_id)).map(
             (k) => (
@@ -479,7 +463,7 @@ export function ListingEditor({
         )}
         <div className="posting-actions">
           <button className="button primary full" type="submit" value="published" disabled={busy || photoBusy || videoBusy}>
-            {busy ? "Saving…" : initial?.status === "published" ? "Save public changes" : "Post publicly"}
+            {busy ? "Saving." : initial?.status === "published" ? "Save public changes" : "Post publicly"}
           </button>
           <button className="text-button" type="submit" value="draft" disabled={busy || photoBusy || videoBusy}>
             Save draft
@@ -728,7 +712,7 @@ function Importer({ seller, visual }) {
       {rows.length > 0 && (
         <>
           <div className="notice-box">
-            {fileName} · {rows.filter((r) => !r.error).length} valid rows ·{" "}
+            {fileName} � {rows.filter((r) => !r.error).length} valid rows �{" "}
             {rows.filter((r) => r.error).length} errors
           </div>
           <div className="table-scroll">
@@ -744,7 +728,7 @@ function Importer({ seller, visual }) {
                 {rows.slice(0, 15).map((r) => (
                   <tr key={r.row}>
                     <td>{r.row}</td>
-                    <td>{r.data?.title || "—"}</td>
+                    <td>{r.data?.title || "-"}</td>
                     <td>{r.error || "Ready as draft"}</td>
                   </tr>
                 ))}
@@ -785,7 +769,7 @@ function Importer({ seller, visual }) {
             }}
           >
             {busy
-              ? `Importing… ${log.length}/${rows.length}`
+              ? `Importing. ${log.length}/${rows.length}`
               : "Import valid rows as drafts"}
           </button>
           {busy && (
@@ -918,7 +902,7 @@ export function Dashboard({ startSell = false, visual = false }) {
           <span className="eyebrow">MY SHOP STUDIO</span>
           <h1>{seller.name}</h1>
           <p>
-            {seller.location} ·{" "}
+            {seller.location} �{" "}
             {seller.type === "shop" ? "Shop account" : "Individual seller"}
           </p>
         </div>
@@ -1028,7 +1012,7 @@ export function Dashboard({ startSell = false, visual = false }) {
                       <div>
                         <strong>{i.title}</strong>
                         <small>
-                          {money(i.price)} / {i.commerce?.unit || "item"} · {i.commerce?.variants?.length ? "Stock by variant" : i.commerce?.stock == null ? "Stock not tracked" : i.commerce.stock + " available"}
+                          {money(i.price)} / {i.commerce?.unit || "item"} � {i.commerce?.variants?.length ? "Stock by variant" : i.commerce?.stock == null ? "Stock not tracked" : i.commerce.stock + " available"}
                         </small>
                       </div>
                       <span className={"status " + i.status}>
@@ -1054,7 +1038,7 @@ export function Dashboard({ startSell = false, visual = false }) {
                 </div>
               ) : (
                 <Empty title="Your first product starts here">
-                  Add photos, a price and a little detail. We’ll give it a home.
+                  Add photos, a price and a little detail. We'll give it a home.
                 </Empty>
               )}
               <div className="pagination">
@@ -1142,12 +1126,12 @@ export function Dashboard({ startSell = false, visual = false }) {
                     const index=collections.findIndex(entry=>entry.id===c.id);const other=collections[index-1];
                     if (!other) return;
                     try { await result(supabase.from("collections").update({position:index-1}).eq("id",c.id).eq("seller_id",seller.id));await result(supabase.from("collections").update({position:index}).eq("id",other.id).eq("seller_id",seller.id));load(); } catch(e){notice(e.message)}
-                  }}>↑</button>
+                  }}></button>
                   <button type="button" disabled={collections.at(-1)?.id===c.id} aria-label={"Move " + c.name + " down"} onClick={async()=>{
                     const index=collections.findIndex(entry=>entry.id===c.id);const other=collections[index+1];
                     if (!other) return;
                     try { await result(supabase.from("collections").update({position:index+1}).eq("id",c.id).eq("seller_id",seller.id));await result(supabase.from("collections").update({position:index}).eq("id",other.id).eq("seller_id",seller.id));load(); } catch(e){notice(e.message)}
-                  }}>↓</button>
+                  }}></button>
                   <button
                     aria-label={"Rename " + c.name}
                     onClick={() => {
@@ -1200,3 +1184,4 @@ export function Dashboard({ startSell = false, visual = false }) {
     </div>
   );
 }
+
