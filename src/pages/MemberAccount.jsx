@@ -55,10 +55,11 @@ export function MemberAccount() {
     Promise.all([
       result(supabase.from("member_profiles").select("username").eq("user_id", session.user.id).maybeSingle()),
       result(supabase.from("sellers").select("id,whatsapp,whatsapp_enabled").eq("user_id", session.user.id).maybeSingle()),
-    ]).then(([member, seller]) => {
+    ]).then(async ([member, seller]) => {
+      const contact = seller ? await result(supabase.from("seller_private_contacts").select("whatsapp").eq("seller_id", seller.id).maybeSingle()) : null;
       if (!active) return;
       setSellerProfile(seller);
-      setProfile((old) => ({ ...old, username: member?.username || old.username, phone: seller?.whatsapp || old.phone, showWhatsApp: seller?.whatsapp_enabled === true }));
+      setProfile((old) => ({ ...old, username: member?.username || old.username, phone: contact?.whatsapp || seller?.whatsapp || old.phone, showWhatsApp: seller?.whatsapp_enabled === true }));
     }).catch((e) => { if (active) setProfileError(e.message); });
     return () => { active = false; };
   }, [session?.user?.id]);
@@ -98,19 +99,20 @@ export function MemberAccount() {
     async function loadConversations() {
       if (!configured) return;
       try {
-        const rows = await result(
-          supabase
-            .from("direct_conversations")
-            .select("id,buyer_id,created_at,listing:listings(id,title,seller:sellers(id,name,user_id))")
-            .order("created_at", { ascending: false }),
-        );
+        const [listingRows, storeRows] = await Promise.all([
+          result(supabase.from("direct_conversations").select("id,buyer_id,created_at,listing:listings(id,title,seller:sellers(id,name,user_id))").order("created_at", { ascending: false })),
+          result(supabase.from("store_conversations").select("id,buyer_id,created_at,store:sellers(id,name,user_id)").order("created_at", { ascending: false })),
+        ]);
+        const rows = [...listingRows.map((row) => ({ ...row, kind: "listing" })), ...storeRows.map((row) => ({ ...row, kind: "store" }))].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         const recent = rows.slice(0, 5);
-        const ids = recent.map((row) => row.id);
-        const peopleIds = [...new Set(recent.flatMap((row) => [row.buyer_id, row.listing?.seller?.user_id]).filter(Boolean))];
+        const listingIds = recent.filter((row) => row.kind === "listing").map((row) => row.id);
+        const storeIds = recent.filter((row) => row.kind === "store").map((row) => row.id);
+        const peopleIds = [...new Set(recent.flatMap((row) => [row.buyer_id, row.store?.user_id || row.listing?.seller?.user_id]).filter(Boolean))];
         const [messages, people] = await Promise.all([
-          ids.length
-            ? result(supabase.from("direct_messages").select("conversation_id,body,sender_id,created_at").in("conversation_id", ids).order("created_at", { ascending: false }))
-            : Promise.resolve([]),
+          Promise.all([
+            listingIds.length ? result(supabase.from("direct_messages").select("conversation_id,body,sender_id,created_at").in("conversation_id", listingIds).order("created_at", { ascending: false })) : Promise.resolve([]),
+            storeIds.length ? result(supabase.from("store_messages").select("conversation_id,body,sender_id,created_at").in("conversation_id", storeIds).order("created_at", { ascending: false })) : Promise.resolve([]),
+          ]).then(([a, b]) => [...a, ...b].sort((x, y) => new Date(y.created_at) - new Date(x.created_at))),
           peopleIds.length
             ? result(supabase.from("member_profiles").select("user_id,username").in("user_id", peopleIds))
             : Promise.resolve([]),
@@ -122,11 +124,11 @@ export function MemberAccount() {
         setConversationCount(rows.length);
         setConversations(recent.map((conversation) => {
           const mine = conversation.buyer_id === session.user.id;
-          const otherId = mine ? conversation.listing?.seller?.user_id : conversation.buyer_id;
+          const otherId = mine ? conversation.store?.user_id || conversation.listing?.seller?.user_id : conversation.buyer_id;
           return {
             ...conversation,
-            partner: usernames[otherId] || (mine ? conversation.listing?.seller?.name : "Marketplace member") || "Marketplace member",
-            listingTitle: conversation.listing?.title || "Marketplace listing",
+            partner: usernames[otherId] || (mine ? conversation.store?.name || conversation.listing?.seller?.name : "Marketplace member") || "Marketplace member",
+            listingTitle: conversation.kind === "store" ? "Store conversation" : conversation.listing?.title || "Marketplace listing",
             latest: latest.get(conversation.id),
           };
         }));
@@ -194,7 +196,10 @@ export function MemberAccount() {
       if (sellerProfile && profile.showWhatsApp && !phone) throw Error("Add a WhatsApp number before showing it on your store.");
       await result(supabase.from("member_profiles").upsert({ user_id: session.user.id, username }, { onConflict: "user_id" }));
       await result(supabase.auth.updateUser({ data: { ...session.user.user_metadata, full_name: profile.name.trim(), username, phone } }));
-      if (sellerProfile) await result(supabase.from("sellers").update({ ...(phone ? { whatsapp: phone } : {}), whatsapp_enabled: profile.showWhatsApp }).eq("id", sellerProfile.id).eq("user_id", session.user.id));
+      if (sellerProfile) {
+        await result(supabase.from("seller_private_contacts").upsert({ seller_id: sellerProfile.id, whatsapp: phone }, { onConflict: "seller_id" }));
+        await result(supabase.from("sellers").update({ whatsapp: profile.showWhatsApp ? phone : "", whatsapp_enabled: profile.showWhatsApp }).eq("id", sellerProfile.id).eq("user_id", session.user.id));
+      }
       setProfile((old) => ({ ...old, username, phone }));
       notice("Account settings saved");
     } catch (e) { setProfileError(e.message); }
@@ -256,7 +261,7 @@ export function MemberAccount() {
           </button>
           {openSection === "messages" && <div className="member-message-preview">
             {conversations.length ? conversations.map((conversation) => (
-              <Link className="member-message-row" key={conversation.id} to={`/messages?conversation=${encodeURIComponent(conversation.id)}`}>
+              <Link className="member-message-row" key={conversation.id} to={`/messages?${conversation.kind === "store" ? "store" : "conversation"}=${encodeURIComponent(conversation.id)}`}>
                 <span className="member-message-avatar" aria-hidden="true">{conversation.partner.slice(0, 1).toUpperCase()}</span>
                 <span className="member-message-copy"><strong>{conversation.partner}</strong><small>{conversation.listingTitle}</small><span>{conversation.latest?.body || "Open conversation"}</span></span>
                 <span className="member-message-meta">{conversation.latest ? new Date(conversation.latest.created_at).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : ""}<ArrowRight size={17} /></span>

@@ -98,7 +98,7 @@ export function ProductCard({ item, compact = false }) {
     return () => { active = false; window.removeEventListener("onlinekeithel:saved-change", sync); };
   }, [session?.user?.id, item.id]);
   return (
-    <article className={compact ? "product-card product-card-list" : "product-card"}>
+    <article className={(compact ? "product-card product-card-list" : "product-card") + (outOfStock(item) ? " is-out-of-stock" : "")}>
       <div className="product-photo">
         {(item.videos || []).some(v=>embedUrl(v.url)) ? <div className="product-card-video"><Video url={item.videos.find(v=>embedUrl(v.url)).url} poster={item.images?.[0]} posterFit="contain" title={item.title} sellerName={item.seller?.name} priceLabel={listingPrice(item, money)} listingHref={"/listing/" + item.id} compact/></div> : <Link
           to={"/listing/" + item.id}
@@ -132,7 +132,7 @@ export function ProductCard({ item, compact = false }) {
         <span
           className={"condition " + (item.condition === "Used" ? "used" : "")}
         >
-          {isClassified(item.category_id)
+          {outOfStock(item) ? "Out of stock" : isClassified(item.category_id)
             ? item.attributes?.[
                 item.category_id === "jobs"
                   ? "Employment type"
@@ -143,9 +143,7 @@ export function ProductCard({ item, compact = false }) {
             : item.category_id === "freebies"
               ? item.attributes?.["Listing type"] ||
                 (Number(item.price) === 0 ? "Giveaway" : "Community listing")
-              : outOfStock(item)
-                ? "Out of stock"
-                : item.condition}
+              : item.condition}
         </span>
         <button
           className={"save-button " + (saved ? "saved" : "")}
@@ -615,6 +613,7 @@ export function Home() {
             .from("listings")
             .select("*,seller:sellers(*)")
             .eq("status", "published")
+            .eq("is_hidden", false)
             .order("created_at", { ascending: false })
             .order("id", { ascending: false })
             .range(0, 23),
@@ -649,6 +648,7 @@ export function Home() {
           .from("listings")
           .select("*,seller:sellers(*)")
           .eq("status", "published")
+          .eq("is_hidden", false)
           .order("created_at", { ascending: false })
           .order("id", { ascending: false })
           .range(items.length, items.length + 23),
@@ -857,7 +857,8 @@ export function Search({ saved = false }) {
         } else if (configured) {
           let query = supabase
             .rpc("search_listings", { p_query: q })
-            .select("*,seller:sellers!inner(*)");
+            .select("*,seller:sellers!inner(*)")
+            .eq("is_hidden", false);
           if (cat) query = query.eq("category_id", cat);
           else if (department === "construction") {
             const ids = constructionCategories(categories).map((c) => c.id);
@@ -1317,6 +1318,7 @@ export function SellerPage({ slug }) {
                 .select("*,seller:sellers(*)")
                 .eq("seller_id", s.id)
                 .eq("status", "published")
+                .eq("is_hidden", false)
             : null;
           const fetchRange = async (start, end) => {
             let query = makeQuery();
@@ -1523,6 +1525,7 @@ export function SellerPage({ slug }) {
               : "INDIVIDUAL SELLER"}
           </span>
           <h1>{seller.name}</h1>
+          <StoreActivity seller={seller} />
           <p>
             <MapPin size={16} /> {seller.location}
           </p>
@@ -1709,8 +1712,62 @@ export function SellerPage({ slug }) {
         </div>
       )}
       {display.layout !== "portfolio" && shopStory}
+      {seller.messages_enabled !== false && <StoreChatButton seller={seller} />}
     </div>
   );
+}
+function StoreActivity({ seller }) {
+  const [now, setNow] = useState(Date.now());
+  const [lastSeen, setLastSeen] = useState(seller.last_active_at);
+  useEffect(() => {
+    const refresh = async () => {
+      setNow(Date.now());
+      if (!configured || (!seller.show_online_status && !seller.show_last_active)) return;
+      const { data } = await supabase.from("sellers").select("last_active_at").eq("id", seller.id).maybeSingle();
+      if (data) setLastSeen(data.last_active_at);
+    };
+    const timer = setInterval(refresh, 60000);
+    return () => clearInterval(timer);
+  }, [seller.id, seller.show_online_status, seller.show_last_active]);
+  if (!seller.show_online_status && !seller.show_last_active) return null;
+  const last = lastSeen ? new Date(lastSeen).getTime() : 0;
+  if (!last) return null;
+  const minutes = Math.max(0, Math.floor((now - last) / 60000));
+  if (seller.show_online_status && minutes < 3) return <small className="store-activity online">● Online now</small>;
+  if (seller.show_last_active) return <small className="store-activity">Last active {minutes < 60 ? `${minutes} min ago` : minutes < 1440 ? `${Math.floor(minutes / 60)} hr ago` : `${Math.floor(minutes / 1440)} days ago`}</small>;
+  return null;
+}
+function StoreChatButton({ seller }) {
+  const { session, navigate, notice } = useMarket();
+  const [open, setOpen] = useState(false);
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  if (session?.user?.id === seller.user_id) return null;
+  const send = async (event) => {
+    event.preventDefault();
+    if (!session) return navigate("/login?returnTo=" + encodeURIComponent("/shop/" + seller.slug));
+    if (!configured || !body.trim()) return;
+    setBusy(true);
+    try {
+      let conversation = await result(supabase.from("store_conversations").select("id").eq("seller_id", seller.id).eq("buyer_id", session.user.id).maybeSingle());
+      if (!conversation) conversation = await result(supabase.from("store_conversations").insert({ seller_id: seller.id, buyer_id: session.user.id }).select("id").single());
+      const message = await result(supabase.from("store_messages").insert({ conversation_id: conversation.id, sender_id: session.user.id, body: body.trim() }).select("id").single());
+      // The conversation is saved first. External alerts are best effort and never block it.
+      const { data } = await supabase.auth.getSession();
+      fetch("/api/store-notifications", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session?.access_token || ""}` }, body: JSON.stringify({ messageId: message.id }) }).catch(() => {});
+      navigate("/messages?store=" + conversation.id);
+    } catch (e) { notice(e.message); }
+    finally { setBusy(false); }
+  };
+  return <div className="store-chat-float">
+    {open && <div className="store-chat-sheet" role="dialog" aria-label={"Chat with " + seller.name}>
+      <div className="store-chat-heading"><strong>{seller.name}</strong><button type="button" aria-label="Close chat" onClick={() => setOpen(false)}>×</button></div>
+      <StoreActivity seller={seller} />
+      <p>Ask about an item, availability or the shop. Your conversation will appear in Messages.</p>
+      <form onSubmit={send}><textarea aria-label="Message to store" required maxLength={4000} rows={3} value={body} onChange={(e) => setBody(e.target.value)} placeholder="Write your message…" /><button className="button primary" disabled={busy || !body.trim()}>{busy ? "Sending…" : "Send message"}</button></form>
+    </div>}
+    <button className="button primary store-chat-trigger" type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)}><ChatCircleDots size={22} /> Chat with store</button>
+  </div>;
 }
 export function ProductPage({ id }) {
   const { fixtures, notice, session, path, categories } = useMarket();

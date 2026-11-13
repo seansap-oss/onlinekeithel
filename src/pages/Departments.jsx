@@ -48,6 +48,7 @@ export function Department({ kind }) {
             .select("*,seller:sellers!inner(*)")
             .eq("category_id", category)
             .eq("status", "published")
+            .eq("is_hidden", false)
             .order("created_at", { ascending: false })
             .limit(6);
           if (choice && c.field)
@@ -278,6 +279,7 @@ export function Recruiters({ slug }) {
             .select("*,seller:sellers!inner(*)")
             .eq("category_id", "jobs")
             .eq("status", "published")
+            .eq("is_hidden", false)
             .order("created_at", { ascending: false })
             .limit(100);
           if (slug)

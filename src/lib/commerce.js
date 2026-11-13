@@ -92,6 +92,7 @@ export function stockFor(item, variantId = "") {
 export function outOfStock(item) {
   const c = commerceFor(item);
   return (
+    item.is_out_of_stock === true ||
     (item.status && item.status !== "published") ||
     (c.variants.length ? c.variants.every((v) => v.stock === 0) : c.stock === 0)
   );

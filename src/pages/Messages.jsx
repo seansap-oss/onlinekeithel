@@ -11,7 +11,8 @@ import { Empty, Field } from "../components/UI";
 
 export function Messages() {
   const { session, path, notice, navigate } = useMarket();
-  const requested = new URLSearchParams(path.split("?")[1] || "").get("conversation");
+  const params = new URLSearchParams(path.split("?")[1] || "");
+  const requested = params.get("store") || params.get("conversation");
   const [conversations, setConversations] = useState([]);
   const [active, setActive] = useState(requested || "");
   const [messages, setMessages] = useState([]);
@@ -24,14 +25,13 @@ export function Messages() {
   const loadConversations = useCallback(async () => {
     if (!configured || !session) return;
     try {
-      const rows = await result(
-        supabase
-          .from("direct_conversations")
-          .select("*,listing:listings(id,title,seller:sellers(id,name,slug,user_id))")
-          .order("created_at", { ascending: false }),
-      );
+      const [listingRows, storeRows] = await Promise.all([
+        result(supabase.from("direct_conversations").select("*,listing:listings(id,title,seller:sellers(id,name,slug,user_id))").order("created_at", { ascending: false })),
+        result(supabase.from("store_conversations").select("*,store:sellers(id,name,slug,user_id)").order("created_at", { ascending: false })),
+      ]);
+      const rows = [...listingRows.map((row) => ({ ...row, kind: "listing" })), ...storeRows.map((row) => ({ ...row, kind: "store" }))].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       setConversations(rows);
-      const ids = [...new Set(rows.flatMap((c) => [c.buyer_id, c.listing?.seller?.user_id]).filter(Boolean))];
+      const ids = [...new Set(rows.flatMap((c) => [c.buyer_id, c.store?.user_id || c.listing?.seller?.user_id]).filter(Boolean))];
       if (ids.length) {
         const people = await result(supabase.from("member_profiles").select("user_id,username").in("user_id", ids));
         setProfiles(Object.fromEntries(people.map((person) => [person.user_id, person.username])));
@@ -45,10 +45,12 @@ export function Messages() {
   const loadMessages = useCallback(async () => {
     if (!active || !session) return;
     try {
+      const conversation = conversations.find((entry) => entry.id === active);
+      if (!conversation) return;
       setMessages(
         await result(
           supabase
-            .from("direct_messages")
+            .from(conversation.kind === "store" ? "store_messages" : "direct_messages")
             .select("*")
             .eq("conversation_id", active)
             .order("created_at", { ascending: true }),
@@ -57,11 +59,16 @@ export function Messages() {
     } catch (e) {
       notice(e.message);
     }
-  }, [active, session?.user?.id, notice]);
+  }, [active, conversations, session?.user?.id, notice]);
 
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
+  useEffect(() => {
+    if (!configured || !session) return;
+    const timer = setInterval(loadConversations, 20000);
+    return () => clearInterval(timer);
+  }, [session?.user?.id, loadConversations]);
   useEffect(() => {
     if (!configured || !session) return;
     const channel = supabase
@@ -76,13 +83,17 @@ export function Messages() {
         loadConversations,
       )
       .subscribe();
+    const storeChannel = supabase.channel("store-conversations-" + session.user.id).on("postgres_changes", { event: "INSERT", schema: "public", table: "store_conversations" }, loadConversations).subscribe();
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(storeChannel);
     };
   }, [session?.user?.id, loadConversations]);
   useEffect(() => {
     loadMessages();
     if (!active) return;
+    const conversation = conversations.find((entry) => entry.id === active);
+    if (!conversation) return;
     const channel = supabase
       .channel("direct-messages-" + active)
       .on(
@@ -90,7 +101,7 @@ export function Messages() {
         {
           event: "*",
           schema: "public",
-          table: "direct_messages",
+          table: conversation.kind === "store" ? "store_messages" : "direct_messages",
           filter: "conversation_id=eq." + active,
         },
         loadMessages,
@@ -99,10 +110,15 @@ export function Messages() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [active, loadMessages]);
+  }, [active, conversations, loadMessages]);
+  useEffect(() => {
+    if (!active || !session) return;
+    const timer = setInterval(loadMessages, 10000);
+    return () => clearInterval(timer);
+  }, [active, session?.user?.id, loadMessages]);
 
   const current = conversations.find((c) => c.id === active);
-  const isSeller = current?.listing?.seller?.user_id === session?.user?.id;
+  const isSeller = (current?.store?.user_id || current?.listing?.seller?.user_id) === session?.user?.id;
 
   async function send(e) {
     e.preventDefault();
@@ -110,13 +126,17 @@ export function Messages() {
     if (!text || !active || busy) return;
     setBusy(true);
     try {
-      await result(
-        supabase.from("direct_messages").insert({
+      const message = await result(
+        supabase.from(current.kind === "store" ? "store_messages" : "direct_messages").insert({
           conversation_id: active,
           sender_id: session.user.id,
           body: text,
-        }),
+        }).select("id").single(),
       );
+      if (current.kind === "store" && !isSeller) {
+        const { data } = await supabase.auth.getSession();
+        fetch("/api/store-notifications", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session?.access_token || ""}` }, body: JSON.stringify({ messageId: message.id }) }).catch(() => {});
+      }
       setBody("");
       await loadMessages();
     } catch (e) {
@@ -181,9 +201,9 @@ export function Messages() {
             conversations.map((conversation) => {
               const listing = conversation.listing;
               const mine = conversation.buyer_id === session.user.id;
-              const title = listing?.title || "Marketplace listing";
+              const title = conversation.kind === "store" ? "Store conversation" : listing?.title || "Marketplace listing";
               const partner = mine
-                ? profiles[listing?.seller?.user_id] || listing?.seller?.name || "Seller"
+                ? profiles[conversation.store?.user_id || listing?.seller?.user_id] || conversation.store?.name || listing?.seller?.name || "Seller"
                 : profiles[conversation.buyer_id] || "Marketplace member";
               return (
                 <button
@@ -191,7 +211,7 @@ export function Messages() {
                   className={active === conversation.id ? "active" : ""}
                   onClick={() => {
                     setActive(conversation.id);
-                    navigate("/messages?conversation=" + conversation.id);
+                    navigate("/messages?" + (conversation.kind === "store" ? "store=" : "conversation=") + conversation.id);
                   }}
                 >
                   <span className="conversation-avatar">
@@ -213,10 +233,10 @@ export function Messages() {
                 <div>
                   <strong>
                     {current.buyer_id === session.user.id
-                      ? profiles[current.listing?.seller?.user_id] || current.listing?.seller?.name || "Marketplace seller"
+                      ? profiles[current.store?.user_id || current.listing?.seller?.user_id] || current.store?.name || current.listing?.seller?.name || "Marketplace seller"
                       : profiles[current.buyer_id] || "Marketplace member"}
                   </strong>
-                  <small>{current.listing?.title || "Listing conversation"}</small>
+                  <small>{current.kind === "store" ? "Store conversation" : current.listing?.title || "Listing conversation"}</small>
                 </div>
                 {current.listing?.id && (
                   <Link to={"/listing/" + current.listing.id}>View listing</Link>
@@ -234,7 +254,7 @@ export function Messages() {
                     <strong className="chat-username">@{profiles[message.sender_id] || (message.sender_id === session.user.id ? session.user.user_metadata?.username : null) || "member"}</strong>
                     <p>{message.body}</p>
                     <small>{new Date(message.created_at).toLocaleString()}</small>
-                    {isSeller && message.sender_id !== session.user.id && (
+                    {isSeller && current.kind === "listing" && message.sender_id !== session.user.id && (
                       <button
                         className="text-button muted"
                         onClick={() => setReportId(message.id)}

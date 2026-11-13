@@ -927,7 +927,7 @@ export function Dashboard({ startSell = false, visual = false }) {
   }, [sharedAttempt, path]);
   const [starterCategory, setStarterCategory] = useState("");
   const [tab, setTab] = useState(
-      ["products", "profile", "collections", "sales", "import"].includes(new URLSearchParams(path.split("?")[1]).get("tab"))
+      ["products", "profile", "collections", "sales", "import", "availability"].includes(new URLSearchParams(path.split("?")[1]).get("tab"))
         ? new URLSearchParams(path.split("?")[1]).get("tab")
         : "products",
     ),
@@ -942,7 +942,18 @@ export function Dashboard({ startSell = false, visual = false }) {
     [moveCollectionTo, setMoveCollectionTo] = useState(""),
     [page, setPage] = useState(0),
     [more, setMore] = useState(false),
-    [count, setCount] = useState(0);
+    [count, setCount] = useState(0),
+    [listingBusy, setListingBusy] = useState("");
+  const updateListingFlag = async (listing, key, value) => {
+    if (visual) return notice("Connect your account to change listings.");
+    setListingBusy(listing.id);
+    try {
+      await result(supabase.from("listings").update({ [key]: value }).eq("id", listing.id).eq("seller_id", seller.id).select("id").single());
+      setRows((current) => current.map((row) => row.id === listing.id ? { ...row, [key]: value } : row));
+      notice(key === "is_hidden" ? (value ? "Listing hidden from the public" : "Listing visible again") : (value ? "Marked out of stock" : "Marked available"));
+    } catch (e) { notice(e.message); }
+    finally { setListingBusy(""); }
+  };
   const load = async () => {
     if (!seller) return;
     if (visual) {
@@ -998,6 +1009,7 @@ export function Dashboard({ startSell = false, visual = false }) {
     ["products", Package, "Stock & listings"],
     ["sales", Stack, "Sales"],
     ["profile", Storefront, "Shop identity"],
+    ["availability", Megaphone, "Messages & availability"],
     ["collections", Stack, "Collections"],
     ["import", UploadSimple, "Import catalogue"],
   ];
@@ -1125,6 +1137,12 @@ export function Dashboard({ startSell = false, visual = false }) {
                       <span className={"status " + i.status}>
                         {i.status}
                       </span>
+                      <label className="inventory-control">Stock
+                        <select aria-label={"Stock status for " + i.title} value={i.is_out_of_stock ? "out" : "available"} disabled={listingBusy === i.id || i.status !== "published"} onChange={(e) => updateListingFlag(i, "is_out_of_stock", e.target.value === "out")}>
+                          <option value="available">Available</option><option value="out">Out of stock</option>
+                        </select>
+                      </label>
+                      <label className="inventory-visibility"><input type="checkbox" checked={!i.is_hidden} disabled={listingBusy === i.id || i.status !== "published"} onChange={(e) => updateListingFlag(i, "is_hidden", !e.target.checked)} /> {i.is_hidden ? "Hidden" : "Visible"}</label>
                       <button
                         className="icon-button"
                         aria-label={"Duplicate " + i.title}
@@ -1166,6 +1184,7 @@ export function Dashboard({ startSell = false, visual = false }) {
               onSaved={refreshUser}
             />
           )}{" "}
+          {tab === "availability" && <StoreAvailability seller={seller} session={session} visual={visual} onSaved={refreshUser} />}
           {tab === "collections" && (
             <>
               <h2>Manage your store departments</h2>
@@ -1293,4 +1312,73 @@ export function Dashboard({ startSell = false, visual = false }) {
       )}
     </div>
   );
+}
+
+function StoreAvailability({ seller, session, visual, onSaved }) {
+  const { notice, settings, plans } = useMarket();
+  const [form, setForm] = useState({
+    messages_enabled: seller.messages_enabled !== false,
+    show_online_status: seller.show_online_status === true,
+    show_last_active: seller.show_last_active === true,
+    notify_email: seller.notify_email === true,
+    notify_whatsapp: seller.notify_whatsapp === true,
+    phone: "",
+  });
+  const [planId, setPlanId] = useState("free");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (visual) return;
+    let active = true;
+    Promise.all([
+      result(supabase.from("seller_private_contacts").select("whatsapp").eq("seller_id", seller.id).maybeSingle()),
+      result(supabase.from("entitlements").select("plan_id,expires_at").eq("seller_id", seller.id).maybeSingle()),
+    ]).then(([contact, entitlement]) => {
+      if (!active) return;
+      setForm((previous) => ({ ...previous, phone: contact?.whatsapp || seller.whatsapp || "" }));
+      setPlanId(entitlement && new Date(entitlement.expires_at) > new Date() ? entitlement.plan_id : "free");
+    }).catch((e) => notice(e.message));
+    return () => { active = false; };
+  }, [seller.id]);
+  const selectedPlan = plans.find((plan) => plan.id === planId);
+  const gated = settings.premium_enforcement === true;
+  const availableEmail = !gated || selectedPlan?.email_alerts === true;
+  const availableWhatsApp = !gated || selectedPlan?.whatsapp_alerts === true;
+  const verifiedEmail = Boolean(session?.user?.email_confirmed_at);
+  const toggle = (key) => setForm((current) => ({ ...current, [key]: !current[key] }));
+  const save = async (event) => {
+    event.preventDefault();
+    if (visual) return notice("Connect your account to save settings.");
+    setBusy(true);
+    try {
+      const phone = form.phone.replace(/[\s()+-]/g, "");
+      if ((form.notify_whatsapp || seller.whatsapp_enabled) && !/^[1-9]\d{7,14}$/.test(phone))
+        throw Error("Enter a WhatsApp number with country code.");
+      await result(supabase.from("seller_private_contacts").upsert({ seller_id: seller.id, whatsapp: phone }, { onConflict: "seller_id" }));
+      await result(supabase.from("sellers").update({
+        messages_enabled: form.messages_enabled,
+        show_online_status: form.show_online_status,
+        show_last_active: form.show_last_active,
+        last_active_at: form.show_online_status || form.show_last_active ? new Date().toISOString() : null,
+        notify_email: availableEmail && verifiedEmail && form.notify_email,
+        notify_whatsapp: availableWhatsApp && form.notify_whatsapp,
+        whatsapp: seller.whatsapp_enabled ? phone : "",
+      }).eq("id", seller.id).select("id").single());
+      await onSaved();
+      notice("Store message settings saved.");
+    } catch (e) { notice(e.message); }
+    finally { setBusy(false); }
+  };
+  return <form className="store-availability" onSubmit={save}>
+    <h2>Store messages & availability</h2>
+    <p className="muted">Private conversations stay in your OnlineKeithel inbox, even when you are offline.</p>
+    <label><span><strong>Accept store messages</strong><small>Show Chat with store on your public page.</small></span><input type="checkbox" checked={form.messages_enabled} onChange={() => toggle("messages_enabled")} /></label>
+    <label><span><strong>Show online status</strong><small>Online means your account is active in the app.</small></span><input type="checkbox" checked={form.show_online_status} onChange={() => toggle("show_online_status")} /></label>
+    <label><span><strong>Show last active</strong><small>Show when you were last active after you go offline.</small></span><input type="checkbox" checked={form.show_last_active} onChange={() => toggle("show_last_active")} /></label>
+    <h3>Message copies and alerts</h3>
+    <label><span><strong>Email copy {gated && !availableEmail && "· Premium"}</strong><small>{verifiedEmail ? session.user.email : "Verify your account email before enabling."}</small></span><input type="checkbox" disabled={!availableEmail || !verifiedEmail} checked={form.notify_email && availableEmail && verifiedEmail} onChange={() => toggle("notify_email")} /></label>
+    <label><span><strong>WhatsApp alert {gated && !availableWhatsApp && "· Premium"}</strong><small>A notification for a new store message; reply in the app.</small></span><input type="checkbox" disabled={!availableWhatsApp} checked={form.notify_whatsapp && availableWhatsApp} onChange={() => toggle("notify_whatsapp")} /></label>
+    <label className="store-availability-phone"><span><strong>Notification WhatsApp number</strong><small>Only shown publicly if you enable the separate store contact option.</small></span><input type="tel" value={form.phone} onChange={(e) => setForm((current) => ({ ...current, phone: e.target.value }))} placeholder="91 followed by your number" /></label>
+    <p className="muted">Email and WhatsApp delivery becomes active when the marketplace connects its notification providers. Your in-app inbox works independently.</p>
+    <button className="button primary" disabled={busy}>{busy ? "Saving…" : "Save message settings"}</button>
+  </form>;
 }

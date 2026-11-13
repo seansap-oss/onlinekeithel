@@ -360,6 +360,14 @@ export function SellerForm({ existing, onSaved }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const change = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  useEffect(() => {
+    if (!existing?.id) return;
+    let active = true;
+    result(supabase.from("seller_private_contacts").select("whatsapp").eq("seller_id", existing.id).maybeSingle())
+      .then((contact) => { if (active && contact?.whatsapp) setForm((current) => ({ ...current, whatsapp: contact.whatsapp })); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [existing?.id]);
   return (
     <form
       className="editor-form"
@@ -401,14 +409,16 @@ export function SellerForm({ existing, onSaved }) {
             },
             user_id: existing?.user_id || session.user.id,
             whatsapp_enabled: form.whatsapp_enabled === true,
+            whatsapp: form.whatsapp_enabled === true ? form.whatsapp : "",
           };
           delete payload.created_at;
           delete payload.suspended;
-          await result(
+          const savedSeller = await result(
             existing
-              ? supabase.from("sellers").update(payload).eq("id", existing.id)
-              : supabase.from("sellers").insert(payload),
+              ? supabase.from("sellers").update(payload).eq("id", existing.id).select("id").single()
+              : supabase.from("sellers").insert(payload).select("id").single(),
           );
+          await result(supabase.from("seller_private_contacts").upsert({ seller_id: savedSeller.id, whatsapp: form.whatsapp }, { onConflict: "seller_id" }));
           await refreshUser();
           notice("Your seller profile is saved");
           onSaved?.();

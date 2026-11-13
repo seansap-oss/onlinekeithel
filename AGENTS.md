@@ -1,5 +1,12 @@
 # Prototype Instructions
 
+## Approved store controls and messaging - v0.25.0, 13 November 2026
+
+- Keep the existing Shop Studio and public store layout. A published item has independent Out of stock and Hidden switches. Hidden items remain in seller inventory but disappear from public discovery; out-of-stock items remain visible and cannot receive purchase enquiries.
+- Add optional store-wide in-app chat to the seller's Messages inbox. The seller controls whether store chat, online status and last-active status appear. Presence reflects recent active sessions, with no public activity timestamp when both visibility options are off.
+- Store owners can opt into verified-email copies and WhatsApp template alerts. In-app messages remain the source of truth. External delivery requires provider credentials and an approved template; do not claim delivery until configured and exercised.
+- Admin can set email/WhatsApp features by plan, assign store entitlements and enable premium enforcement later. During launch, enforcement is off. Verified payment fulfillment updates existing entitlements automatically.
+
 ## Video viewer decision — v0.23.0, 13 November 2026
 
 - The approved guitar mock uses a vertical 9:16 in-app viewer over the existing marketplace. Tapping a listing's video cover opens it without replacing the homepage; Close returns to the same listing position. Include the listing title, price, seller contact and a separate original-post link.

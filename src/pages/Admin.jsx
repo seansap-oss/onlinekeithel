@@ -1,5 +1,6 @@
 import { StarterCatalogue } from "../components/StarterCatalogue";
 import { AdminUsers } from "../components/AdminUsers";
+import { AdminPlans } from "../components/AdminPlans";
 import { HomepageEditor } from "../components/HomepageEditor";
 import { SubcategoryEditor } from "../components/SubcategoryEditor";
 import { categoryIcons } from "../components/CategoryIcon";
@@ -30,6 +31,7 @@ const sections = [
   ["listings", "Listings", Package],
   ["categories", "Categories", SquaresFour],
   ["plans", "Packages", Package],
+  ["premium", "Plans & entitlements", ShieldCheck],
   ["campaigns", "Advertisements", Megaphone],
   ["reports", "Reports", Flag],
   ["message_reports", "Message reports", Flag],
@@ -73,7 +75,7 @@ export function Admin({ visual = false }) {
     [query, setQuery] = useState(""),
     [starterOnly, setStarterOnly] = useState(false);
   const load = async () => {
-    if (["settings", "ticker", "users", "starter"].includes(tab)) return;
+    if (["settings", "ticker", "users", "starter", "premium"].includes(tab)) return;
     try {
       if (visual) {
         setRows(fixtures?.[tab] || []);
@@ -128,10 +130,11 @@ export function Admin({ visual = false }) {
     if (visual) return notice("Administrator preview only. Connect your admin account to change settings.");
     setBusy(true);
     try {
+      const current = await result(supabase.from("settings").select("value").eq("id", "marketplace").single());
       await result(
         supabase.rpc("publish_homepage", {
-          p_value: { ...settings, payments_enabled: enabled },
-          p_expected: settings,
+          p_value: { ...current.value, payments_enabled: enabled },
+          p_expected: current.value,
         }),
       );
       await refresh();
@@ -226,6 +229,8 @@ export function Admin({ visual = false }) {
             />
           ) : tab === "users" ? (
             <AdminUsers visual={visual} />
+          ) : tab === "premium" ? (
+            <AdminPlans visual={visual} />
           ) : tab === "starter" ? (
             <StarterCatalogue visual={visual} />
           ) : (

@@ -82,6 +82,17 @@ export function MarketProvider({ children }) {
   useEffect(() => {
     loadUser(session?.user);
   }, [session?.user?.id, loadUser]);
+  useEffect(() => {
+    if (!seller?.id || !session?.user?.id || (!seller.show_online_status && !seller.show_last_active)) return;
+    const beat = () => {
+      if (document.visibilityState === "visible")
+        supabase.from("sellers").update({ last_active_at: new Date().toISOString() }).eq("id", seller.id).eq("user_id", session.user.id).then(() => {});
+    };
+    beat();
+    const timer = setInterval(beat, 60000);
+    document.addEventListener("visibilitychange", beat);
+    return () => { clearInterval(timer); document.removeEventListener("visibilitychange", beat); };
+  }, [seller?.id, seller?.show_online_status, seller?.show_last_active, session?.user?.id]);
   const refresh = useCallback(async () => {
     try {
       if (configured) {
