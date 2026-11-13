@@ -18,6 +18,7 @@ import { configured, requireBackend, result, supabase } from "../lib/backend";
 import { accountEmailUrl } from "../lib/auth-url";
 import { Empty, Photo } from "../components/UI";
 import { money } from "../lib/utils";
+import { setSavedId } from "../lib/saved-items";
 
 const categoryIcons = {
   "home-living": House,
@@ -43,6 +44,24 @@ export function MemberAccount() {
   const [openSection, setOpenSection] = useState("messages");
   const [conversations, setConversations] = useState([]);
   const [conversationCount, setConversationCount] = useState(0);
+  const [profile, setProfile] = useState({ name: session?.user?.user_metadata?.full_name || "", username: session?.user?.user_metadata?.username || "", phone: session?.user?.user_metadata?.phone || "", showWhatsApp: false });
+  const [sellerProfile, setSellerProfile] = useState(null);
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [profileError, setProfileError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    if (!configured || !session?.user?.id) return;
+    Promise.all([
+      result(supabase.from("member_profiles").select("username").eq("user_id", session.user.id).maybeSingle()),
+      result(supabase.from("sellers").select("id,whatsapp,whatsapp_enabled").eq("user_id", session.user.id).maybeSingle()),
+    ]).then(([member, seller]) => {
+      if (!active) return;
+      setSellerProfile(seller);
+      setProfile((old) => ({ ...old, username: member?.username || old.username, phone: seller?.whatsapp || old.phone, showWhatsApp: seller?.whatsapp_enabled === true }));
+    }).catch((e) => { if (active) setProfileError(e.message); });
+    return () => { active = false; };
+  }, [session?.user?.id]);
 
   useEffect(() => {
     let current = true;
@@ -139,7 +158,7 @@ export function MemberAccount() {
   const visibleGroups = activeCategory === "all"
     ? grouped
     : grouped.filter((group) => group.category.id === activeCategory);
-  const displayName =
+  const displayName = profile.name ||
     session?.user?.user_metadata?.username ||
     session?.user?.user_metadata?.full_name ||
     session?.user?.user_metadata?.name ||
@@ -156,10 +175,30 @@ export function MemberAccount() {
           .eq("listing_id", listingId),
       );
       setItems((current) => current.filter((item) => item.id !== listingId));
+      await setSavedId(session.user.id, listingId, false);
       notice("Removed from saved items");
     } catch (e) {
       notice(e.message);
     }
+  }
+
+  async function saveProfile(event) {
+    event.preventDefault();
+    setProfileError("");
+    setProfileBusy(true);
+    try {
+      const username = profile.username.trim();
+      const phone = profile.phone.replace(/[\s()+-]/g, "");
+      if (!/^[A-Za-z0-9_]{3,24}$/.test(username)) throw Error("Username must be 3–24 letters, numbers or underscores.");
+      if (phone && !/^[1-9]\d{7,14}$/.test(phone)) throw Error("Enter your number with country code, for example 91 followed by 10 digits.");
+      if (sellerProfile && profile.showWhatsApp && !phone) throw Error("Add a WhatsApp number before showing it on your store.");
+      await result(supabase.from("member_profiles").upsert({ user_id: session.user.id, username }, { onConflict: "user_id" }));
+      await result(supabase.auth.updateUser({ data: { ...session.user.user_metadata, full_name: profile.name.trim(), username, phone } }));
+      if (sellerProfile) await result(supabase.from("sellers").update({ ...(phone ? { whatsapp: phone } : {}), whatsapp_enabled: profile.showWhatsApp }).eq("id", sellerProfile.id).eq("user_id", session.user.id));
+      setProfile((old) => ({ ...old, username, phone }));
+      notice("Account settings saved");
+    } catch (e) { setProfileError(e.message); }
+    finally { setProfileBusy(false); }
   }
 
   async function sendPasswordLink() {
@@ -255,6 +294,15 @@ export function MemberAccount() {
             <ShieldCheck size={23} /> <span>Account settings</span><CaretDown className="member-accordion-caret" size={19} />
           </button>
           {openSection === "settings" && <div className="member-settings-panel">
+            <form className="member-profile-form" onSubmit={saveProfile}>
+              <label>Display name<input value={profile.name} maxLength={80} autoComplete="name" onChange={(e) => setProfile((old) => ({ ...old, name: e.target.value }))} /></label>
+              <label>Username<input value={profile.username} required minLength={3} maxLength={24} pattern="[A-Za-z0-9_]+" autoComplete="username" onChange={(e) => setProfile((old) => ({ ...old, username: e.target.value }))} /></label>
+              <label>Phone number with country code<input type="tel" value={profile.phone} autoComplete="tel" placeholder="91 followed by your number" onChange={(e) => setProfile((old) => ({ ...old, phone: e.target.value }))} /></label>
+              <small>Your phone stays private unless you choose to show WhatsApp on your store.</small>
+              {sellerProfile ? <label className="member-profile-visibility"><input type="checkbox" checked={profile.showWhatsApp} onChange={(e) => setProfile((old) => ({ ...old, showWhatsApp: e.target.checked }))} /> Show WhatsApp on my store and listings</label> : <small>Create a store profile to add a public WhatsApp contact.</small>}
+              {profileError && <p className="form-error" role="alert">{profileError}</p>}
+              <button type="submit" className="button primary" disabled={profileBusy}>{profileBusy ? "Saving…" : "Save account settings"}</button>
+            </form>
             <button className="member-action-link" onClick={sendPasswordLink} disabled={busy}><ShieldCheck size={20} /> {busy ? "Sending link…" : "Set or reset password"}</button>
             <button className="member-action-link" onClick={signOut}><SignOut size={20} /> Sign out</button>
           </div>}

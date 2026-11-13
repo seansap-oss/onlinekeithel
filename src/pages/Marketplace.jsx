@@ -82,11 +82,21 @@ import {
   isSellerId,
 } from "../lib/storefront";
 import { icons } from "../components/Layout";
+import { savedIds, setSavedId } from "../lib/saved-items";
 const isExampleListing = (item) => item.sample || item.attributes?.["Starter example"] === "true";
 export function ProductCard({ item, compact = false }) {
   const { session, navigate, notice } = useMarket();
   const [saved, setSaved] = useState(false),
-    [flipped, setFlipped] = useState(false);
+    [flipped, setFlipped] = useState(false),
+    [saving, setSaving] = useState(false);
+  useEffect(() => {
+    let active = true;
+    if (!session?.user?.id) { setSaved(false); return; }
+    savedIds(session.user.id).then((ids) => { if (active) setSaved(ids.has(item.id)); }).catch(() => {});
+    const sync = (event) => { if (active && event.detail.userId === session.user.id && event.detail.listingId === item.id) setSaved(event.detail.value); };
+    window.addEventListener("onlinekeithel:saved-change", sync);
+    return () => { active = false; window.removeEventListener("onlinekeithel:saved-change", sync); };
+  }, [session?.user?.id, item.id]);
   return (
     <article className={compact ? "product-card product-card-list" : "product-card"}>
       <div className="product-photo">
@@ -141,12 +151,10 @@ export function ProductCard({ item, compact = false }) {
           className={"save-button " + (saved ? "saved" : "")}
           aria-label={`Save ${item.title}`}
           aria-pressed={saved}
+          disabled={saving}
           onClick={async () => {
-            if (isExampleListing(item))
-              return notice(
-                "Saving is available after account services are connected.",
-              );
             if (!session) return navigate("/login");
+            setSaving(true);
             try {
               if (saved)
                 await result(
@@ -162,12 +170,14 @@ export function ProductCard({ item, compact = false }) {
                     .from("saved_listings")
                     .upsert({ user_id: session.user.id, listing_id: item.id }),
                 );
-              setSaved(!saved);
+              await setSavedId(session.user.id, item.id, !saved);
               notice(
                 saved ? "Removed from saved items" : "Saved to your account",
               );
             } catch (e) {
               notice(e.message);
+            } finally {
+              setSaving(false);
             }
           }}
         >
@@ -841,6 +851,8 @@ export function Search({ saved = false }) {
               );
           if (sort === "low") list.sort((a, b) => a.price - b.price);
           if (sort === "high") list.sort((a, b) => b.price - a.price);
+          if (sort === "oldest") list.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+          if (sort === "newest") list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
           list = list.slice(page * 24, page * 24 + 25);
         } else if (configured) {
           let query = supabase
@@ -883,8 +895,8 @@ export function Search({ saved = false }) {
             );
           }
           query = query
-            .order(sort === "newest" ? "created_at" : "price", {
-              ascending: sort === "low",
+            .order(["newest", "oldest"].includes(sort) ? "created_at" : "price", {
+              ascending: sort === "oldest" || sort === "low",
             })
             .order("id")
             .range(page * 24, page * 24 + 24);
@@ -1123,6 +1135,7 @@ export function Search({ saved = false }) {
               onChange={(e) => setSort(e.target.value)}
             >
               <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
               <option value="low">Price: low to high</option>
               <option value="high">Price: high to low</option>
             </select>
